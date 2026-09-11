@@ -13,5 +13,6 @@ def test_operational_core_commands_are_exposed() -> None:
         ["analyze-history", "--path", "history.md"],
         ["backup-db", "--db", "x.db", "--out", "backup.db"],
         ["restore-db", "--backup", "backup.db", "--out", "restored.db"],
+        ["serve", "--db", "x.db"],
     ]
     assert [parser.parse_args(command).command for command in commands] == [command[0] for command in commands]

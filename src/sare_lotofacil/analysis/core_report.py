@@ -29,18 +29,20 @@ class CoreAnalysisReport:
         return payload
 
 
-def analyze_core(draws: Sequence[Iterable[int]], *, min_train: int | None = None) -> CoreAnalysisReport:
+def analyze_core(draws: Sequence[Iterable[int]], *, min_train: int | None = None, delta_min: float = 0.0) -> CoreAnalysisReport:
     normalized = tuple(normalize_numbers(draw) for draw in draws)
     if len(normalized) < 101:
         raise ValueError("Core requer ao menos 101 concursos para walk-forward")
+    if delta_min < 0:
+        raise ValueError("delta_min não pode ser negativo")
     selected_min_train = min_train if min_train is not None else max(100, int(len(normalized) * 0.60))
     if selected_min_train >= len(normalized):
         raise ValueError("min_train precisa ser menor que a quantidade de concursos")
 
     marginal = marginal_uniformity(normalized)
     repetitions = repetition_counts(normalized)
-    m1 = walk_forward_frequency(normalized, min_train=selected_min_train, lam=100.0)
-    m2 = walk_forward_exponential(normalized, min_train=selected_min_train, alpha=0.05)
+    m1 = walk_forward_frequency(normalized, min_train=selected_min_train, lam=100.0, delta_min=delta_min)
+    m2 = walk_forward_exponential(normalized, min_train=selected_min_train, alpha=0.05, delta_min=delta_min)
 
     return CoreAnalysisReport(
         contest_count=len(normalized),

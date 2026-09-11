@@ -3,7 +3,7 @@ from __future__ import annotations
 import sqlite3
 from pathlib import Path
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 SCHEMA_SQL = """
 PRAGMA foreign_keys = ON;
@@ -86,6 +86,65 @@ CREATE TABLE IF NOT EXISTS runs (
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     finished_at TEXT
 );
+
+CREATE TABLE IF NOT EXISTS run_results (
+    run_id TEXT PRIMARY KEY REFERENCES runs(run_id) ON DELETE CASCADE,
+    result_json TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS portfolios (
+    portfolio_id TEXT PRIMARY KEY,
+    snapshot_id TEXT REFERENCES snapshots(snapshot_id),
+    target_contest INTEGER,
+    seed INTEGER NOT NULL,
+    card_count INTEGER NOT NULL CHECK (card_count BETWEEN 3 AND 100),
+    cost_cents INTEGER NOT NULL CHECK (cost_cents > 0),
+    predictive_evidence TEXT NOT NULL DEFAULT 'NOT_ESTABLISHED',
+    evidence_label TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS portfolio_cards (
+    portfolio_id TEXT NOT NULL REFERENCES portfolios(portfolio_id) ON DELETE CASCADE,
+    position INTEGER NOT NULL CHECK (position > 0),
+    result_mask INTEGER NOT NULL CHECK (result_mask > 0),
+    PRIMARY KEY (portfolio_id, position),
+    UNIQUE (portfolio_id, result_mask)
+);
+
+CREATE TABLE IF NOT EXISTS evaluations (
+    evaluation_id TEXT PRIMARY KEY,
+    portfolio_id TEXT NOT NULL REFERENCES portfolios(portfolio_id) ON DELETE CASCADE,
+    result_mask INTEGER NOT NULL CHECK (result_mask > 0),
+    hits_json TEXT NOT NULL,
+    max_hits INTEGER NOT NULL CHECK (max_hits BETWEEN 5 AND 15),
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS idempotency_keys (
+    operation TEXT NOT NULL,
+    idempotency_key TEXT NOT NULL,
+    request_hash TEXT NOT NULL,
+    response_json TEXT NOT NULL,
+    status_code INTEGER NOT NULL,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (operation, idempotency_key)
+);
+
+CREATE TABLE IF NOT EXISTS audit_events (
+    event_id TEXT PRIMARY KEY,
+    action TEXT NOT NULL,
+    entity_type TEXT NOT NULL,
+    entity_id TEXT NOT NULL,
+    detail_json TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_portfolios_snapshot
+ON portfolios(snapshot_id);
+
+CREATE INDEX IF NOT EXISTS idx_evaluations_portfolio
+ON evaluations(portfolio_id);
 
 CREATE INDEX IF NOT EXISTS idx_contest_revisions_date
 ON contest_revisions(draw_date);

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 from fractions import Fraction
 from pathlib import Path
 
@@ -93,6 +94,12 @@ def build_parser() -> argparse.ArgumentParser:
     restore = subparsers.add_parser("restore-db", help="restaura backup SQLite para novo destino")
     restore.add_argument("--backup", type=Path, required=True)
     restore.add_argument("--out", type=Path, required=True)
+
+    serve = subparsers.add_parser("serve", help="inicia a API local do SARE Operational")
+    serve.add_argument("--db", type=Path, required=True)
+    serve.add_argument("--host", default="127.0.0.1")
+    serve.add_argument("--port", type=int, default=8765)
+    serve.add_argument("--max-body-bytes", type=int, default=65_536)
     return parser
 
 
@@ -147,5 +154,18 @@ def main() -> int:
     if args.command == "restore-db":
         info = restore_database(args.backup, args.out)
         print(json.dumps({"path": str(info.path), "sha256": info.sha256, "integrity": info.integrity}, sort_keys=True))
+        return 0
+    if args.command == "serve":
+        if args.host not in {"127.0.0.1", "localhost", "::1"}:
+            raise SystemExit("Operational 1.1 recusa binding externo; use loopback local")
+        from sare_lotofacil.api.app import create_app
+        import uvicorn
+
+        app = create_app(
+            args.db,
+            write_token=os.getenv("SARE_WRITE_TOKEN"),
+            max_body_bytes=args.max_body_bytes,
+        )
+        uvicorn.run(app, host=args.host, port=args.port)
         return 0
     raise RuntimeError("comando não tratado")

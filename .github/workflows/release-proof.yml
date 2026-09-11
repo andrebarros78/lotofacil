@@ -1,0 +1,52 @@
+name: Release Proof
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "tests/**"
+      - "pyproject.toml"
+      - ".github/workflows/release-proof.yml"
+      - "docs/OPERACAO.md"
+
+permissions:
+  contents: read
+
+jobs:
+  clean-install:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Build wheel
+        run: python -m pip wheel . --no-deps -w dist
+      - name: Create clean environment and install wheel
+        run: |
+          python -m venv /tmp/sare-clean
+          /tmp/sare-clean/bin/python -m pip install dist/sare_lotofacil-*.whl
+      - name: Prove mathematical doctor
+        run: /tmp/sare-clean/bin/python -m sare_lotofacil doctor
+      - name: Prove persistence backup restore and API import
+        run: |
+          /tmp/sare-clean/bin/python -m sare_lotofacil init-db --path /tmp/sare.db
+          /tmp/sare-clean/bin/python -m sare_lotofacil backup-db --db /tmp/sare.db --out /tmp/sare.backup.db
+          /tmp/sare-clean/bin/python -m sare_lotofacil restore-db --backup /tmp/sare.backup.db --out /tmp/sare.restored.db
+          /tmp/sare-clean/bin/python - <<'PY'
+          from sare_lotofacil.api.app import create_app
+          app = create_app('/tmp/sare.restored.db', write_token='release-proof')
+          paths = {route.path for route in app.routes}
+          required = {'/health/live', '/health/ready', '/v1/analyses', '/v1/portfolios', '/v1/evaluations', '/v1/ris'}
+          assert required <= paths
+          print('RELEASE_PROOF_PASS')
+          PY
+      - name: Upload wheel
+        uses: actions/upload-artifact@v4
+        with:
+          name: sare-lotofacil-wheel
+          path: dist/*.whl
+          if-no-files-found: error
