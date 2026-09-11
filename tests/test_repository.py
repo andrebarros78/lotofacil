@@ -40,3 +40,27 @@ def test_snapshot_is_deterministic_and_loadable(tmp_path) -> None:
     assert first == second
     draws = load_snapshot_draws(path, first.snapshot_id)
     assert draws == (tuple(range(1, 16)),)
+
+
+def test_prize_change_creates_new_revision_and_preserves_previous(tmp_path) -> None:
+    path = tmp_path / "sare.db"
+    first = persist_caixa_contest(path, contest(BASE))
+
+    changed = deepcopy(BASE)
+    changed["listaRateioPremio"][0]["valorPremio"] = 2000.0
+    second = persist_caixa_contest(path, contest(changed))
+
+    assert first.revision == 1
+    assert second.revision == 2
+    assert second.created is True
+
+    import sqlite3
+
+    connection = sqlite3.connect(path)
+    try:
+        rows = connection.execute(
+            "SELECT revision, prize_cents FROM prize_tiers WHERE contest_id=100 ORDER BY revision"
+        ).fetchall()
+        assert rows == [(1, 100000), (2, 200000)]
+    finally:
+        connection.close()
