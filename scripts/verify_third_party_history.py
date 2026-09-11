@@ -32,13 +32,23 @@ def main() -> int:
     if not records or records[0].contest_id != 1:
         raise RuntimeError("histórico não inicia no concurso 1")
 
+    official_latest = fetch_caixa_contest()
+    if records[-1].contest_id != official_latest.record.contest_id:
+        print(json.dumps({
+            "status": "STALE_SOURCE",
+            "candidate_last_contest": records[-1].contest_id,
+            "official_last_contest": official_latest.record.contest_id,
+        }, ensure_ascii=False, sort_keys=True))
+        return 4
+
     by_id = {record.contest_id: record for record in records}
     checkpoint_ids = tuple(dict.fromkeys((*CHECKPOINTS, records[-1].contest_id)))
+    official_cache = {official_latest.record.contest_id: official_latest}
     checks = []
     for contest_id in checkpoint_ids:
         if contest_id not in by_id:
             raise RuntimeError(f"checkpoint ausente no CSV: {contest_id}")
-        official = fetch_caixa_contest(contest_id)
+        official = official_cache.get(contest_id) or fetch_caixa_contest(contest_id)
         candidate = by_id[contest_id]
         matches = candidate.draw_date == official.record.draw_date and candidate.numbers == official.record.numbers
         checks.append({
@@ -65,6 +75,7 @@ def main() -> int:
         "records": len(records),
         "first_contest": records[0].contest_id,
         "last_contest": records[-1].contest_id,
+        "official_latest_contest": official_latest.record.contest_id,
         "checkpoints": checks,
         "core_report": report.to_dict(),
         "marginal_min_holm": min(item.p_holm for item in marginal),
