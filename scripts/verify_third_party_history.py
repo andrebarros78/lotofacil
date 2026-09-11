@@ -13,6 +13,7 @@ from sare_lotofacil.statistics.inference import marginal_tests, pair_tests, temp
 
 SOURCE_URL = "https://raw.githubusercontent.com/heldersontuc-collab/lotofacil-data/main/data/lotofacil.csv"
 CHECKPOINTS = (1, 100, 949, 2000, 3000, 3766)
+MAX_OFFICIAL_PATCHES = 20
 
 
 def download_text(url: str) -> bytes:
@@ -25,30 +26,52 @@ def main() -> int:
     raw = download_text(SOURCE_URL)
     digest = hashlib.sha256(raw).hexdigest()
     parsed = parse_history_csv(raw.decode("utf-8-sig"))
-    if not parsed.is_valid:
-        print(json.dumps({"status": "INVALID_SOURCE", "issues": [asdict(issue) for issue in parsed.issues[:50]]}, ensure_ascii=False))
+
+    non_gap_issues = [issue for issue in parsed.issues if not issue.message.startswith("lacuna de concursos")]
+    if non_gap_issues:
+        print(json.dumps({"status": "INVALID_SOURCE", "issues": [asdict(issue) for issue in non_gap_issues[:50]]}, ensure_ascii=False))
         return 2
-    records = parsed.records
-    if not records or records[0].contest_id != 1:
+    if not parsed.records or parsed.records[0].contest_id != 1:
         raise RuntimeError("histórico não inicia no concurso 1")
 
     official_latest = fetch_caixa_contest()
-    if records[-1].contest_id != official_latest.record.contest_id:
+    source_last_contest = parsed.records[-1].contest_id
+    if source_last_contest != official_latest.record.contest_id:
         print(json.dumps({
             "status": "STALE_SOURCE",
-            "candidate_last_contest": records[-1].contest_id,
+            "candidate_last_contest": source_last_contest,
             "official_last_contest": official_latest.record.contest_id,
         }, ensure_ascii=False, sort_keys=True))
         return 4
 
-    by_id = {record.contest_id: record for record in records}
-    checkpoint_ids = tuple(dict.fromkeys((*CHECKPOINTS, records[-1].contest_id)))
+    by_id = {record.contest_id: record for record in parsed.records}
+    missing_ids = [contest_id for contest_id in range(1, source_last_contest + 1) if contest_id not in by_id]
+    if len(missing_ids) > MAX_OFFICIAL_PATCHES:
+        print(json.dumps({
+            "status": "TOO_MANY_SOURCE_GAPS",
+            "missing_count": len(missing_ids),
+            "missing_contests": missing_ids[:100],
+        }, ensure_ascii=False, sort_keys=True))
+        return 5
+
     official_cache = {official_latest.record.contest_id: official_latest}
+    official_patches = []
+    for contest_id in missing_ids:
+        official = fetch_caixa_contest(contest_id)
+        official_cache[contest_id] = official
+        by_id[contest_id] = official.record
+        official_patches.append({
+            "contest_id": contest_id,
+            "source_url": official.source_url,
+            "draw_date": official.record.draw_date.isoformat(),
+        })
+
+    records = tuple(by_id[contest_id] for contest_id in range(1, source_last_contest + 1))
+    checkpoint_ids = tuple(dict.fromkeys((*CHECKPOINTS, records[-1].contest_id)))
     checks = []
     for contest_id in checkpoint_ids:
-        if contest_id not in by_id:
-            raise RuntimeError(f"checkpoint ausente no CSV: {contest_id}")
         official = official_cache.get(contest_id) or fetch_caixa_contest(contest_id)
+        official_cache[contest_id] = official
         candidate = by_id[contest_id]
         matches = candidate.draw_date == official.record.draw_date and candidate.numbers == official.record.numbers
         checks.append({
@@ -56,6 +79,7 @@ def main() -> int:
             "matches_official": matches,
             "candidate_date": candidate.draw_date.isoformat(),
             "official_date": official.record.draw_date.isoformat(),
+            "candidate_origin": "OFICIAL_DIRETA_PATCH" if contest_id in missing_ids else "TERCEIRO_CORROBORADO",
         })
         if not matches:
             print(json.dumps({"status": "CHECKPOINT_MISMATCH", "checkpoint": checks[-1]}, ensure_ascii=False))
@@ -68,14 +92,16 @@ def main() -> int:
     temporal = temporal_repetition_monte_carlo(draws, replications=999, seed=20260911)
 
     result = {
-        "status": "THIRD_PARTY_CORROBORATED_CHECKPOINTS",
+        "status": "THIRD_PARTY_CORROBORATED_WITH_OFFICIAL_PATCHES",
         "source_class": "TERCEIRO_CORROBORADO",
         "source_url": SOURCE_URL,
         "source_sha256": digest,
-        "records": len(records),
+        "source_records": len(parsed.records),
+        "records_after_official_patches": len(records),
         "first_contest": records[0].contest_id,
         "last_contest": records[-1].contest_id,
         "official_latest_contest": official_latest.record.contest_id,
+        "official_patches": official_patches,
         "checkpoints": checks,
         "core_report": report.to_dict(),
         "marginal_min_holm": min(item.p_holm for item in marginal),
@@ -86,7 +112,8 @@ def main() -> int:
         "predictive_evidence": "NOT_ESTABLISHED",
         "scientific_conclusion": "EVIDENCIA_PREDITIVA_INSUFICIENTE",
         "limitations": [
-            "A fonte histórica completa é de terceiro e foi apenas corroborada por checkpoints contra a CAIXA.",
+            "A maior parte da série histórica vem de terceiro e foi corroborada por checkpoints contra a CAIXA, não reconciliada linha a linha.",
+            "Lacunas do terceiro foram preenchidas individualmente por OFICIAL_DIRETA e permanecem listadas em official_patches.",
             "A análise é retrospectiva e não constitui prova prospectiva.",
             "Monte Carlo temporal usa 999 replicações nesta verificação, com resolução mínima 0,001.",
         ],
