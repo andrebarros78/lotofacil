@@ -4,7 +4,9 @@ import hashlib
 import json
 import sqlite3
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
+from typing import Iterable
 
 from sare_lotofacil.domain.masks import mask_to_numbers
 from sare_lotofacil.ingestion.caixa import CaixaContest
@@ -49,10 +51,18 @@ def persist_caixa_contest(path: str | Path, contest: CaixaContest, *, source_cla
             "SELECT revision, draw_date, result_mask FROM contest_revisions WHERE contest_id=? ORDER BY revision DESC",
             (contest.record.contest_id,),
         ).fetchall()
+        incoming_tiers = _tier_signature(contest)
         for revision, draw_date, result_mask in existing:
             if draw_date == contest.record.draw_date.isoformat() and result_mask == contest.record.mask:
-                _replace_prize_tiers(connection, contest.record.contest_id, revision, contest)
-                return PersistedContest(contest.record.contest_id, revision, False, artifact_id)
+                stored_tiers = tuple(
+                    connection.execute(
+                        "SELECT hits, winners, prize_cents FROM prize_tiers "
+                        "WHERE contest_id=? AND revision=? ORDER BY hits DESC",
+                        (contest.record.contest_id, revision),
+                    ).fetchall()
+                )
+                if stored_tiers == incoming_tiers:
+                    return PersistedContest(contest.record.contest_id, revision, False, artifact_id)
 
         revision = (existing[0][0] + 1) if existing else 1
         connection.execute(
@@ -72,11 +82,15 @@ def persist_caixa_contest(path: str | Path, contest: CaixaContest, *, source_cla
         return PersistedContest(contest.record.contest_id, revision, True, artifact_id)
 
 
+def _tier_signature(contest: CaixaContest) -> tuple[tuple[int, int, int], ...]:
+    return tuple((tier.hits, tier.winners, tier.prize_cents) for tier in contest.prize_tiers)
+
+
 def _replace_prize_tiers(connection: sqlite3.Connection, contest_id: int, revision: int, contest: CaixaContest) -> None:
     connection.execute("DELETE FROM prize_tiers WHERE contest_id=? AND revision=?", (contest_id, revision))
     connection.executemany(
         "INSERT INTO prize_tiers(contest_id, revision, hits, winners, prize_cents) VALUES (?, ?, ?, ?, ?)",
-        [(contest_id, revision, tier.hits, tier.winners, tier.prize_cents) for tier in contest.prize_tiers],
+        [(contest_id, revision, *tier) for tier in _tier_signature(contest)],
     )
 
 
