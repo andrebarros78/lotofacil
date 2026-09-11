@@ -5,6 +5,13 @@ on:
   push:
     paths:
       - ".github/workflows/real-history-check.yml"
+      - "scripts/verify_third_party_history.py"
+      - "src/sare_lotofacil/ingestion/**"
+      - "src/sare_lotofacil/analysis/**"
+      - "src/sare_lotofacil/statistics/**"
+      - "src/sare_lotofacil/experiments/**"
+      - "src/sare_lotofacil/domain/**"
+      - "pyproject.toml"
 
 permissions:
   contents: read
