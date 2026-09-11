@@ -3,7 +3,7 @@ from __future__ import annotations
 import sqlite3
 from pathlib import Path
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 SCHEMA_SQL = """
 PRAGMA foreign_keys = ON;
@@ -11,6 +11,16 @@ PRAGMA foreign_keys = ON;
 CREATE TABLE IF NOT EXISTS schema_meta (
     key TEXT PRIMARY KEY,
     value TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS source_artifacts (
+    artifact_id TEXT PRIMARY KEY,
+    source_url TEXT NOT NULL,
+    source_class TEXT NOT NULL,
+    captured_at TEXT NOT NULL,
+    sha256 TEXT NOT NULL UNIQUE,
+    raw_json TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS rulesets (
@@ -34,6 +44,17 @@ CREATE TABLE IF NOT EXISTS contest_revisions (
     availability_at TEXT,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (contest_id, revision)
+);
+
+CREATE TABLE IF NOT EXISTS prize_tiers (
+    contest_id INTEGER NOT NULL,
+    revision INTEGER NOT NULL,
+    hits INTEGER NOT NULL CHECK (hits BETWEEN 11 AND 15),
+    winners INTEGER NOT NULL CHECK (winners >= 0),
+    prize_cents INTEGER NOT NULL CHECK (prize_cents >= 0),
+    PRIMARY KEY (contest_id, revision, hits),
+    FOREIGN KEY (contest_id, revision)
+        REFERENCES contest_revisions(contest_id, revision) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS snapshots (
