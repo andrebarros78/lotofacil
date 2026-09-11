@@ -6,7 +6,7 @@ from statistics import stdev
 from typing import Iterable, Sequence
 
 from sare_lotofacil.domain.masks import normalize_numbers
-from sare_lotofacil.statistics.baseline import UNIFORM_BRIER, brier_score, uniform_baseline
+from sare_lotofacil.statistics.baseline import UNIFORM_BRIER, brier_score, delta_brier, uniform_baseline
 
 
 @dataclass(frozen=True, slots=True)
@@ -57,6 +57,7 @@ def exponential_update(probabilities: Sequence[float], observed_draw: Iterable[i
         (1.0 - alpha) * float(probability) + alpha * (1.0 if index in observed else 0.0)
         for index, probability in enumerate(probabilities, start=1)
     )
+    # Cada concurso possui exatamente 15 dezenas; a atualização convexa preserva soma 15.
     return updated
 
 

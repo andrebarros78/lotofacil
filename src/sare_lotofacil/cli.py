@@ -124,7 +124,7 @@ def main() -> int:
         return 0
     if args.command == "snapshot":
         snapshot = create_latest_snapshot(args.db)
-        print(json.dumps({
+        print(json.dumps(snapshot.__dict__ if hasattr(snapshot, "__dict__") else {
             "snapshot_id": snapshot.snapshot_id,
             "snapshot_hash": snapshot.snapshot_hash,
             "contest_count": snapshot.contest_count,

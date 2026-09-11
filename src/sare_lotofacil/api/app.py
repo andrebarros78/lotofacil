@@ -243,6 +243,7 @@ def create_app(
 
         return idempotent("CREATE_EVALUATION", idempotency_key, payload, execute)
 
+
     @app.get("/v1/audit")
     def audit_events(limit: int = 100) -> dict[str, Any]:
         try:

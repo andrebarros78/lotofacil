@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS schema_meta (
     value TEXT NOT NULL
 );
 
+
 CREATE TABLE IF NOT EXISTS source_artifacts (
     artifact_id TEXT PRIMARY KEY,
     source_url TEXT NOT NULL,
@@ -86,6 +87,7 @@ CREATE TABLE IF NOT EXISTS runs (
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     finished_at TEXT
 );
+
 
 CREATE TABLE IF NOT EXISTS run_results (
     run_id TEXT PRIMARY KEY REFERENCES runs(run_id) ON DELETE CASCADE,

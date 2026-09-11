@@ -11,6 +11,7 @@ on:
       - "src/sare_lotofacil/statistics/**"
       - "src/sare_lotofacil/experiments/**"
       - "src/sare_lotofacil/domain/**"
+      - "src/sare_lotofacil/persistence/**"
       - "pyproject.toml"
 
 permissions:
@@ -33,5 +34,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: third-party-history-report
-          path: artifacts/third_party_history_report.json
+          path: |
+            artifacts/third_party_history_report.json
+            artifacts/real_history.db
           if-no-files-found: error
