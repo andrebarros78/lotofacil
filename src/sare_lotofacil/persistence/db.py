@@ -3,7 +3,7 @@ from __future__ import annotations
 import sqlite3
 from pathlib import Path
 
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 
 SCHEMA_SQL = """
 PRAGMA foreign_keys = ON;
@@ -141,6 +141,56 @@ CREATE TABLE IF NOT EXISTS audit_events (
     detail_json TEXT NOT NULL,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS ingestion_runs (
+    ingestion_id TEXT PRIMARY KEY,
+    source_class TEXT NOT NULL,
+    source_url TEXT NOT NULL,
+    contest_id INTEGER,
+    revision INTEGER,
+    artifact_id TEXT,
+    execution_state TEXT NOT NULL CHECK (execution_state IN ('COMPLETED', 'FAILED')),
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    finished_at TEXT
+);
+
+CREATE TABLE IF NOT EXISTS hypotheses (
+    hypothesis_id TEXT PRIMARY KEY,
+    protocol_hash TEXT NOT NULL UNIQUE,
+    protocol_json TEXT NOT NULL,
+    status TEXT NOT NULL CHECK (status IN ('REGISTERED', 'IN_PROOF', 'CONCLUDED', 'INVALIDATED')),
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS experiment_runs (
+    experiment_id TEXT PRIMARY KEY,
+    hypothesis_id TEXT NOT NULL REFERENCES hypotheses(hypothesis_id),
+    run_id TEXT NOT NULL REFERENCES runs(run_id),
+    protocol_hash TEXT NOT NULL,
+    conclusion TEXT NOT NULL,
+    predictive_evidence TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (hypothesis_id, run_id)
+);
+
+CREATE TABLE IF NOT EXISTS model_promotions (
+    promotion_id TEXT PRIMARY KEY,
+    experiment_id TEXT NOT NULL REFERENCES experiment_runs(experiment_id),
+    model_name TEXT NOT NULL,
+    predictive_evidence TEXT NOT NULL CHECK (predictive_evidence = 'REPLICATED'),
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (experiment_id, model_name)
+);
+
+CREATE INDEX IF NOT EXISTS idx_hypotheses_status
+ON hypotheses(status);
+
+CREATE INDEX IF NOT EXISTS idx_experiment_runs_hypothesis
+ON experiment_runs(hypothesis_id);
+
+CREATE INDEX IF NOT EXISTS idx_ingestion_runs_contest
+ON ingestion_runs(contest_id);
 
 CREATE INDEX IF NOT EXISTS idx_portfolios_snapshot
 ON portfolios(snapshot_id);

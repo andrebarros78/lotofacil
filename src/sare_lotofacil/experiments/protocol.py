@@ -18,6 +18,13 @@ class ExperimentProtocol:
     evidence_mode: str = "RETROSPECTIVO_REVISADO"
     delta_min: float = 0.0
     min_train: int = 100
+    variables: str = "marginal_presence_1_25"
+    model: str = "M1_frequency_regularized_and_M2_exponential_vs_M0"
+    comparators: tuple[str, ...] = ("uniform_p_0_6", "frequency_regularized", "exponential")
+    multiplicity_family: str = "registered_primary_family_holm"
+    sample_plan: str = "frozen_snapshot_walk_forward"
+    stopping_rule: str = "fixed_snapshot_no_optional_stopping"
+    code_environment: str = "release_commit_and_runtime_recorded_by_run"
 
     def validate(self) -> None:
         required = {
@@ -28,8 +35,16 @@ class ExperimentProtocol:
             "snapshot_id": self.snapshot_id,
             "metric_primary": self.metric_primary,
             "baseline": self.baseline,
+            "variables": self.variables,
+            "model": self.model,
+            "multiplicity_family": self.multiplicity_family,
+            "sample_plan": self.sample_plan,
+            "stopping_rule": self.stopping_rule,
+            "code_environment": self.code_environment,
         }
         empty = [name for name, value in required.items() if not str(value).strip()]
+        if not self.comparators or any(not str(value).strip() for value in self.comparators):
+            empty.append("comparators")
         if empty:
             raise ValueError(f"campos obrigatórios vazios: {', '.join(empty)}")
         if self.metric_primary != "brier_score":
@@ -44,6 +59,8 @@ class ExperimentProtocol:
             raise ValueError("min_train deve ser positivo")
         if self.delta_min < 0:
             raise ValueError("delta_min não pode ser negativo")
+        if "uniform_p_0_6" not in self.comparators:
+            raise ValueError("comparadores precisam incluir o M0 uniforme")
 
     def canonical_json(self) -> str:
         self.validate()
