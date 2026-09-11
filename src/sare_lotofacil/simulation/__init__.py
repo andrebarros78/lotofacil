@@ -1,0 +1,1 @@
+"""Simuladores do SARE."""
