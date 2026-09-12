@@ -10,6 +10,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 license = {text = "Proprietary"}
 authors = [{name = "Andre Barros"}]
+keywords = ["lotofacil", "statistics", "audit"]
 dependencies = ["fastapi>=0.115,<1.0", "uvicorn>=0.30,<1.0"]
 
 [project.optional-dependencies]

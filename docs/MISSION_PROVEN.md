@@ -1,6 +1,8 @@
 # SARE Lotofácil 1.1.0 — Evidências de MISSION_PROVEN
 
-A release é considerada `MISSION_PROVEN` somente quando os três workflows obrigatórios terminarem com sucesso no mesmo commit e a tag `v1.1.0` apontar para esse SHA.
+A release é considerada `MISSION_PROVEN` somente quando os três workflows obrigatórios terminarem com sucesso no mesmo commit de release.
+
+A identidade canônica e imutável da release é o **SHA Git completo**. O alias humano `release/v1.1.0` deve apontar exatamente para esse SHA no encerramento da missão.
 
 ## Matriz
 
@@ -29,7 +31,7 @@ O SHA da release precisa apresentar simultaneamente:
 - `Release Proof`: `completed/success`;
 - wheel e runtime declarando versão `1.1.0`;
 - relatório histórico com `database_integrity=ok` e `snapshot_roundtrip_exact=true`;
-- tag `v1.1.0` e branch `main` resolvendo para o mesmo commit.
+- branch `main` e alias `release/v1.1.0` resolvendo para o mesmo SHA de release.
 
 ## Resultado científico
 
@@ -39,4 +41,4 @@ O SHA da release precisa apresentar simultaneamente:
 
 A release é local e usa SQLite. O histórico principal de terceiro é corroborado por checkpoints oficiais e recebe apenas patches limitados provenientes da CAIXA; não é apresentado como reconciliação integral linha a linha de uma exportação oficial única. RIS numérico continua desabilitado.
 
-Quando todos os gates forem observados no commit tagueado, o estado técnico desta release é `MISSION_PROVEN`.
+Quando todos os gates forem observados no SHA canônico e no alias de release, o estado técnico desta release é `MISSION_PROVEN`.
