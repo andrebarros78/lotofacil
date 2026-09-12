@@ -11,6 +11,7 @@ on:
       - "pyproject.toml"
       - ".github/workflows/release-proof.yml"
       - "docs/**"
+      - "README.md"
 
 permissions:
   contents: read
@@ -30,17 +31,25 @@ jobs:
         run: |
           python -m venv /tmp/sare-clean
           /tmp/sare-clean/bin/python -m pip install dist/sare_lotofacil-*.whl
-      - name: Prove mathematical doctor
-        run: /tmp/sare-clean/bin/python -m sare_lotofacil doctor
-      - name: Prove installed module origin
+      - name: Prove release version and installed module origin
         run: |
           /tmp/sare-clean/bin/python - <<'PY'
+          from importlib.metadata import version
           from pathlib import Path
           import sare_lotofacil
+          from sare_lotofacil.api.app import create_app
+          expected = "1.1.0"
           module = Path(sare_lotofacil.__file__).resolve()
           assert "site-packages" in str(module), module
+          assert version("sare-lotofacil") == expected
+          assert sare_lotofacil.__version__ == expected
+          app = create_app('/tmp/version-proof.db')
+          assert app.version == expected
+          print(f"RELEASE_VERSION={expected}")
           print(f"INSTALLED_MODULE={module}")
           PY
+      - name: Prove mathematical doctor
+        run: /tmp/sare-clean/bin/python -m sare_lotofacil doctor
       - name: Prove persistence backup restore and API import
         run: |
           /tmp/sare-clean/bin/python -m sare_lotofacil init-db --path /tmp/sare.db

@@ -105,7 +105,7 @@ def _ingestion_payload(record) -> dict[str, Any]:
 def create_app(db_path: str | Path, *, write_token: str | None = None, max_body_bytes: int = 65_536):
     path = Path(db_path)
     app = _legacy_create_app(path, write_token=write_token, max_body_bytes=max_body_bytes)
-    app.version = "0.4.0"
+    app.version = "1.1.0"
 
     def auth(token: str | None) -> None:
         if not write_token:
