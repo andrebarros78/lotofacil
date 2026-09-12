@@ -3,7 +3,7 @@ from __future__ import annotations
 import sqlite3
 from pathlib import Path
 
-SCHEMA_VERSION = 4
+SCHEMA_VERSION = 5
 
 SCHEMA_SQL = """
 PRAGMA foreign_keys = ON;
@@ -182,6 +182,34 @@ CREATE TABLE IF NOT EXISTS model_promotions (
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     UNIQUE (experiment_id, model_name)
 );
+
+CREATE TABLE IF NOT EXISTS jobs (
+    job_id TEXT PRIMARY KEY,
+    job_type TEXT NOT NULL,
+    request_json TEXT NOT NULL,
+    request_hash TEXT NOT NULL,
+    state TEXT NOT NULL CHECK (state IN ('QUEUED', 'LEASED', 'COMPLETED', 'FAILED', 'CANCELLED')),
+    lease_owner TEXT,
+    lease_token INTEGER NOT NULL DEFAULT 0,
+    lease_expires_at TEXT,
+    attempts INTEGER NOT NULL DEFAULT 0,
+    cancel_requested INTEGER NOT NULL DEFAULT 0 CHECK (cancel_requested IN (0, 1)),
+    result_json TEXT,
+    error_json TEXT,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    finished_at TEXT
+);
+
+CREATE TABLE IF NOT EXISTS job_checkpoints (
+    job_id TEXT PRIMARY KEY REFERENCES jobs(job_id) ON DELETE CASCADE,
+    lease_token INTEGER NOT NULL,
+    checkpoint_json TEXT NOT NULL,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_jobs_claim
+ON jobs(state, lease_expires_at, created_at);
 
 CREATE INDEX IF NOT EXISTS idx_hypotheses_status
 ON hypotheses(status);

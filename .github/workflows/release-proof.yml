@@ -7,9 +7,10 @@ on:
     paths:
       - "src/**"
       - "tests/**"
+      - "scripts/prove_operational_release.py"
       - "pyproject.toml"
       - ".github/workflows/release-proof.yml"
-      - "docs/OPERACAO.md"
+      - "docs/**"
 
 permissions:
   contents: read
@@ -31,6 +32,15 @@ jobs:
           /tmp/sare-clean/bin/python -m pip install dist/sare_lotofacil-*.whl
       - name: Prove mathematical doctor
         run: /tmp/sare-clean/bin/python -m sare_lotofacil doctor
+      - name: Prove installed module origin
+        run: |
+          /tmp/sare-clean/bin/python - <<'PY'
+          from pathlib import Path
+          import sare_lotofacil
+          module = Path(sare_lotofacil.__file__).resolve()
+          assert "site-packages" in str(module), module
+          print(f"INSTALLED_MODULE={module}")
+          PY
       - name: Prove persistence backup restore and API import
         run: |
           /tmp/sare-clean/bin/python -m sare_lotofacil init-db --path /tmp/sare.db
@@ -42,11 +52,22 @@ jobs:
           paths = {route.path for route in app.routes}
           required = {'/health/live', '/health/ready', '/v1/analyses', '/v1/portfolios', '/v1/evaluations', '/v1/ris'}
           assert required <= paths
-          print('RELEASE_PROOF_PASS')
+          print('RELEASE_PROOF_BASE_PASS')
           PY
+      - name: Prove Operational 1.1 journey from installed wheel
+        run: |
+          mkdir -p artifacts
+          /tmp/sare-clean/bin/python scripts/prove_operational_release.py | tee artifacts/operational_release_proof.json
+          grep -q '"status": "OPERATIONAL_RELEASE_PROOF_PASS"' artifacts/operational_release_proof.json
       - name: Upload wheel
         uses: actions/upload-artifact@v4
         with:
           name: sare-lotofacil-wheel
           path: dist/*.whl
+          if-no-files-found: error
+      - name: Upload operational proof
+        uses: actions/upload-artifact@v4
+        with:
+          name: operational-release-proof
+          path: artifacts/operational_release_proof.json
           if-no-files-found: error

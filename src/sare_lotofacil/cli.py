@@ -21,6 +21,8 @@ from sare_lotofacil.ingestion.caixa import fetch_caixa_contest
 from sare_lotofacil.ingestion.legacy_markdown import parse_legacy_markdown
 from sare_lotofacil.persistence.backup import backup_database, restore_database
 from sare_lotofacil.persistence.db import initialize_database
+from sare_lotofacil.persistence.evidence import verify_source_artifacts
+from sare_lotofacil.persistence.jobs import run_worker_once
 from sare_lotofacil.persistence.repository import create_latest_snapshot, load_snapshot_draws, persist_caixa_contest
 from sare_lotofacil.statistics.baseline import UNIFORM_BRIER
 
@@ -95,6 +97,14 @@ def build_parser() -> argparse.ArgumentParser:
     restore.add_argument("--backup", type=Path, required=True)
     restore.add_argument("--out", type=Path, required=True)
 
+    worker_once = subparsers.add_parser("worker-once", help="executa no máximo um trabalho persistido")
+    worker_once.add_argument("--db", type=Path, required=True)
+    worker_once.add_argument("--worker-id", required=True)
+    worker_once.add_argument("--lease-seconds", type=int, default=30)
+
+    verify_evidence = subparsers.add_parser("verify-evidence", help="verifica hashes dos artefatos de evidência")
+    verify_evidence.add_argument("--db", type=Path, required=True)
+
     serve = subparsers.add_parser("serve", help="inicia a API local do SARE Operational")
     serve.add_argument("--db", type=Path, required=True)
     serve.add_argument("--host", default="127.0.0.1")
@@ -155,6 +165,24 @@ def main() -> int:
         info = restore_database(args.backup, args.out)
         print(json.dumps({"path": str(info.path), "sha256": info.sha256, "integrity": info.integrity}, sort_keys=True))
         return 0
+    if args.command == "worker-once":
+        job = run_worker_once(args.db, args.worker_id, lease_seconds=args.lease_seconds)
+        if job is None:
+            print("NO_JOB")
+        else:
+            print(json.dumps({"job_id": job.job_id, "state": job.state, "attempts": job.attempts}, sort_keys=True))
+        return 0
+    if args.command == "verify-evidence":
+        checks = verify_source_artifacts(args.db)
+        payload = {
+            "valid": all(check.valid for check in checks),
+            "artifacts": [
+                {"artifact_id": c.artifact_id, "expected_sha256": c.expected_sha256, "actual_sha256": c.actual_sha256, "valid": c.valid, "error": c.error}
+                for c in checks
+            ],
+        }
+        print(json.dumps(payload, ensure_ascii=False, sort_keys=True))
+        return 0 if payload["valid"] else 3
     if args.command == "serve":
         if args.host not in {"127.0.0.1", "localhost", "::1"}:
             raise SystemExit("Operational 1.1 recusa binding externo; use loopback local")

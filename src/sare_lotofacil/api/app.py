@@ -4,41 +4,40 @@ import hmac
 import json
 import sqlite3
 from pathlib import Path
-from typing import Annotated, Any, Callable
+from typing import Annotated, Any, Callable, Literal
 
 from fastapi import Header, HTTPException
-from fastapi.responses import JSONResponse, PlainTextResponse
-from pydantic import BaseModel, Field
+from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse
+from pydantic import BaseModel, ConfigDict, Field
 
 from sare_lotofacil.api.legacy_app import create_app as _legacy_create_app
 from sare_lotofacil.experiments.protocol import ExperimentProtocol
 from sare_lotofacil.ingestion.caixa import fetch_caixa_contest
-from sare_lotofacil.persistence.operations import (
-    get_idempotency,
-    get_portfolio,
-    payload_hash,
-    save_idempotency,
-)
+from sare_lotofacil.persistence.evidence import verify_source_artifacts
+from sare_lotofacil.persistence.jobs import enqueue_job, get_job, request_cancel
+from sare_lotofacil.persistence.operations import get_idempotency, get_portfolio, get_run, payload_hash, save_idempotency
 from sare_lotofacil.persistence.repository import create_latest_snapshot
 from sare_lotofacil.persistence.workflows import (
-    execute_experiment,
-    get_experiment,
-    get_hypothesis,
-    get_latest_contest,
-    list_contests,
-    list_hypotheses,
-    list_ingestions,
-    promote_model,
-    record_caixa_ingestion,
+    execute_experiment, get_experiment, get_hypothesis, get_ingestion, get_latest_contest,
+    list_contests, list_hypotheses, list_ingestions, promote_model, record_caixa_ingestion,
     register_hypothesis,
 )
 
 
-class CaixaIngestionRequest(BaseModel):
+class StrictModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+
+class CaixaIngestionRequest(StrictModel):
     contest_id: int | None = Field(default=None, ge=1)
 
 
-class HypothesisRequest(BaseModel):
+class IngestionRequest(StrictModel):
+    source: Literal["CAIXA"] = "CAIXA"
+    contest_id: int | None = Field(default=None, ge=1)
+
+
+class HypothesisRequest(StrictModel):
     hypothesis_id: str = Field(min_length=1, max_length=128)
     question: str = Field(min_length=3, max_length=2000)
     h0: str = Field(min_length=1, max_length=2000)
@@ -64,63 +63,68 @@ class HypothesisRequest(BaseModel):
         return ExperimentProtocol(**data)
 
 
-class ExperimentRequest(BaseModel):
+class ExperimentRequest(StrictModel):
     hypothesis_id: str = Field(min_length=1, max_length=128)
 
 
-class PromotionRequest(BaseModel):
+class PromotionRequest(StrictModel):
     experiment_id: str = Field(min_length=1, max_length=128)
     model_name: str = Field(min_length=1, max_length=256)
 
 
+class ModelPromotionRequest(StrictModel):
+    experiment_id: str = Field(min_length=1, max_length=128)
+
+
+class JobRequest(StrictModel):
+    job_type: Literal["ANALYSIS", "PORTFOLIO", "EXPERIMENT"]
+    payload: dict[str, Any]
+
+
 def _hypothesis_payload(record) -> dict[str, Any]:
-    return {
-        "hypothesis_id": record.hypothesis_id,
-        "protocol_hash": record.protocol_hash,
-        "status": record.status,
-        "protocol": record.protocol,
-    }
+    return {"hypothesis_id": record.hypothesis_id, "protocol_hash": record.protocol_hash, "status": record.status, "protocol": record.protocol}
 
 
 def _experiment_payload(record) -> dict[str, Any]:
     return {
-        "experiment_id": record.experiment_id,
-        "hypothesis_id": record.hypothesis_id,
-        "run_id": record.run_id,
-        "protocol_hash": record.protocol_hash,
-        "conclusion": record.conclusion,
-        "predictive_evidence": record.predictive_evidence,
+        "experiment_id": record.experiment_id, "hypothesis_id": record.hypothesis_id,
+        "run_id": record.run_id, "protocol_hash": record.protocol_hash,
+        "conclusion": record.conclusion, "predictive_evidence": record.predictive_evidence,
+    }
+
+
+def _ingestion_payload(record) -> dict[str, Any]:
+    return {
+        "ingestion_id": record.ingestion_id, "source_class": record.source_class,
+        "source_url": record.source_url, "contest_id": record.contest_id,
+        "revision": record.revision, "artifact_id": record.artifact_id,
+        "execution_state": record.execution_state,
     }
 
 
 def create_app(db_path: str | Path, *, write_token: str | None = None, max_body_bytes: int = 65_536):
     path = Path(db_path)
     app = _legacy_create_app(path, write_token=write_token, max_body_bytes=max_body_bytes)
-    app.version = "0.3.0"
+    app.version = "0.4.0"
 
-    def require_write_auth(token: str | None) -> None:
+    def auth(token: str | None) -> None:
         if not write_token:
-            raise HTTPException(status_code=503, detail="WRITE_DISABLED")
+            raise HTTPException(503, "WRITE_DISABLED")
         if token is None:
-            raise HTTPException(status_code=401, detail="AUTH_REQUIRED")
+            raise HTTPException(401, "AUTH_REQUIRED")
         if not hmac.compare_digest(token, write_token):
-            raise HTTPException(status_code=403, detail="AUTH_INVALID")
+            raise HTTPException(403, "AUTH_INVALID")
 
-    def idempotent(
-        operation: str,
-        key: str | None,
-        request_payload: dict[str, Any],
-        callback: Callable[[], tuple[dict[str, Any], int]],
-    ) -> JSONResponse:
-        if key is None or not key.strip():
-            raise HTTPException(status_code=400, detail="IDEMPOTENCY_KEY_REQUIRED")
+    def idem(operation: str, key: str | None, request_payload: dict[str, Any], callback: Callable[[], tuple[dict[str, Any], int]]) -> JSONResponse:
+        if not key or not key.strip():
+            raise HTTPException(400, "IDEMPOTENCY_KEY_REQUIRED")
         if len(key) > 128:
-            raise HTTPException(status_code=400, detail="IDEMPOTENCY_KEY_TOO_LONG")
+            raise HTTPException(400, "IDEMPOTENCY_KEY_TOO_LONG")
         digest = payload_hash(request_payload)
         existing = get_idempotency(path, operation, key)
         if existing:
             if existing.request_hash != digest:
-                raise HTTPException(status_code=409, detail="IDEMPOTENCY_KEY_CONFLICT")
+                raise HTTPException(409, "IDEMPOTENCY_KEY_CONFLICT")
             return JSONResponse(json.loads(existing.response_json), status_code=existing.status_code)
         payload, status = callback()
         try:
@@ -128,7 +132,7 @@ def create_app(db_path: str | Path, *, write_token: str | None = None, max_body_
         except sqlite3.IntegrityError:
             existing = get_idempotency(path, operation, key)
             if not existing or existing.request_hash != digest:
-                raise HTTPException(status_code=409, detail="IDEMPOTENCY_KEY_CONFLICT")
+                raise HTTPException(409, "IDEMPOTENCY_KEY_CONFLICT")
             return JSONResponse(json.loads(existing.response_json), status_code=existing.status_code)
         return JSONResponse(payload, status_code=status)
 
@@ -137,78 +141,55 @@ def create_app(db_path: str | Path, *, write_token: str | None = None, max_body_
         try:
             return {"items": list(list_contests(path, limit=limit, offset=offset))}
         except ValueError as exc:
-            raise HTTPException(status_code=422, detail=str(exc))
+            raise HTTPException(422, str(exc))
 
     @app.get("/v1/contests/{contest_id}")
     def contest_by_id(contest_id: int):
         try:
             return get_latest_contest(path, contest_id)
         except KeyError:
-            raise HTTPException(status_code=404, detail="CONTEST_NOT_FOUND")
-        except ValueError as exc:
-            raise HTTPException(status_code=422, detail=str(exc))
+            raise HTTPException(404, "CONTEST_NOT_FOUND")
 
     @app.get("/v1/ingestions")
     def ingestions(limit: int = 100):
         try:
-            records = list_ingestions(path, limit=limit)
+            return {"items": [_ingestion_payload(r) for r in list_ingestions(path, limit=limit)]}
         except ValueError as exc:
-            raise HTTPException(status_code=422, detail=str(exc))
-        return {
-            "items": [
-                {
-                    "ingestion_id": r.ingestion_id,
-                    "source_class": r.source_class,
-                    "source_url": r.source_url,
-                    "contest_id": r.contest_id,
-                    "revision": r.revision,
-                    "artifact_id": r.artifact_id,
-                    "execution_state": r.execution_state,
-                }
-                for r in records
-            ]
-        }
+            raise HTTPException(422, str(exc))
+
+    def _caixa(contest_id: int | None):
+        try:
+            return record_caixa_ingestion(path, fetch_caixa_contest(contest_id))
+        except (OSError, ValueError, json.JSONDecodeError) as exc:
+            raise HTTPException(502, f"CAIXA_INGESTION_FAILED: {exc}")
 
     @app.post("/v1/ingestions/caixa")
-    def ingest_caixa(
-        body: CaixaIngestionRequest,
-        idempotency_key: Annotated[str | None, Header(alias="Idempotency-Key")] = None,
-        x_sare_token: Annotated[str | None, Header(alias="X-SARE-Token")] = None,
-    ):
-        require_write_auth(x_sare_token)
+    def ingest_caixa(body: CaixaIngestionRequest, idempotency_key: Annotated[str | None, Header(alias="Idempotency-Key")] = None, x_sare_token: Annotated[str | None, Header(alias="X-SARE-Token")] = None):
+        auth(x_sare_token)
+        return idem("INGEST_CAIXA", idempotency_key, body.model_dump(), lambda: (_ingestion_payload(_caixa(body.contest_id)), 201))
 
-        def execute():
-            try:
-                r = record_caixa_ingestion(path, fetch_caixa_contest(body.contest_id))
-            except (OSError, ValueError, json.JSONDecodeError) as exc:
-                raise HTTPException(status_code=502, detail=f"CAIXA_INGESTION_FAILED: {exc}")
-            return {
-                "ingestion_id": r.ingestion_id,
-                "source_class": r.source_class,
-                "source_url": r.source_url,
-                "contest_id": r.contest_id,
-                "revision": r.revision,
-                "artifact_id": r.artifact_id,
-                "execution_state": r.execution_state,
-            }, 201
+    @app.post("/v1/ingestions")
+    def ingest_configured(body: IngestionRequest, idempotency_key: Annotated[str | None, Header(alias="Idempotency-Key")] = None, x_sare_token: Annotated[str | None, Header(alias="X-SARE-Token")] = None):
+        auth(x_sare_token)
+        return idem("INGEST_CONFIGURED_SOURCE", idempotency_key, body.model_dump(), lambda: (_ingestion_payload(_caixa(body.contest_id)), 201))
 
-        return idempotent("INGEST_CAIXA", idempotency_key, body.model_dump(), execute)
+    @app.get("/v1/ingestions/{ingestion_id}")
+    def ingestion_by_id(ingestion_id: str):
+        try:
+            return _ingestion_payload(get_ingestion(path, ingestion_id))
+        except KeyError:
+            raise HTTPException(404, "INGESTION_NOT_FOUND")
 
     @app.post("/v1/snapshots")
-    def publish_snapshot(
-        idempotency_key: Annotated[str | None, Header(alias="Idempotency-Key")] = None,
-        x_sare_token: Annotated[str | None, Header(alias="X-SARE-Token")] = None,
-    ):
-        require_write_auth(x_sare_token)
-
+    def publish_snapshot(idempotency_key: Annotated[str | None, Header(alias="Idempotency-Key")] = None, x_sare_token: Annotated[str | None, Header(alias="X-SARE-Token")] = None):
+        auth(x_sare_token)
         def execute():
             try:
                 s = create_latest_snapshot(path)
             except ValueError as exc:
-                raise HTTPException(status_code=422, detail=str(exc))
+                raise HTTPException(422, str(exc))
             return {"snapshot_id": s.snapshot_id, "snapshot_hash": s.snapshot_hash, "contest_count": s.contest_count}, 201
-
-        return idempotent("PUBLISH_SNAPSHOT", idempotency_key, {"mode": "LATEST_REVISIONS"}, execute)
+        return idem("PUBLISH_SNAPSHOT", idempotency_key, {"mode": "LATEST_REVISIONS"}, execute)
 
     @app.get("/v1/hypotheses")
     def hypotheses():
@@ -219,98 +200,127 @@ def create_app(db_path: str | Path, *, write_token: str | None = None, max_body_
         try:
             return _hypothesis_payload(get_hypothesis(path, hypothesis_id))
         except KeyError:
-            raise HTTPException(status_code=404, detail="HYPOTHESIS_NOT_FOUND")
+            raise HTTPException(404, "HYPOTHESIS_NOT_FOUND")
 
     @app.post("/v1/hypotheses")
-    def create_hypothesis(
-        body: HypothesisRequest,
-        idempotency_key: Annotated[str | None, Header(alias="Idempotency-Key")] = None,
-        x_sare_token: Annotated[str | None, Header(alias="X-SARE-Token")] = None,
-    ):
-        require_write_auth(x_sare_token)
-
+    def create_hypothesis(body: HypothesisRequest, idempotency_key: Annotated[str | None, Header(alias="Idempotency-Key")] = None, x_sare_token: Annotated[str | None, Header(alias="X-SARE-Token")] = None):
+        auth(x_sare_token)
         def execute():
             try:
-                r = register_hypothesis(path, body.to_protocol())
+                return _hypothesis_payload(register_hypothesis(path, body.to_protocol())), 201
             except KeyError:
-                raise HTTPException(status_code=404, detail="SNAPSHOT_NOT_FOUND")
+                raise HTTPException(404, "SNAPSHOT_NOT_FOUND")
             except ValueError as exc:
-                raise HTTPException(
-                    status_code=409 if str(exc) == "HYPOTHESIS_IMMUTABLE_CONFLICT" else 422,
-                    detail=str(exc),
-                )
-            return _hypothesis_payload(r), 201
-
-        return idempotent("REGISTER_HYPOTHESIS", idempotency_key, body.model_dump(), execute)
+                raise HTTPException(409 if str(exc) == "HYPOTHESIS_IMMUTABLE_CONFLICT" else 422, str(exc))
+        return idem("REGISTER_HYPOTHESIS", idempotency_key, body.model_dump(), execute)
 
     @app.post("/v1/experiments")
-    def create_experiment(
-        body: ExperimentRequest,
-        idempotency_key: Annotated[str | None, Header(alias="Idempotency-Key")] = None,
-        x_sare_token: Annotated[str | None, Header(alias="X-SARE-Token")] = None,
-    ):
-        require_write_auth(x_sare_token)
-
+    def create_experiment(body: ExperimentRequest, idempotency_key: Annotated[str | None, Header(alias="Idempotency-Key")] = None, x_sare_token: Annotated[str | None, Header(alias="X-SARE-Token")] = None):
+        auth(x_sare_token)
         def execute():
             try:
-                r = execute_experiment(path, body.hypothesis_id)
+                return _experiment_payload(execute_experiment(path, body.hypothesis_id)), 201
             except KeyError:
-                raise HTTPException(status_code=404, detail="HYPOTHESIS_NOT_FOUND")
+                raise HTTPException(404, "HYPOTHESIS_NOT_FOUND")
             except ValueError as exc:
-                raise HTTPException(status_code=422, detail=str(exc))
-            return _experiment_payload(r), 201
-
-        return idempotent("EXECUTE_EXPERIMENT", idempotency_key, body.model_dump(), execute)
+                raise HTTPException(422, str(exc))
+        return idem("EXECUTE_EXPERIMENT", idempotency_key, body.model_dump(), execute)
 
     @app.get("/v1/experiments/{experiment_id}")
     def experiment_by_id(experiment_id: str):
         try:
             return _experiment_payload(get_experiment(path, experiment_id))
         except KeyError:
-            raise HTTPException(status_code=404, detail="EXPERIMENT_NOT_FOUND")
+            raise HTTPException(404, "EXPERIMENT_NOT_FOUND")
+
+    def _promote(experiment_id: str, model_name: str):
+        try:
+            r = promote_model(path, experiment_id, model_name)
+        except KeyError:
+            raise HTTPException(404, "EXPERIMENT_NOT_FOUND")
+        except PermissionError as exc:
+            raise HTTPException(409, str(exc))
+        return {"promotion_id": r.promotion_id, "experiment_id": r.experiment_id, "model_name": r.model_name, "predictive_evidence": r.predictive_evidence}
 
     @app.post("/v1/promotions")
-    def create_promotion(
-        body: PromotionRequest,
-        idempotency_key: Annotated[str | None, Header(alias="Idempotency-Key")] = None,
-        x_sare_token: Annotated[str | None, Header(alias="X-SARE-Token")] = None,
-    ):
-        require_write_auth(x_sare_token)
+    def create_promotion(body: PromotionRequest, idempotency_key: Annotated[str | None, Header(alias="Idempotency-Key")] = None, x_sare_token: Annotated[str | None, Header(alias="X-SARE-Token")] = None):
+        auth(x_sare_token)
+        return idem("PROMOTE_MODEL", idempotency_key, body.model_dump(), lambda: (_promote(body.experiment_id, body.model_name), 201))
 
+    @app.post("/v1/models/{model_name}/promotions")
+    def canonical_promotion(model_name: str, body: ModelPromotionRequest, idempotency_key: Annotated[str | None, Header(alias="Idempotency-Key")] = None, x_sare_token: Annotated[str | None, Header(alias="X-SARE-Token")] = None):
+        auth(x_sare_token)
+        payload = {"model_name": model_name, **body.model_dump()}
+        return idem("PROMOTE_MODEL_CANONICAL", idempotency_key, payload, lambda: (_promote(body.experiment_id, model_name), 201))
+
+    @app.post("/v1/jobs")
+    def create_job(body: JobRequest, idempotency_key: Annotated[str | None, Header(alias="Idempotency-Key")] = None, x_sare_token: Annotated[str | None, Header(alias="X-SARE-Token")] = None):
+        auth(x_sare_token)
         def execute():
             try:
-                r = promote_model(path, body.experiment_id, body.model_name)
-            except KeyError:
-                raise HTTPException(status_code=404, detail="EXPERIMENT_NOT_FOUND")
-            except PermissionError as exc:
-                raise HTTPException(status_code=409, detail=str(exc))
+                job = enqueue_job(path, body.job_type, body.payload)
             except ValueError as exc:
-                raise HTTPException(status_code=422, detail=str(exc))
-            return {
-                "promotion_id": r.promotion_id,
-                "experiment_id": r.experiment_id,
-                "model_name": r.model_name,
-                "predictive_evidence": r.predictive_evidence,
-            }, 201
+                raise HTTPException(422, str(exc))
+            return {"job_id": job.job_id, "state": job.state, "location": f"/v1/jobs/{job.job_id}"}, 202
+        return idem("CREATE_JOB", idempotency_key, body.model_dump(), execute)
 
-        return idempotent("PROMOTE_MODEL", idempotency_key, body.model_dump(), execute)
+    @app.get("/v1/jobs/{job_id}")
+    def job_by_id(job_id: str):
+        try:
+            job = get_job(path, job_id)
+        except KeyError:
+            raise HTTPException(404, "JOB_NOT_FOUND")
+        return {"job_id": job.job_id, "job_type": job.job_type, "state": job.state, "attempts": job.attempts, "cancel_requested": job.cancel_requested, "result": job.result, "error": job.error}
+
+    @app.post("/v1/jobs/{job_id}/cancel")
+    def cancel_job(job_id: str, idempotency_key: Annotated[str | None, Header(alias="Idempotency-Key")] = None, x_sare_token: Annotated[str | None, Header(alias="X-SARE-Token")] = None):
+        auth(x_sare_token)
+        def execute():
+            try:
+                job = request_cancel(path, job_id)
+            except KeyError:
+                raise HTTPException(404, "JOB_NOT_FOUND")
+            return {"job_id": job.job_id, "state": job.state, "cancel_requested": job.cancel_requested}, 200
+        return idem("CANCEL_JOB", idempotency_key, {"job_id": job_id}, execute)
+
+    @app.get("/v1/exports/{run_id}")
+    def export_run(run_id: str):
+        try:
+            run = get_run(path, run_id)
+        except KeyError:
+            raise HTTPException(404, "RUN_NOT_FOUND")
+        return {"run_id": run.run_id, "execution_state": run.execution_state, "snapshot_id": run.snapshot_id, "predictive_evidence": run.predictive_evidence, "result": run.result}
 
     @app.get("/v1/portfolios/{portfolio_id}/export", response_class=PlainTextResponse)
     def export_portfolio(portfolio_id: str):
         try:
             r = get_portfolio(path, portfolio_id)
         except KeyError:
-            raise HTTPException(status_code=404, detail="PORTFOLIO_NOT_FOUND")
-        lines = [
-            f"# {r.evidence_label}",
-            f"# portfolio_id={r.portfolio_id}",
-            f"# predictive_evidence={r.predictive_evidence}",
-            "position,numbers",
-        ]
-        lines.extend(
-            f'{index},"{" ".join(f"{number:02d}" for number in card)}"'
-            for index, card in enumerate(r.cards, start=1)
-        )
+            raise HTTPException(404, "PORTFOLIO_NOT_FOUND")
+        lines = [f"# {r.evidence_label}", f"# portfolio_id={r.portfolio_id}", f"# predictive_evidence={r.predictive_evidence}", "position,numbers"]
+        lines.extend(f'{i},"{" ".join(f"{n:02d}" for n in card)}"' for i, card in enumerate(r.cards, 1))
         return "\n".join(lines) + "\n"
+
+    @app.get("/v1/evidence/integrity")
+    def evidence_integrity():
+        checks = verify_source_artifacts(path)
+        return {"valid": all(c.valid for c in checks), "artifacts": [{"artifact_id": c.artifact_id, "expected_sha256": c.expected_sha256, "actual_sha256": c.actual_sha256, "valid": c.valid, "error": c.error} for c in checks]}
+
+    @app.get("/", response_class=HTMLResponse)
+    def ui_overview():
+        return HTMLResponse("<!doctype html><html lang='pt-BR'><head><meta charset='utf-8'><title>SARE Lotofácil</title></head><body><main><h1>SARE Lotofácil — Operational 1.1</h1><p><strong>Evidência preditiva:</strong> NÃO ESTABELECIDA.</p><p><a href='/docs'>API</a></p></main></body></html>")
+
+    @app.get("/ui/portfolios/{portfolio_id}", response_class=HTMLResponse)
+    def ui_portfolio(portfolio_id: str):
+        try:
+            record = get_portfolio(path, portfolio_id)
+        except KeyError:
+            raise HTTPException(404, "PORTFOLIO_NOT_FOUND")
+        cards = []
+        for position, card in enumerate(record.cards, 1):
+            first = " ".join(f"{n:02d}" for n in card[:8])
+            second = " ".join(f"{n:02d}" for n in card[8:])
+            cards.append(f"<section><h2>Cartão {position}</h2><code>{first}<br>{second}</code></section>")
+        return HTMLResponse("<!doctype html><html lang='pt-BR'><head><meta charset='utf-8'><title>Carteira SARE</title></head><body>" + f"<h1>{record.evidence_label}</h1>" + "".join(cards) + "</body></html>")
 
     return app

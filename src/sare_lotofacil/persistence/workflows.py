@@ -301,3 +301,14 @@ def list_contests(path: str | Path, *, limit: int = 100, offset: int = 0) -> tup
         }
         for row in rows
     )
+
+
+def get_ingestion(path: str | Path, ingestion_id: str) -> IngestionRecord:
+    with connect(path) as connection:
+        row = connection.execute(
+            "SELECT source_class, source_url, contest_id, revision, artifact_id, execution_state FROM ingestion_runs WHERE ingestion_id=?",
+            (ingestion_id,),
+        ).fetchone()
+    if not row:
+        raise KeyError(ingestion_id)
+    return IngestionRecord(ingestion_id, *row)
