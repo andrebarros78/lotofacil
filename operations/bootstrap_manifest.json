@@ -1,0 +1,14 @@
+{
+  "bootstrap_at_utc": "2026-09-13T19:36:51.470271+00:00",
+  "canonical_sha256": "58529db013c3d9ca83915ab3e8aeff0c7ff6a6e377aeae9e13b04038f7e6546f",
+  "official_latest_at_bootstrap": 3779,
+  "official_patch_ids": [
+    3715,
+    3759,
+    3766,
+    3771
+  ],
+  "source_records": 3775,
+  "source_sha256": "0f451e0de97f36c3ac9ba7ec1f1c070ad4fa843f669e7fc6304525a64960ecd2",
+  "source_url": "https://raw.githubusercontent.com/heldersontuc-collab/lotofacil-data/main/data/lotofacil.csv"
+}
