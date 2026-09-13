@@ -61,7 +61,7 @@ def test_worker_heartbeat_keeps_lease_during_long_payload(monkeypatch, tmp_path)
     original_execute = jobs_module._execute_payload
 
     def slow_execute(path, job):
-        time.sleep(0.45)
+        time.sleep(1.2)
         return original_execute(path, job)
 
     monkeypatch.setattr(jobs_module, "_execute_payload", slow_execute)
@@ -70,24 +70,41 @@ def test_worker_heartbeat_keeps_lease_during_long_payload(monkeypatch, tmp_path)
 
     def run_owner():
         try:
-            result_holder.append(run_worker_once(db, "worker-owner", lease_seconds=0.18))
+            result_holder.append(run_worker_once(db, "worker-owner", lease_seconds=0.6))
         except BaseException as exc:
             errors.append(exc)
 
     thread = threading.Thread(target=run_owner)
     thread.start()
     deadline = time.monotonic() + 2.0
+    initial_expiry = None
     while time.monotonic() < deadline:
         current = get_job(db, queued.job_id)
-        if current.state == "LEASED":
+        if current.state == "LEASED" and current.lease_expires_at:
+            initial_expiry = current.lease_expires_at
             break
         time.sleep(0.01)
     else:
         pytest.fail("owner did not lease job")
 
-    time.sleep(0.25)
-    contender = claim_next_job(db, "worker-contender", lease_seconds=1)
+    renewal_deadline = time.monotonic() + 1.0
+    renewed = None
+    while time.monotonic() < renewal_deadline:
+        current = get_job(db, queued.job_id)
+        if current.lease_expires_at and current.lease_expires_at != initial_expiry:
+            renewed = current.lease_expires_at
+            break
+        time.sleep(0.02)
+    assert renewed is not None, "heartbeat did not renew lease"
+
+    original_expiry = datetime.fromisoformat(initial_expiry)
+    renewed_expiry = datetime.fromisoformat(renewed)
+    assert renewed_expiry > original_expiry
+    contender_time = original_expiry + timedelta(milliseconds=10)
+    assert contender_time < renewed_expiry
+    contender = claim_next_job(db, "worker-contender", lease_seconds=1, now=contender_time)
     assert contender is None
+
     thread.join(timeout=3.0)
     assert not thread.is_alive()
     assert errors == []
