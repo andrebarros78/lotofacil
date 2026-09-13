@@ -14,7 +14,11 @@ keywords = ["lotofacil", "statistics", "audit"]
 dependencies = ["fastapi>=0.115,<1.0", "uvicorn>=0.30,<1.0"]
 
 [project.optional-dependencies]
-dev = ["pytest>=8.0,<10.0", "httpx>=0.27,<1.0"]
+dev = [
+  "pytest>=8.0,<10.0",
+  "httpx>=0.27,<1.0",
+  "hypothesis>=6.0,<7.0",
+]
 
 [project.scripts]
 sare-lotofacil = "sare_lotofacil.cli:main"
