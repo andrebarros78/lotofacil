@@ -1,4 +1,6 @@
 from datetime import datetime, timedelta, timezone
+import threading
+import time
 
 import pytest
 
@@ -9,6 +11,7 @@ from sare_lotofacil.persistence.jobs import (
     complete_job,
     enqueue_job,
     get_job,
+    renew_lease,
     request_cancel,
     run_worker_once,
     save_checkpoint,
@@ -28,6 +31,69 @@ def test_fencing_token_blocks_stale_worker(tmp_path):
     completed = complete_job(db, job.job_id, "worker-b", second.lease_token, {"ok": True})
     assert completed.state == "COMPLETED"
     assert completed.result == {"ok": True}
+
+
+def test_renew_lease_prevents_premature_reclaim(tmp_path):
+    db = tmp_path / "sare.db"
+    job = enqueue_job(db, "PORTFOLIO", {"card_count": 3, "seed": 71})
+    t0 = datetime(2026, 9, 11, tzinfo=timezone.utc)
+    first = claim_next_job(db, "worker-a", lease_seconds=10, now=t0)
+    assert first is not None
+    renewed_until = renew_lease(
+        db,
+        job.job_id,
+        "worker-a",
+        first.lease_token,
+        lease_seconds=10,
+        now=t0 + timedelta(seconds=8),
+    )
+    assert renewed_until == (t0 + timedelta(seconds=18)).isoformat()
+    assert claim_next_job(db, "worker-b", lease_seconds=10, now=t0 + timedelta(seconds=11)) is None
+    reclaimed = claim_next_job(db, "worker-b", lease_seconds=10, now=t0 + timedelta(seconds=19))
+    assert reclaimed is not None and reclaimed.lease_token == 2
+
+
+def test_worker_heartbeat_keeps_lease_during_long_payload(monkeypatch, tmp_path):
+    import sare_lotofacil.persistence.jobs as jobs_module
+
+    db = tmp_path / "sare.db"
+    queued = enqueue_job(db, "PORTFOLIO", {"card_count": 3, "seed": 72})
+    original_execute = jobs_module._execute_payload
+
+    def slow_execute(path, job):
+        time.sleep(0.45)
+        return original_execute(path, job)
+
+    monkeypatch.setattr(jobs_module, "_execute_payload", slow_execute)
+    result_holder = []
+    errors = []
+
+    def run_owner():
+        try:
+            result_holder.append(run_worker_once(db, "worker-owner", lease_seconds=0.18))
+        except BaseException as exc:
+            errors.append(exc)
+
+    thread = threading.Thread(target=run_owner)
+    thread.start()
+    deadline = time.monotonic() + 2.0
+    while time.monotonic() < deadline:
+        current = get_job(db, queued.job_id)
+        if current.state == "LEASED":
+            break
+        time.sleep(0.01)
+    else:
+        pytest.fail("owner did not lease job")
+
+    time.sleep(0.25)
+    contender = claim_next_job(db, "worker-contender", lease_seconds=1)
+    assert contender is None
+    thread.join(timeout=3.0)
+    assert not thread.is_alive()
+    assert errors == []
+    assert result_holder and result_holder[0] is not None
+    assert result_holder[0].state == "COMPLETED"
+    assert result_holder[0].attempts == 1
 
 
 def test_worker_restart_reclaims_job_without_duplicate_domain_result(tmp_path):
