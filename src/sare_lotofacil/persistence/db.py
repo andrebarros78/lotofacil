@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sqlite3
+import time
 from pathlib import Path
 
 SCHEMA_VERSION = 5
@@ -237,9 +238,20 @@ ON runs(execution_state);
 def connect(path: str | Path) -> sqlite3.Connection:
     db_path = Path(path)
     db_path.parent.mkdir(parents=True, exist_ok=True)
-    connection = sqlite3.connect(db_path)
+    connection = sqlite3.connect(db_path, timeout=30.0)
+    connection.execute("PRAGMA busy_timeout = 30000")
     connection.execute("PRAGMA foreign_keys = ON")
-    connection.execute("PRAGMA journal_mode = WAL")
+    for attempt in range(8):
+        try:
+            current_mode = connection.execute("PRAGMA journal_mode").fetchone()[0]
+            if str(current_mode).lower() != "wal":
+                connection.execute("PRAGMA journal_mode = WAL")
+            break
+        except sqlite3.OperationalError as exc:
+            if "locked" not in str(exc).lower() or attempt == 7:
+                connection.close()
+                raise
+            time.sleep(0.025 * (attempt + 1))
     return connection
 
 
