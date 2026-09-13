@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import threading
 from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -82,7 +83,7 @@ def claim_next_job(
     path: str | Path,
     worker_id: str,
     *,
-    lease_seconds: int = 30,
+    lease_seconds: float = 30,
     now: datetime | None = None,
 ) -> JobRecord | None:
     if not worker_id.strip():
@@ -112,6 +113,33 @@ def claim_next_job(
             (worker_id, new_token, expires.isoformat(), job_id),
         )
     return get_job(path, job_id)
+
+
+def renew_lease(
+    path: str | Path,
+    job_id: str,
+    worker_id: str,
+    lease_token: int,
+    *,
+    lease_seconds: float = 30,
+    now: datetime | None = None,
+) -> str:
+    """Extend a live lease only while the same fenced worker still owns it."""
+    if lease_seconds <= 0:
+        raise ValueError("lease_seconds deve ser positivo")
+    current = now or _utcnow()
+    if current.tzinfo is None:
+        raise ValueError("now deve possuir timezone")
+    expires = current + timedelta(seconds=lease_seconds)
+    with connect(path) as connection:
+        cursor = connection.execute(
+            "UPDATE jobs SET lease_expires_at=?, updated_at=CURRENT_TIMESTAMP "
+            "WHERE job_id=? AND state='LEASED' AND lease_owner=? AND lease_token=? AND cancel_requested=0",
+            (expires.isoformat(), job_id, worker_id, lease_token),
+        )
+        if cursor.rowcount != 1:
+            raise StaleLeaseError("STALE_LEASE")
+    return expires.isoformat()
 
 
 def save_checkpoint(
@@ -229,15 +257,44 @@ def run_worker_once(
     path: str | Path,
     worker_id: str,
     *,
-    lease_seconds: int = 30,
+    lease_seconds: float = 30,
     now: datetime | None = None,
 ) -> JobRecord | None:
     job = claim_next_job(path, worker_id, lease_seconds=lease_seconds, now=now)
     if job is None:
         return None
+
+    stop_heartbeat = threading.Event()
+    heartbeat_errors: list[BaseException] = []
+    interval = max(0.05, lease_seconds / 3.0)
+
+    def heartbeat() -> None:
+        while not stop_heartbeat.wait(interval):
+            try:
+                renew_lease(
+                    path,
+                    job.job_id,
+                    worker_id,
+                    job.lease_token,
+                    lease_seconds=lease_seconds,
+                )
+            except BaseException as exc:  # surfaced deterministically in the owner thread
+                heartbeat_errors.append(exc)
+                stop_heartbeat.set()
+                return
+
+    heartbeat_thread = threading.Thread(
+        target=heartbeat,
+        name=f"sare-lease-heartbeat-{job.job_id}",
+        daemon=True,
+    )
+    heartbeat_thread.start()
     try:
         save_checkpoint(path, job.job_id, worker_id, job.lease_token, {"phase": "CLAIMED", "attempt": job.attempts})
         result = _execute_payload(path, job)
+        if heartbeat_errors:
+            raise StaleLeaseError("STALE_LEASE") from heartbeat_errors[0]
+        renew_lease(path, job.job_id, worker_id, job.lease_token, lease_seconds=lease_seconds)
         save_checkpoint(path, job.job_id, worker_id, job.lease_token, {"phase": "COMPUTED", "attempt": job.attempts})
         return complete_job(path, job.job_id, worker_id, job.lease_token, result)
     except StaleLeaseError:
@@ -250,3 +307,6 @@ def run_worker_once(
             job.lease_token,
             {"type": type(exc).__name__, "message": str(exc)},
         )
+    finally:
+        stop_heartbeat.set()
+        heartbeat_thread.join(timeout=max(1.0, interval * 2.0))
