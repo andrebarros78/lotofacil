@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+from datetime import datetime
 from fractions import Fraction
 from pathlib import Path
 
@@ -24,6 +25,7 @@ from sare_lotofacil.persistence.db import initialize_database
 from sare_lotofacil.persistence.evidence import verify_source_artifacts
 from sare_lotofacil.persistence.jobs import run_worker_once
 from sare_lotofacil.persistence.repository import create_latest_snapshot, load_snapshot_draws, persist_caixa_contest
+from sare_lotofacil.persistence.vintages import create_snapshot_as_of
 from sare_lotofacil.statistics.baseline import UNIFORM_BRIER
 
 
@@ -77,6 +79,17 @@ def build_parser() -> argparse.ArgumentParser:
     snapshot = subparsers.add_parser("snapshot", help="publica snapshot das revisões mais recentes")
     snapshot.add_argument("--db", type=Path, required=True)
 
+    snapshot_as_of = subparsers.add_parser(
+        "snapshot-as-of",
+        help="publica snapshot point-in-time usando somente revisões já disponíveis no cutoff",
+    )
+    snapshot_as_of.add_argument("--db", type=Path, required=True)
+    snapshot_as_of.add_argument(
+        "--availability-cutoff",
+        required=True,
+        help="timestamp ISO 8601 com timezone, por exemplo 2026-09-13T17:00:00-03:00",
+    )
+
     analyze_snapshot = subparsers.add_parser("analyze-snapshot", help="executa relatório Core sobre snapshot publicado")
     analyze_snapshot.add_argument("--db", type=Path, required=True)
     analyze_snapshot.add_argument("--snapshot", required=True)
@@ -100,7 +113,7 @@ def build_parser() -> argparse.ArgumentParser:
     worker_once = subparsers.add_parser("worker-once", help="executa no máximo um trabalho persistido")
     worker_once.add_argument("--db", type=Path, required=True)
     worker_once.add_argument("--worker-id", required=True)
-    worker_once.add_argument("--lease-seconds", type=int, default=30)
+    worker_once.add_argument("--lease-seconds", type=float, default=30)
 
     verify_evidence = subparsers.add_parser("verify-evidence", help="verifica hashes dos artefatos de evidência")
     verify_evidence.add_argument("--db", type=Path, required=True)
@@ -138,6 +151,21 @@ def main() -> int:
             "snapshot_id": snapshot.snapshot_id,
             "snapshot_hash": snapshot.snapshot_hash,
             "contest_count": snapshot.contest_count,
+        }, sort_keys=True))
+        return 0
+    if args.command == "snapshot-as-of":
+        try:
+            cutoff = datetime.fromisoformat(args.availability_cutoff)
+        except ValueError as exc:
+            raise SystemExit(f"availability-cutoff inválido: {exc}") from exc
+        if cutoff.tzinfo is None:
+            raise SystemExit("availability-cutoff deve possuir timezone")
+        snapshot = create_snapshot_as_of(args.db, cutoff)
+        print(json.dumps({
+            "snapshot_id": snapshot.snapshot_id,
+            "snapshot_hash": snapshot.snapshot_hash,
+            "contest_count": snapshot.contest_count,
+            "availability_cutoff": cutoff.isoformat(),
         }, sort_keys=True))
         return 0
     if args.command == "analyze-snapshot":
