@@ -48,14 +48,16 @@ jobs:
           from pathlib import Path
           import sare_lotofacil
           from sare_lotofacil.api.app import create_app
-          expected = "1.1.1"
+          expected_package = "1.1.1"
+          expected_api_contract = "1.1.0"
           module = Path(sare_lotofacil.__file__).resolve()
           assert "site-packages" in str(module), module
-          assert version("sare-lotofacil") == expected
-          assert sare_lotofacil.__version__ == expected
+          assert version("sare-lotofacil") == expected_package
+          assert sare_lotofacil.__version__ == expected_package
           app = create_app('/tmp/version-proof.db')
-          assert app.version == expected
-          print(f"RELEASE_VERSION={expected}")
+          assert app.version == expected_api_contract
+          print(f"RELEASE_VERSION={expected_package}")
+          print(f"API_CONTRACT_VERSION={expected_api_contract}")
           print(f"INSTALLED_MODULE={module}")
           PY
       - name: Prove mathematical doctor
