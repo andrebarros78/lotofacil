@@ -14,7 +14,6 @@ CREATE TABLE IF NOT EXISTS schema_meta (
     value TEXT NOT NULL
 );
 
-
 CREATE TABLE IF NOT EXISTS source_artifacts (
     artifact_id TEXT PRIMARY KEY,
     source_url TEXT NOT NULL,
@@ -88,7 +87,6 @@ CREATE TABLE IF NOT EXISTS runs (
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     finished_at TEXT
 );
-
 
 CREATE TABLE IF NOT EXISTS run_results (
     run_id TEXT PRIMARY KEY REFERENCES runs(run_id) ON DELETE CASCADE,
@@ -234,6 +232,29 @@ CREATE INDEX IF NOT EXISTS idx_runs_state
 ON runs(execution_state);
 """
 
+_REQUIRED_COLUMNS: dict[str, frozenset[str]] = {
+    "schema_meta": frozenset({"key", "value"}),
+    "source_artifacts": frozenset({"artifact_id", "source_url", "source_class", "captured_at", "sha256", "raw_json"}),
+    "rulesets": frozenset({"ruleset_id", "valid_from", "universe_size", "draw_size", "simple_bet_cost_cents", "source"}),
+    "contest_revisions": frozenset({"contest_id", "revision", "draw_date", "result_mask", "source_class", "availability_at"}),
+    "prize_tiers": frozenset({"contest_id", "revision", "hits", "winners", "prize_cents"}),
+    "snapshots": frozenset({"snapshot_id", "snapshot_hash", "state"}),
+    "snapshot_members": frozenset({"snapshot_id", "contest_id", "revision"}),
+    "runs": frozenset({"run_id", "run_type", "execution_state", "snapshot_id", "technical_status", "predictive_evidence"}),
+    "run_results": frozenset({"run_id", "result_json"}),
+    "portfolios": frozenset({"portfolio_id", "seed", "card_count", "cost_cents", "predictive_evidence", "evidence_label"}),
+    "portfolio_cards": frozenset({"portfolio_id", "position", "result_mask"}),
+    "evaluations": frozenset({"evaluation_id", "portfolio_id", "result_mask", "hits_json", "max_hits"}),
+    "idempotency_keys": frozenset({"operation", "idempotency_key", "request_hash", "response_json", "status_code"}),
+    "audit_events": frozenset({"event_id", "action", "entity_type", "entity_id", "detail_json"}),
+    "ingestion_runs": frozenset({"ingestion_id", "source_class", "source_url", "execution_state"}),
+    "hypotheses": frozenset({"hypothesis_id", "protocol_hash", "protocol_json", "status"}),
+    "experiment_runs": frozenset({"experiment_id", "hypothesis_id", "run_id", "protocol_hash", "conclusion", "predictive_evidence"}),
+    "model_promotions": frozenset({"promotion_id", "experiment_id", "model_name", "predictive_evidence"}),
+    "jobs": frozenset({"job_id", "job_type", "request_json", "request_hash", "state", "lease_owner", "lease_token", "lease_expires_at", "attempts", "cancel_requested"}),
+    "job_checkpoints": frozenset({"job_id", "lease_token", "checkpoint_json"}),
+}
+
 
 def connect(path: str | Path) -> sqlite3.Connection:
     db_path = Path(path)
@@ -255,10 +276,52 @@ def connect(path: str | Path) -> sqlite3.Connection:
     return connection
 
 
+def _existing_schema_version(connection: sqlite3.Connection) -> int | None:
+    table = connection.execute(
+        "SELECT 1 FROM sqlite_master WHERE type='table' AND name='schema_meta'"
+    ).fetchone()
+    if not table:
+        return None
+    row = connection.execute("SELECT value FROM schema_meta WHERE key='schema_version'").fetchone()
+    if row is None:
+        return None
+    try:
+        return int(row[0])
+    except (TypeError, ValueError) as exc:
+        raise RuntimeError("SCHEMA_VERSION_INVALID") from exc
+
+
+def _verify_schema_shape(connection: sqlite3.Connection) -> None:
+    for table, required in _REQUIRED_COLUMNS.items():
+        exists = connection.execute(
+            "SELECT 1 FROM sqlite_master WHERE type='table' AND name=?",
+            (table,),
+        ).fetchone()
+        if not exists:
+            raise RuntimeError(f"SCHEMA_INCOMPATIBLE: missing table {table}")
+        present = {str(row[1]) for row in connection.execute(f'PRAGMA table_info("{table}")').fetchall()}
+        missing = sorted(required - present)
+        if missing:
+            raise RuntimeError(f"SCHEMA_INCOMPATIBLE: {table} missing columns {','.join(missing)}")
+
+
 def initialize_database(path: str | Path) -> Path:
+    """Initialize or additively migrate a known SARE schema, failing closed on drift.
+
+    Historical SARE schema versions 1-5 are additive for the tables represented by
+    ``SCHEMA_SQL``. ``CREATE TABLE IF NOT EXISTS`` supplies missing additive tables;
+    shape verification prevents the previous false-success mode where metadata was
+    advanced even though an incompatible pre-existing table remained unchanged.
+    """
     db_path = Path(path)
     with connect(db_path) as connection:
+        current_version = _existing_schema_version(connection)
+        if current_version is not None and current_version > SCHEMA_VERSION:
+            raise RuntimeError(
+                f"SCHEMA_NEWER_THAN_CODE: database={current_version} code={SCHEMA_VERSION}"
+            )
         connection.executescript(SCHEMA_SQL)
+        _verify_schema_shape(connection)
         connection.execute(
             "INSERT INTO schema_meta(key, value) VALUES('schema_version', ?) "
             "ON CONFLICT(key) DO UPDATE SET value = excluded.value",
