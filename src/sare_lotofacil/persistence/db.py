@@ -4,7 +4,7 @@ import sqlite3
 import time
 from pathlib import Path
 
-SCHEMA_VERSION = 5
+SCHEMA_VERSION = 6
 
 SCHEMA_SQL = """
 PRAGMA foreign_keys = ON;
@@ -124,6 +124,20 @@ CREATE TABLE IF NOT EXISTS evaluations (
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS revision_evaluations (
+    evaluation_id TEXT PRIMARY KEY,
+    portfolio_id TEXT NOT NULL REFERENCES portfolios(portfolio_id) ON DELETE CASCADE,
+    contest_id INTEGER NOT NULL,
+    revision INTEGER NOT NULL,
+    result_mask INTEGER NOT NULL CHECK (result_mask > 0),
+    hits_json TEXT NOT NULL,
+    max_hits INTEGER NOT NULL CHECK (max_hits BETWEEN 5 AND 15),
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (portfolio_id, contest_id, revision),
+    FOREIGN KEY (contest_id, revision)
+        REFERENCES contest_revisions(contest_id, revision)
+);
+
 CREATE TABLE IF NOT EXISTS idempotency_keys (
     operation TEXT NOT NULL,
     idempotency_key TEXT NOT NULL,
@@ -226,6 +240,9 @@ ON portfolios(snapshot_id);
 
 CREATE INDEX IF NOT EXISTS idx_evaluations_portfolio
 ON evaluations(portfolio_id);
+
+CREATE INDEX IF NOT EXISTS idx_revision_evaluations_portfolio
+ON revision_evaluations(portfolio_id, contest_id, revision);
 
 CREATE INDEX IF NOT EXISTS idx_contest_revisions_date
 ON contest_revisions(draw_date);
