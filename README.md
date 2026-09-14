@@ -4,7 +4,7 @@ Sistema de Análise de Randomicidade e Eventos para a Lotofácil.
 
 ## Release
 
-**SARE Core 1.0 + SARE Operational 1.1 — versão 1.1.4.**
+**SARE Core 1.0 + SARE Operational 1.1 — versão 1.1.5.**
 
 O sistema prioriza integridade dos dados, matemática exata, reprodutibilidade, auditoria e recuperação antes de qualquer alegação preditiva.
 
@@ -41,6 +41,8 @@ A autoridade operacional está documentada em `docs/GITHUB_OPERATIONS.md`.
 - temporal RIS por permutação de concursos completos nos lags predefinidos 1, 2, 3, 5 e 10, com correção de Holm;
 - regime RIS por scan global retrospectivo, limiar calibrado em nulo e falso alarme validado em amostra nula independente;
 - laboratório de alternativas controladas com T17 para potência sob viés marginal e T18 para memória temporal sem confusão marginal;
+- guardrails T20/T21 contra uso do alvo/futuro e transformações ajustadas fora do treino;
+- auditoria T22/T23 de janelas de backtest com denominador explícito, falhas registradas e amostra insuficiente como inconclusiva;
 - simuladores de alternativa controlada para medir sensibilidade sem atribuir causalidade;
 - carteiras uniformes com etiqueta obrigatória de ausência de vantagem comprovada;
 - verificação SHA-256 de evidências persistidas;
@@ -49,12 +51,23 @@ A autoridade operacional está documentada em `docs/GITHUB_OPERATIONS.md`.
 
 ## Laboratório de alternativas controladas
 
-A versão 1.1.4 adiciona duas provas sintéticas predefinidas da fase científica C3:
+Desde a versão 1.1.4, duas provas sintéticas predefinidas da fase científica C3 permanecem obrigatórias:
 
 - **T17 — viés marginal controlado:** uma dezena-alvo recebe probabilidade conhecida maior que 0,6; a família marginal canônica, corrigida por Holm, mede potência empírica em séries independentes.
 - **T18 — memória temporal controlada:** um kernel simétrico retém parte das dezenas do concurso anterior com probabilidade predefinida, preservando 15-de-25 e sem privilegiar uma dezena; o teste temporal deve detectar dependência enquanto a família marginal ajustada permanece sem rejeição.
 
 Essas provas medem sensibilidade e separação de mecanismos em dados sintéticos conhecidos. Elas **não constituem evidência de vantagem preditiva no histórico real**.
+
+## Integridade temporal e de backtest
+
+A versão 1.1.5 adiciona provas T20–T23 da fase científica C4:
+
+- **T20 — leakage de alvo/futuro:** `feature_offsets` aceita apenas offsets negativos; usar o alvo (`0`) ou futuro (`>0`) bloqueia o protocolo com `FUTURE_OR_TARGET_FEATURE_OFFSET`.
+- **T21 — transformação fora do treino:** `transform_fit_scope` canônico é `TRAIN_ONLY`; ajuste em `FULL_HISTORY` é bloqueado com `TRANSFORM_FIT_OUTSIDE_TRAIN`.
+- **T22 — falha de janela:** a política obrigatória é `COUNT_IN_DENOMINATOR`; janelas que falham continuam no denominador e aparecem no relatório, que vira `INCONCLUSIVE_WINDOW_FAILURES`.
+- **T23 — poucas janelas:** quando há menos janelas que o mínimo predefinido, o estado é `INCONCLUSIVE_INSUFFICIENT_WINDOWS` e `advantage_eligible=false`, mesmo se os resultados observados parecerem favoráveis.
+
+Esses controles medem **integridade metodológica**. Passá-los não constitui vantagem preditiva e não promove modelo.
 
 ## RIS categórico
 
