@@ -137,7 +137,7 @@ def create_app(
             existing = get_idempotency(path, operation, key)
             if not existing or existing.request_hash != digest:
                 raise HTTPException(status_code=409, detail="IDEMPOTENCY_KEY_CONFLICT")
-            return JSONResponse(response_payload, status_code=status_code)
+            return JSONResponse(json.loads(existing.response_json), status_code=existing.status_code)
         return JSONResponse(response_payload, status_code=status_code)
 
     @app.get("/health/live")
