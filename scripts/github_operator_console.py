@@ -9,6 +9,11 @@ from pathlib import Path
 from sare_lotofacil.analysis.core_report import analyze_core
 from sare_lotofacil.analysis.ris import build_categorical_ris_from_draws
 from sare_lotofacil.portfolios.core import UNPROVEN_LABEL, generate_uniform_portfolio
+from sare_lotofacil.portfolios.primary import (
+    PRIMARY_MODEL_NAME,
+    SECONDARY_MODEL_NAME,
+    select_primary_card,
+)
 
 
 def _load(path: Path) -> dict:
@@ -101,6 +106,63 @@ def _ris(state_dir: Path) -> dict:
     }
 
 
+def _primary_card(state_dir: Path) -> dict:
+    latest = _load(state_dir / "latest.json")
+    ledger = _load(state_dir / "prospective_ledger.json")
+    target = int(latest["next_prediction_target"])
+    prediction = next(
+        (item for item in ledger.get("predictions", []) if int(item["target_contest"]) == target),
+        None,
+    )
+    if prediction is None:
+        raise RuntimeError("PRIMARY_CARD_FROZEN_PREDICTION_NOT_FOUND")
+    models = prediction.get("models")
+    if not isinstance(models, dict):
+        raise RuntimeError("PRIMARY_CARD_FROZEN_MODELS_NOT_FOUND")
+    try:
+        primary_scores = models[PRIMARY_MODEL_NAME]
+        secondary_scores = models[SECONDARY_MODEL_NAME]
+    except KeyError as exc:
+        raise RuntimeError("PRIMARY_CARD_REQUIRED_MODEL_NOT_FOUND") from exc
+
+    decision = select_primary_card(
+        primary_scores,
+        secondary_scores,
+        target_contest=target,
+        training_last_contest=int(prediction["training_last_contest"]),
+    )
+    frozen = prediction.get("primary_card")
+    if frozen is not None:
+        if not isinstance(frozen, dict) or frozen.get("decision_sha256") != decision.decision_sha256:
+            raise RuntimeError("PRIMARY_CARD_FROZEN_DECISION_MISMATCH")
+        decision_source = "FROZEN_PRIMARY_CARD"
+    else:
+        decision_source = "DERIVED_FROM_FROZEN_LEGACY_MODEL_SCORES"
+
+    return {
+        "status": "GITHUB_OPERATOR_PRIMARY_CARD_PASS",
+        "generated_at_utc": datetime.now(timezone.utc).isoformat(),
+        "target_contest": target,
+        "training_last_contest": decision.training_last_contest,
+        "card_count": 1,
+        "cost_cents": 350,
+        "predictive_evidence": latest["prospective"]["predictive_evidence"],
+        "evidence_label": decision.evidence_label,
+        "state_snapshot_id": latest["snapshot_id"],
+        "state_snapshot_hash": latest["snapshot_hash"],
+        "selection_method": decision.selection_method,
+        "primary_model": decision.primary_model,
+        "secondary_model": decision.secondary_model,
+        "primary_model_score_sum": decision.primary_model_score_sum,
+        "secondary_model_score_sum": decision.secondary_model_score_sum,
+        "decision_sha256": decision.decision_sha256,
+        "decision_source": decision_source,
+        "card": list(decision.card),
+        "card_display": " ".join(f"{number:02d}" for number in decision.card),
+        "ranking": list(decision.ranking),
+    }
+
+
 def _portfolio(state_dir: Path, card_count: int, seed: int) -> dict:
     latest = _load(state_dir / "latest.json")
     target = int(latest["next_prediction_target"])
@@ -159,7 +221,11 @@ def _export(state_dir: Path) -> tuple[dict, str]:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Read-only operator console for the canonical GitHub state")
-    parser.add_argument("--action", choices=("status", "audit", "analyze", "ris", "portfolio", "export"), required=True)
+    parser.add_argument(
+        "--action",
+        choices=("status", "audit", "analyze", "ris", "primary-card", "portfolio", "export"),
+        required=True,
+    )
     parser.add_argument("--state-dir", type=Path, required=True)
     parser.add_argument("--out-dir", type=Path, required=True)
     parser.add_argument("--card-count", type=int, default=10)
@@ -181,6 +247,9 @@ def main() -> int:
     elif args.action == "ris":
         payload = _ris(args.state_dir)
         _write_json(args.out_dir / "ris.json", payload)
+    elif args.action == "primary-card":
+        payload = _primary_card(args.state_dir)
+        _write_json(args.out_dir / "primary_card.json", payload)
     elif args.action == "portfolio":
         payload = _portfolio(args.state_dir, args.card_count, args.seed)
         _write_json(args.out_dir / "portfolio.json", payload)
