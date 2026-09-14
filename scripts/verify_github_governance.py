@@ -63,7 +63,16 @@ def main() -> int:
     operations_path = ROOT / ".github" / "workflows" / "github-operations.yml"
     if operations_path.exists():
         text = operations_path.read_text(encoding="utf-8")
-        for marker in ["workflow_dispatch:","schedule:","ref: main","ref: operations/state","cancel-in-progress: false","verify_github_operational_state.py","git push origin HEAD:operations/state","committed-state-audit:"]:
+        for marker in [
+            "workflow_dispatch:",
+            "schedule:",
+            "ref: main",
+            "ref: operations/state",
+            "cancel-in-progress: false",
+            "verify_github_operational_state.py",
+            "git push origin HEAD:operations/state",
+            "committed-state-audit:",
+        ]:
             if marker not in text:
                 violations.append(f"github-operations.yml missing marker: {marker}")
 
@@ -78,19 +87,45 @@ def main() -> int:
             violations.append("operator-console.yml must read the canonical operations/state branch")
         if "ris-categorical" not in text or "ACTION=ris" not in text:
             violations.append("operator-console.yml must expose categorical RIS")
+        if "generate-primary-card" not in text or "ACTION=primary-card" not in text:
+            violations.append("operator-console.yml must expose PRIMARY_CARD")
 
     proof_path = ROOT / ".github" / "workflows" / "operator-console-proof.yml"
     if proof_path.exists():
         text = proof_path.read_text(encoding="utf-8")
-        for marker in ["workflow_dispatch:","push:","ref: main","ref: operations/state","--action status","--action audit","--action analyze","--action ris","--action portfolio","--action export","GITHUB_OPERATOR_RIS_PASS","RIS_NUMERIC_FORBIDDEN_IN_1_X","calibrated_global_marginal_change_scan","RETROSPECTIVE_DISCOVERY","compatible_with_target","REGIME_ALERT_IS_RETROSPECTIVE_NOT_REALTIME","SARE_OPERATOR_CONSOLE_PROOF_PASS","operations_state_sha"]:
+        for marker in [
+            "workflow_dispatch:",
+            "push:",
+            "ref: main",
+            "ref: operations/state",
+            "--action status",
+            "--action audit",
+            "--action analyze",
+            "--action ris",
+            "--action primary-card",
+            "--action portfolio",
+            "--action export",
+            "GITHUB_OPERATOR_RIS_PASS",
+            "GITHUB_OPERATOR_PRIMARY_CARD_PASS",
+            "RIS_NUMERIC_FORBIDDEN_IN_1_X",
+            "calibrated_global_marginal_change_scan",
+            "RETROSPECTIVE_DISCOVERY",
+            "compatible_with_target",
+            "REGIME_ALERT_IS_RETROSPECTIVE_NOT_REALTIME",
+            "SARE_OPERATOR_CONSOLE_PROOF_PASS",
+            "operations_state_sha",
+        ]:
             if marker not in text:
                 violations.append(f"operator-console-proof.yml missing marker: {marker}")
         if re.search(r"(?m)^\s*contents:\s*write\s*$", text):
             violations.append("operator-console-proof.yml must remain read-only")
 
     release_path = ROOT / ".github" / "workflows" / "release-proof.yml"
+    suite_path = ROOT / "scripts" / "prove_release_integrity.py"
     if release_path.exists():
-        text = release_path.read_text(encoding="utf-8")
+        release_text = release_path.read_text(encoding="utf-8")
+        suite_text = suite_path.read_text(encoding="utf-8") if suite_path.exists() else ""
+        combined = release_text + "\n" + suite_text
         release_markers = [
             f'expected = "{canonical_version}"',
             "CATEGORICAL_RIS_RELEASE_PROOF_PASS",
@@ -99,6 +134,8 @@ def main() -> int:
             "BACKTEST_INTEGRITY_RELEASE_PROOF_PASS",
             "RISK_REPRO_JOINT_COVERAGE_RELEASE_PROOF_PASS",
             "PORTFOLIO_ECONOMIC_INTEGRITY_RELEASE_PROOF_PASS",
+            "PRIMARY_CARD_RELEASE_PROOF_PASS",
+            "RELEASE_INTEGRITY_SUITE_PASS",
             "LOOKAHEAD_LEAKAGE_DETECTED",
             "TRANSFORM_FIT_LEAKAGE_DETECTED",
             "run_audited_backtest",
@@ -112,14 +149,18 @@ def main() -> int:
             "evaluate_portfolio_revision",
             "SCHEMA_VERSION",
             "/v1/evaluations/revisions",
+            "select_primary_card",
+            "M1_TOP15_M2_TIEBREAK_V1",
+            "PRIMARY_CARD_TARGET_MUST_EQUAL_TRAINING_LAST_PLUS_ONE",
             "controlled-alternatives-release-proof",
             "backtest-integrity-release-proof",
             "risk-repro-joint-coverage-release-proof",
             "portfolio-economic-integrity-release-proof",
+            "primary-card-release-proof",
         ]
         for marker in release_markers:
-            if marker not in text:
-                violations.append(f"release-proof.yml missing marker: {marker}")
+            if marker not in combined:
+                violations.append(f"release proof contract missing marker: {marker}")
 
     native = policy.get("native_ruleset", {})
     if native.get("status") != "ENFORCED":
