@@ -3,12 +3,14 @@ from __future__ import annotations
 from datetime import date, datetime, timezone
 
 import pytest
+from fastapi.testclient import TestClient
 
+from sare_lotofacil.api.app import create_app
 from sare_lotofacil.economics import calculate_economic_audit, summarize_horizon_cashflow
 from sare_lotofacil.ingestion.caixa import CaixaContest
 from sare_lotofacil.ingestion.validation import validate_contest
 from sare_lotofacil.persistence.db import connect
-from sare_lotofacil.persistence.operations import evaluate_portfolio_revision, persist_uniform_portfolio
+from sare_lotofacil.persistence.operations import persist_uniform_portfolio
 from sare_lotofacil.persistence.repository import persist_caixa_contest
 from sare_lotofacil.portfolios.core import generate_uniform_portfolio, normalize_portfolio_cards
 from sare_lotofacil.portfolios.coverage import exact_jackpot_coverage
@@ -133,9 +135,22 @@ def test_t39_same_portfolio_and_contest_revision_audit_is_idempotent(tmp_path) -
     persisted = persist_caixa_contest(db, contest, source_class="SINTETICO")
     assert persisted.revision == 1
 
-    first = evaluate_portfolio_revision(db, portfolio.portfolio_id, 500, 1)
-    second = evaluate_portfolio_revision(db, portfolio.portfolio_id, 500, 1)
-    assert first == second
+    client = TestClient(create_app(db, write_token="secret"))
+    body = {"portfolio_id": portfolio.portfolio_id, "contest_id": 500, "revision": 1}
+    first = client.post(
+        "/v1/evaluations/revisions",
+        json=body,
+        headers={"Idempotency-Key": "rev-eval-1", "X-SARE-Token": "secret"},
+    )
+    second = client.post(
+        "/v1/evaluations/revisions",
+        json=body,
+        headers={"Idempotency-Key": "rev-eval-2", "X-SARE-Token": "secret"},
+    )
+    assert first.status_code == second.status_code == 201
+    assert first.json() == second.json()
+    assert first.json()["contest_id"] == 500
+    assert first.json()["revision"] == 1
 
     with connect(db) as connection:
         evaluations = connection.execute("SELECT COUNT(*) FROM revision_evaluations").fetchone()[0]
