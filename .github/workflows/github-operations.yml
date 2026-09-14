@@ -146,3 +146,41 @@ jobs:
             artifacts/canonical_prize_audit_committed.json
             artifacts/operational_git_history.txt
           if-no-files-found: error
+
+  economic-state-proof:
+    needs: committed-state-audit
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout engine
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: main
+          path: app
+      - name: Checkout committed state
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: operations/state
+          path: state-store
+      - name: Setup Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: "3.13"
+      - name: Install engine
+        run: python -m pip install ./app
+      - name: Prove canonical economic calculation
+        run: |
+          mkdir -p artifacts
+          python app/scripts/prove_economic_state.py \
+            --state-dir state-store/operations \
+            --out artifacts/github_economic_state_proof.json
+          grep -q '"status": "GITHUB_ECONOMIC_STATE_PROOF_PASS"' artifacts/github_economic_state_proof.json
+          grep -q '"purchase_recorded": false' artifacts/github_economic_state_proof.json
+      - name: Upload economic proof
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: github-economic-state-proof
+          path: artifacts/github_economic_state_proof.json
+          if-no-files-found: error
