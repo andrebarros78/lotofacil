@@ -10,6 +10,7 @@ from fastapi import Header, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse
 from pydantic import BaseModel, ConfigDict, Field
 
+from sare_lotofacil import __version__
 from sare_lotofacil.api.legacy_app import create_app as _legacy_create_app
 from sare_lotofacil.experiments.protocol import ExperimentProtocol
 from sare_lotofacil.ingestion.caixa import fetch_caixa_contest
@@ -105,7 +106,7 @@ def _ingestion_payload(record) -> dict[str, Any]:
 def create_app(db_path: str | Path, *, write_token: str | None = None, max_body_bytes: int = 65_536):
     path = Path(db_path)
     app = _legacy_create_app(path, write_token=write_token, max_body_bytes=max_body_bytes)
-    app.version = "1.1.0"
+    app.version = __version__
 
     def auth(token: str | None) -> None:
         if not write_token:
@@ -133,7 +134,7 @@ def create_app(db_path: str | Path, *, write_token: str | None = None, max_body_
             existing = get_idempotency(path, operation, key)
             if not existing or existing.request_hash != digest:
                 raise HTTPException(409, "IDEMPOTENCY_KEY_CONFLICT")
-            return JSONResponse(json.loads(existing.response_json), status_code=existing.status_code)
+            return JSONResponse(payload, status_code=status)
         return JSONResponse(payload, status_code=status)
 
     @app.get("/v1/contests")
