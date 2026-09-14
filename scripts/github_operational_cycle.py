@@ -163,6 +163,7 @@ def _build_prediction(
         },
         "primary_card": primary_card.to_dict(),
         "evaluation": None,
+        "primary_card_evaluation": None,
     }
     prediction["prediction_sha256"] = _sha256(_prediction_hash_payload(prediction))
     return prediction
@@ -194,7 +195,7 @@ def _evaluate_prediction(prediction: dict[str, object], observed_record) -> None
     primary_card = prediction.get("primary_card")
     if isinstance(primary_card, dict) and isinstance(primary_card.get("card"), list):
         observed = set(observed_record.numbers)
-        primary_card["evaluation"] = {
+        prediction["primary_card_evaluation"] = {
             "hits": sum(1 for number in primary_card["card"] if number in observed),
             "observed_contest": observed_record.contest_id,
         }
