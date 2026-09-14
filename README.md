@@ -4,7 +4,7 @@ Sistema de Análise de Randomicidade e Eventos para a Lotofácil.
 
 ## Release
 
-**SARE Core 1.0 + SARE Operational 1.1 — versão 1.1.0.**
+**SARE Core 1.0 + SARE Operational 1.1 — versão 1.1.1.**
 
 O sistema prioriza integridade dos dados, matemática exata, reprodutibilidade, auditoria e recuperação antes de qualquer alegação preditiva.
 
@@ -89,7 +89,8 @@ A configuração-alvo dos Rulesets nativos está em `docs/GITHUB_NATIVE_RULESET.
 - console operacional: `docs/OPERATOR_CONSOLE.md`;
 - rulesets nativos: `docs/GITHUB_NATIVE_RULESET.md`;
 - operação e política GitHub-only: `docs/OPERACAO.md`;
-- matriz de comprovação: `docs/MISSION_PROVEN.md`;
+- matriz de comprovação ativa: `docs/MISSION_PROVEN.md`;
+- contrato preservado da 1.1.0: `docs/MISSION_PROVEN_1_1_0.md`;
 - identidade da especificação-fonte: `docs/SOURCE_SPEC.md`;
 - testes automatizados: `tests/`;
 - workflows: `.github/workflows/`.
