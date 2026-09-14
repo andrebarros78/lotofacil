@@ -41,7 +41,7 @@ jobs:
           from pathlib import Path
           import sare_lotofacil
           from sare_lotofacil.api.app import create_app
-          expected = "1.1.4"
+          expected = "1.1.5"
           module = Path(sare_lotofacil.__file__).resolve()
           assert "site-packages" in str(module), module
           assert version("sare-lotofacil") == expected
@@ -181,6 +181,72 @@ jobs:
           print(json.dumps(payload, sort_keys=True))
           PY
           grep -q 'CONTROLLED_ALTERNATIVES_RELEASE_PROOF_PASS' artifacts/controlled_alternatives_release_proof.json
+      - name: Prove T20-T23 leakage and backtest integrity from installed wheel
+        run: |
+          mkdir -p artifacts
+          /tmp/sare-clean/bin/python - <<'PY' | tee artifacts/leakage_backtest_release_proof.json
+          import json
+          from dataclasses import asdict
+          from sare_lotofacil.experiments.integrity import TemporalIntegrityViolation, audit_backtest_windows
+          from sare_lotofacil.experiments.protocol import ExperimentProtocol
+
+          def protocol(**overrides):
+              payload = {
+                  'hypothesis_id': 'release-integrity',
+                  'question': 'O protocolo temporal é íntegro?',
+                  'h0': 'Sem vantagem',
+                  'h1': 'Há vantagem',
+                  'snapshot_id': 'snap-release-proof',
+              }
+              payload.update(overrides)
+              return ExperimentProtocol(**payload)
+
+          def blocked_code(candidate):
+              try:
+                  _ = candidate.protocol_hash
+              except TemporalIntegrityViolation as exc:
+                  return exc.code
+              raise AssertionError('protocol should have been blocked')
+
+          t20_code = blocked_code(protocol(feature_offsets=(-1, 0)))
+          assert t20_code == 'FUTURE_OR_TARGET_FEATURE_OFFSET'
+          t21_code = blocked_code(protocol(transform_fit_scope='FULL_HISTORY'))
+          assert t21_code == 'TRANSFORM_FIT_OUTSIDE_TRAIN'
+
+          windows = tuple(f'window-{index:02d}' for index in range(35))
+          def evaluator(window_id):
+              if window_id == 'window-11':
+                  raise RuntimeError('synthetic window failure')
+              return 0.24
+          values, t22 = audit_backtest_windows(windows, evaluator, min_required_windows=30)
+          assert len(values) == 34
+          assert t22.total_windows == 35
+          assert t22.successful_windows == 34
+          assert t22.failed_windows == 1
+          assert t22.status == 'INCONCLUSIVE_WINDOW_FAILURES'
+          assert t22.advantage_eligible is False
+
+          few_values, t23 = audit_backtest_windows(
+              tuple(f'window-{index:02d}' for index in range(5)),
+              lambda _: 0.20,
+              min_required_windows=30,
+          )
+          assert len(few_values) == 5
+          assert t23.total_windows == 5
+          assert t23.status == 'INCONCLUSIVE_INSUFFICIENT_WINDOWS'
+          assert t23.advantage_eligible is False
+
+          payload = {
+              'status': 'LEAKAGE_BACKTEST_INTEGRITY_RELEASE_PROOF_PASS',
+              't20_block_code': t20_code,
+              't21_block_code': t21_code,
+              't22': asdict(t22),
+              't23': asdict(t23),
+              'interpretation': 'Integrity/readiness proof only; no predictive advantage is created by passing T20-T23.',
+          }
+          print(json.dumps(payload, sort_keys=True))
+          PY
+          grep -q 'LEAKAGE_BACKTEST_INTEGRITY_RELEASE_PROOF_PASS' artifacts/leakage_backtest_release_proof.json
       - name: Prove Operational 1.1 journey from installed wheel
         run: |
           mkdir -p artifacts
@@ -209,4 +275,10 @@ jobs:
         with:
           name: controlled-alternatives-release-proof
           path: artifacts/controlled_alternatives_release_proof.json
+          if-no-files-found: error
+      - name: Upload leakage and backtest integrity proof
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: leakage-backtest-integrity-release-proof
+          path: artifacts/leakage_backtest_release_proof.json
           if-no-files-found: error
