@@ -1,6 +1,12 @@
 # SARE Lotofácil — Operação integral no GitHub
 
-O GitHub é o ambiente operacional do produto. Não existe requisito de instalação em PC, VPS ou servidor externo.
+## Regra soberana GitHub-only
+
+O GitHub é o único ambiente operacional canônico do produto.
+
+Não existe requisito de instalação, execução, persistência, recuperação ou aceitação em PC local, VPS ou servidor externo. Nenhum desses ambientes pode ser condição para continuidade do SARE.
+
+Execuções fora do GitHub são estritamente não canônicas: podem servir para desenvolvimento ou diagnóstico, mas não podem alterar `operations/state`, produzir evidência oficial, promover readiness, fechar gaps ou sustentar `MISSION_PROVEN`.
 
 ## Separação de responsabilidades
 
@@ -8,7 +14,8 @@ O GitHub é o ambiente operacional do produto. Não existe requisito de instala�
 - `release/v1.1.0`: baseline comprovada da release 1.1.0.
 - `operations/state`: estado operacional persistente e auditável.
 - GitHub Actions: executor do ciclo automático e das provas.
-- Artifacts: SQLite reconstruído, relatórios e evidências de cada execução.
+- GitHub Artifacts: SQLite reconstruído, relatórios e evidências de cada execução.
+- Git history: trilha temporal e de proveniência.
 
 O banco SQLite não é usado como memória permanente do Git. A memória canônica persistida é textual e versionável: `canonical_history.json`, `bootstrap_manifest.json`, `prospective_ledger.json` e `latest.json`. Cada execução reconstrói um SQLite a partir desse estado, exige `integrity_check=ok` e publica o banco como artefato de prova.
 
@@ -65,3 +72,11 @@ O histórico de commits do branch `operations/state` fornece marca temporal inde
 - `PROSPECTIVE_REPLICATION_CRITERIA_MET_REVIEW_REQUIRED`: as duas coortes cumpriram o critério matemático; revisão independente ainda é obrigatória.
 
 Até revisão e promoção formal, `predictive_evidence` permanece `NOT_ESTABLISHED` e as carteiras continuam sem alegação de vantagem preditiva comprovada.
+
+## Condição de aceitação
+
+A prova operacional válida deve permanecer integralmente no GitHub e ligar:
+
+`commit -> workflow run -> artifact -> provenance -> operations/state -> auditoria`
+
+Quando houver dependências, recovery ou integração, a evidência correspondente também deve ser produzida em GitHub Actions. Prova obtida somente em máquina externa é informação auxiliar, nunca evidência canônica.

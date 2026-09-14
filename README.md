@@ -8,7 +8,24 @@ Sistema de Análise de Randomicidade e Eventos para a Lotofácil.
 
 O sistema prioriza integridade dos dados, matemática exata, reprodutibilidade, auditoria e recuperação antes de qualquer alegação preditiva.
 
-**Não há vantagem preditiva comprovada.** O histórico real validado até o concurso 3779 produz `EVIDENCIA_PREDITIVA_INSUFICIENTE`; carteiras permanecem combinatórias e são rotuladas explicitamente dessa forma.
+**Não há vantagem preditiva comprovada.** O histórico real validado produz `EVIDENCIA_PREDITIVA_INSUFICIENTE`; carteiras permanecem combinatórias e são rotuladas explicitamente dessa forma.
+
+## Regra operacional soberana
+
+O SARE Lotofácil é um produto **GitHub-only**.
+
+- repositório canônico: `andrebarros78/lotofacil`;
+- `main`: código, testes, protocolos e workflows aprovados;
+- `operations/state`: estado operacional persistente e auditável;
+- GitHub Actions: único executor operacional aceito;
+- GitHub Artifacts: evidências, relatórios e snapshots reconstruíveis;
+- Git history: trilha temporal e de proveniência.
+
+**Nenhum PC local, VPS, servidor externo, banco local ou processo residente é requisito de operação, continuidade ou aceitação do produto.**
+
+Execuções fora do GitHub podem existir somente como desenvolvimento ou diagnóstico não canônico. Elas não podem promover estado, produzir evidência oficial, alterar readiness, fechar gaps nem sustentar `MISSION_PROVEN`.
+
+A autoridade operacional está documentada em `docs/GITHUB_OPERATIONS.md`.
 
 ## Capacidades
 
@@ -16,60 +33,45 @@ O sistema prioriza integridade dos dados, matemática exata, reprodutibilidade, 
 - `C(25,15) = 3.268.760`, distribuição hipergeométrica exata e máscaras de 25 bits;
 - M0 uniforme `p_i = 0,6`, Brier `0,24`;
 - M1 frequência regularizada e M2 média exponencial em walk-forward, com `ΔBrier` e IC95%;
-- ingestão validada, revisões imutáveis, artefatos de fonte e snapshots SQLite;
-- fonte oficial CAIXA e histórico de terceiro corroborado por checkpoints oficiais;
+- ingestão validada, revisões imutáveis e artefatos de fonte;
+- fonte oficial CAIXA e histórico corroborado por checkpoints oficiais;
 - protocolo científico congelado por hash, hipóteses e experimentos auditáveis;
 - promoção de modelo bloqueada enquanto a evidência não for `REPLICATED`;
 - carteiras uniformes com etiqueta obrigatória de ausência de vantagem comprovada;
-- API FastAPI local com autenticação de escrita, idempotência e limite de body;
-- fila persistente com lease, fencing token, checkpoint, cancelamento e retomada;
 - verificação SHA-256 de evidências persistidas;
-- backup/restore SQLite com `integrity_check`;
-- UI mínima de carteira em 8+7 com dezenas de dois dígitos;
-- CI Python 3.12/3.13, Real History Check e Release Proof a partir do wheel instalado.
+- reconstrução determinística do SQLite operacional em GitHub Actions com `integrity_check`;
+- CI Python 3.12/3.13, Real History Check, GitHub Operational Cycle e Release Proof.
 
-## Desenvolvimento
+## Operação
 
-```bash
-python -m venv .venv
-.venv/bin/python -m pip install -e '.[dev]'
-python -m pytest
-python -m sare_lotofacil doctor
-```
+A operação ocorre exclusivamente por workflows do GitHub.
 
-Windows PowerShell:
+Fluxo canônico:
 
-```powershell
-py -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -e ".[dev]"
-.\.venv\Scripts\python.exe -m pytest
-.\.venv\Scripts\python.exe -m sare_lotofacil doctor
-```
+1. código e protocolos permanecem versionados em `main`;
+2. CI e gates científicos validam o commit;
+3. `GitHub Operational Cycle` lê `operations/state`;
+4. o SQLite transitório é reconstruído no runner do GitHub;
+5. resultados, hashes e ledger são verificados;
+6. somente estado textual validado é persistido em `operations/state`;
+7. artefatos da execução são publicados no GitHub;
+8. um segundo job audita o estado já commitado.
 
-## Banco, worker e API
+Falha em qualquer gate impede alteração do estado operacional canônico.
 
-```bash
-python -m sare_lotofacil init-db --path data/sare.db
-python -m sare_lotofacil worker-once --db data/sare.db --worker-id worker-01
-python -m sare_lotofacil verify-evidence --db data/sare.db
-export SARE_WRITE_TOKEN='segredo-local'
-python -m sare_lotofacil serve --db data/sare.db
-```
+## Persistência e recuperação
 
-O servidor recusa binding externo nesta linha e opera em loopback por padrão.
+O Git não usa SQLite como memória permanente. O estado canônico é textual, versionável e auditável no branch `operations/state`, incluindo os manifests e ledgers definidos pelo contrato operacional.
 
-## Recuperação
-
-```bash
-python -m sare_lotofacil backup-db --db data/sare.db --out backups/sare.db
-python -m sare_lotofacil restore-db --backup backups/sare.db --out restore/sare.db
-```
+Cada execução reconstrói os artefatos transitórios a partir desse estado. Recuperação significa reproduzir o estado a partir do histórico Git e comprovar novamente integridade e proveniência dentro do GitHub Actions.
 
 ## Provas e documentação
 
-- operação: `docs/OPERACAO.md`;
+- autoridade operacional: `docs/GITHUB_OPERATIONS.md`;
+- operação e política GitHub-only: `docs/OPERACAO.md`;
 - matriz de comprovação: `docs/MISSION_PROVEN.md`;
 - identidade da especificação-fonte: `docs/SOURCE_SPEC.md`;
 - testes automatizados: `tests/`;
-- prova do wheel instalado: `scripts/prove_operational_release.py`;
-- workflows: `.github/workflows/ci.yml`, `real-history-check.yml` e `release-proof.yml`.
+- workflows: `.github/workflows/`.
+
+`MISSION_PROVEN` só pode ser declarado por uma cadeia material de evidência no GitHub ligando commit, workflow run, artifact, provenance, estado e gates aplicáveis.

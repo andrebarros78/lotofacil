@@ -1,121 +1,96 @@
-# SARE Operational 1.1 — Operação local
+# SARE Operational 1.1 — Operação GitHub-only
 
 Release operacional: **1.1.0**.
 
-## Princípios
+## Autoridade operacional
 
-- API em loopback; o CLI recusa binding externo nesta linha.
-- Escritas desabilitadas quando `SARE_WRITE_TOKEN` não está definido.
-- Escritas HTTP exigem `X-SARE-Token` e `Idempotency-Key`.
-- Carteiras são combinatórias e exibem `CARTEIRA COMBINATÓRIA — SEM VANTAGEM PREDITIVA COMPROVADA` enquanto `predictive_evidence != REPLICATED`.
-- RIS numérico permanece desabilitado.
-- Execução técnica concluída não equivale a vantagem preditiva.
+O SARE Lotofácil é operado exclusivamente no GitHub.
 
-## Instalação
+Não existe requisito operacional de PC local, VPS, servidor externo, banco residente ou processo de longa duração fora do GitHub. Qualquer execução fora do GitHub é não canônica e serve apenas para desenvolvimento ou diagnóstico.
 
-```bash
-python -m venv .venv
-.venv/bin/python -m pip install .
-python -m sare_lotofacil doctor
-python -m sare_lotofacil init-db --path data/sare.db
-```
+A cadeia operacional aceita é:
 
-Windows PowerShell:
+`commit GitHub -> GitHub Actions -> artifact -> provenance -> operations/state -> auditoria independente`
 
-```powershell
-py -m venv .venv
-.\.venv\Scripts\python.exe -m pip install .
-.\.venv\Scripts\python.exe -m sare_lotofacil doctor
-.\.venv\Scripts\python.exe -m sare_lotofacil init-db --path data\sare.db
-```
+Somente essa cadeia pode alterar estado operacional, produzir evidência oficial, promover readiness ou participar de `MISSION_PROVEN`.
 
-`doctor` deve terminar com `MATHEMATICAL_CHECKS_PASS`.
+## Componentes canônicos
 
-## API local
+- `main`: código, testes, protocolos, políticas e workflows aprovados.
+- `operations/state`: memória operacional textual, persistente, versionada e auditável.
+- GitHub Actions: executor operacional e científico.
+- GitHub Artifacts: SQLite reconstruído, relatórios, manifests e evidências de cada execução.
+- Git history: trilha de proveniência e marca temporal.
+- `docs/GITHUB_OPERATIONS.md`: contrato detalhado da operação integral no GitHub.
 
-```bash
-export SARE_WRITE_TOKEN='troque-por-um-segredo-local'
-python -m sare_lotofacil serve --db data/sare.db
-```
+## Princípios científicos preservados
 
-PowerShell:
+- carteiras permanecem combinatórias enquanto `predictive_evidence != REPLICATED`;
+- toda carteira aplicável exibe `CARTEIRA COMBINATÓRIA — SEM VANTAGEM PREDITIVA COMPROVADA`;
+- RIS numérico permanece desabilitado;
+- execução técnica concluída não equivale a vantagem preditiva;
+- M0 usa `p=0,6` e Brier exato `0,24`;
+- M1/M2 são avaliados em walk-forward com `ΔBrier`, IC95%, amostra e efeito mínimo;
+- nenhuma promoção preditiva é automática.
 
-```powershell
-$env:SARE_WRITE_TOKEN='troque-por-um-segredo-local'
-python -m sare_lotofacil serve --db data\sare.db
-```
+## Estado operacional e banco transitório
 
-Principais endpoints:
+SQLite pode ser usado durante uma execução do GitHub Actions, mas não é a memória permanente do produto.
 
-- `GET /health/live`, `GET /health/ready`
-- `GET /v1/contests`, `GET /v1/contests/{contest_id}`
-- `POST /v1/ingestions`, `POST /v1/ingestions/caixa`, `GET /v1/ingestions/{ingestion_id}`
-- `GET/POST /v1/snapshots`
-- `GET/POST /v1/hypotheses`
-- `POST /v1/experiments`, `GET /v1/experiments/{experiment_id}`
-- `POST /v1/promotions`, `POST /v1/models/{model_name}/promotions`
-- `POST /v1/analyses`, `GET /v1/runs/{run_id}`
-- `POST /v1/portfolios`, `GET /v1/portfolios/{portfolio_id}`
-- `GET /v1/portfolios/{portfolio_id}/export`
-- `POST /v1/evaluations`
-- `POST /v1/jobs`, `GET /v1/jobs/{job_id}`, `POST /v1/jobs/{job_id}/cancel`
-- `GET /v1/evidence/integrity`
-- `GET /v1/ris`
-- `GET /ui/portfolios/{portfolio_id}`
+O estado persistente é textual e versionável no branch `operations/state`. Cada ciclo reconstrói o SQLite em runner efêmero, exige `PRAGMA integrity_check = ok`, produz os relatórios necessários e publica o banco apenas como artefato de prova.
 
-## Fila persistente e recuperação
+O encerramento do runner não pode causar perda de estado canônico, porque a continuidade deriva de `operations/state` e do histórico Git.
 
-O banco mantém jobs com estados `QUEUED`, `LEASED`, `COMPLETED`, `FAILED` e `CANCELLED`. O lease usa `lease_token` monotônico como fencing token; um worker antigo não pode publicar resultado depois que seu lease é substituído.
+## GitHub Operational Cycle
 
-Execução de um trabalho:
+O workflow operacional deve:
 
-```bash
-python -m sare_lotofacil worker-once --db data/sare.db --worker-id worker-01 --lease-seconds 30
-```
+1. fazer checkout do código aprovado;
+2. fazer checkout de `operations/state`;
+3. instalar o pacote em runner efêmero;
+4. executar suíte, doctor e gates prévios;
+5. reconstruir o banco transitório;
+6. obter somente os dados externos previstos pelo contrato;
+7. atualizar histórico, ledger e previsão prospectiva sem vazamento temporal;
+8. recalcular hashes e métricas;
+9. persistir estado validado em `operations/state`;
+10. publicar artefatos;
+11. realizar auditoria independente do estado já commitado.
 
-Checkpoint e estado ficam no SQLite. Um trabalho expirado pode ser retomado por outro worker; os testes de regressão verificam ausência de duplicação do resultado de domínio.
+Se qualquer gate falhar, `operations/state` não deve ser alterado.
 
-## Integridade de evidências
+## Recuperação
 
-```bash
-python -m sare_lotofacil verify-evidence --db data/sare.db
-```
+Recuperação é GitHub-native:
 
-Artefatos de fonte são re-hashados a partir dos bytes persistidos. Qualquer divergência entre SHA-256 esperado e observado faz a verificação falhar.
+1. selecionar um commit válido de `operations/state`;
+2. reconstruir o ambiente em runner limpo;
+3. reconstruir o SQLite a partir do estado textual;
+4. verificar hashes, ledger, protocolo e `integrity_check`;
+5. reproduzir os resultados esperados;
+6. publicar nova evidência de recuperação.
 
-## Backup e restauração
-
-```bash
-python -m sare_lotofacil backup-db --db data/sare.db --out backups/sare.db
-python -m sare_lotofacil restore-db --backup backups/sare.db --out restore/sare.db
-```
-
-Backup e restore só são aceitos quando `PRAGMA integrity_check` retorna `ok`. A restauração exige destino inexistente. Hipóteses, experimentos, carteiras e jobs são comprovados novamente no workflow `Release Proof` após restauração.
+Não existe procedimento de recuperação que dependa de arquivo existente em PC local.
 
 ## Segurança e limites
 
-- URL arbitrária não é aceita pela ingestão; a fonte operacional configurada é CAIXA.
-- servidor local recusa bind externo;
-- body HTTP padrão limitado a 65.536 bytes;
-- SQL parametrizado;
-- token não é persistido no banco;
-- idempotência detecta reutilização da mesma chave com payload diferente;
-- concorrência com a mesma chave idempotente resulta em um único trabalho lógico;
-- CORS permissivo não é habilitado;
-- falha de persistência simulada como `disk full` não pode produzir estado `COMPLETED`.
+- workflows devem operar com permissões mínimas necessárias;
+- alterações de estado exigem gates prévios;
+- fonte externa arbitrária não pode substituir a fonte definida em protocolo;
+- segredos, quando necessários, pertencem ao mecanismo de secrets do GitHub e nunca ao repositório;
+- artifacts não são tratados como autoridade de estado quando existir representação canônica em `operations/state`;
+- nenhum resultado local pode fechar gap remoto por equivalência presumida.
 
-## Evidência científica
+## Evidência e aceitação
 
-M0 usa `p=0,6` e Brier exato `0,24`. M1/M2 são avaliados em walk-forward e reportam `ΔBrier`, IC95%, amostra e `delta_min`. Hipóteses são congeladas por hash antes da execução. Promoção para uso preditivo exige `predictive_evidence=REPLICATED`.
+A release só é aceita quando a evidência produzida no GitHub liga materialmente:
 
-O Real History Check atual conclui `EVIDENCIA_PREDITIVA_INSUFICIENTE`; portanto nenhuma carteira desta release recebe alegação de vantagem preditiva.
+`commit -> workflow run -> artifact -> provenance -> state -> evidence application`
 
-## Prova de release
+e, quando aplicável:
 
-A release só é aceita quando, no mesmo commit:
+`integração -> regressão -> recuperação`.
 
-1. `CI` passa em Python 3.12 e 3.13;
-2. `Real History Check` passa e publica o relatório/banco de evidência;
-3. `Release Proof` constrói o wheel, instala em ambiente limpo, comprova origem em `site-packages`, executa a jornada operacional e retorna `OPERATIONAL_RELEASE_PROOF_PASS`.
+A presença de arquivo, workflow ou script isolado não prova readiness.
 
-A matriz completa está em `docs/MISSION_PROVEN.md`.
+A matriz completa permanece em `docs/MISSION_PROVEN.md` e a especificação operacional detalhada em `docs/GITHUB_OPERATIONS.md`.
