@@ -34,17 +34,17 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Checkout canonical engine
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
         with:
           ref: main
           path: app
       - name: Checkout canonical operational state
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
         with:
           ref: operations/state
           path: state-store
       - name: Setup Python
-        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
         with:
           python-version: "3.13"
       - name: Install canonical engine
@@ -79,7 +79,7 @@ jobs:
             --card-count "$CARD_COUNT" \
             --seed "$SEED"
       - name: Upload operator evidence
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
           name: sare-operator-${{ inputs.action }}-${{ github.run_id }}
           path: artifacts/operator/**

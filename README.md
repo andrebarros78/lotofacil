@@ -4,7 +4,7 @@ Sistema de Análise de Randomicidade e Eventos para a Lotofácil.
 
 ## Release
 
-**SARE Core 1.0 + SARE Operational 1.1 — versão 1.1.0.**
+**SARE Core 1.0 + SARE Operational 1.1 — versão 1.1.1.**
 
 O sistema prioriza integridade dos dados, matemática exata, reprodutibilidade, auditoria e recuperação antes de qualquer alegação preditiva.
 
@@ -80,6 +80,8 @@ Cada execução reconstrói os artefatos transitórios a partir desse estado. Re
 ## Hardening GitHub-only
 
 A política executável está em `governance/github-only-policy.json`. O gate `scripts/verify_github_governance.py` impede runners self-hosted, Actions não fixados por SHA e workflows não autorizados com `contents: write`.
+
+A release 1.1.1 migra os Actions oficiais canônicos para variantes com runtime Node 24, preservando o pin por SHA.
 
 A configuração-alvo dos Rulesets nativos está em `docs/GITHUB_NATIVE_RULESET.md`. A ativação administrativa desses Rulesets é a única etapa de P0 que o conector GitHub atual não consegue realizar diretamente.
 
