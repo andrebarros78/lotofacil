@@ -14,6 +14,7 @@ on:
       - "docs/MISSION_PROVEN.md"
       - "src/**"
       - "tests/test_github_operator_console.py"
+      - "tests/test_primary_card.py"
       - "tests/test_ris.py"
       - "tests/test_regime.py"
       - "pyproject.toml"
@@ -52,13 +53,14 @@ jobs:
             --state-dir state-store/operations \
             --out artifacts/operator-proof/state_audit.json
           grep -q '"status": "GITHUB_OPERATIONAL_AUDIT_PASS"' artifacts/operator-proof/state_audit.json
-      - name: Prove all read-only operator actions
+      - name: Prove all read-only operator actions including PRIMARY_CARD
         run: |
           python app/scripts/github_operator_console.py --action status --state-dir state-store/operations --out-dir artifacts/operator-proof/status
           python app/scripts/github_operator_console.py --action audit --state-dir state-store/operations --out-dir artifacts/operator-proof/audit
           python app/scripts/github_operator_console.py --action analyze --state-dir state-store/operations --out-dir artifacts/operator-proof/analyze
           python app/scripts/github_operator_console.py --action ris --state-dir state-store/operations --out-dir artifacts/operator-proof/ris
-          python app/scripts/github_operator_console.py --action portfolio --state-dir state-store/operations --out-dir artifacts/operator-proof/portfolio --card-count 10 --seed 0
+          python app/scripts/github_operator_console.py --action primary-card --state-dir state-store/operations --out-dir artifacts/operator-proof/primary-card
+          python app/scripts/github_operator_console.py --action portfolio --state-dir state-store/operations --out-dir artifacts/operator-proof/portfolio --card-count 1 --seed 0
           python app/scripts/github_operator_console.py --action export --state-dir state-store/operations --out-dir artifacts/operator-proof/export
           grep -q '"status": "GITHUB_OPERATOR_STATE_PASS"' artifacts/operator-proof/status/status.json
           grep -q '"status": "GITHUB_OPERATOR_STATE_PASS"' artifacts/operator-proof/audit/audit.json
@@ -72,7 +74,13 @@ jobs:
           grep -q '"compatible_with_target": true' artifacts/operator-proof/ris/ris.json
           grep -q '"candidate_label":' artifacts/operator-proof/ris/ris.json
           grep -q 'REGIME_ALERT_IS_RETROSPECTIVE_NOT_REALTIME' artifacts/operator-proof/ris/ris.json
+          grep -q '"status": "GITHUB_OPERATOR_PRIMARY_CARD_PASS"' artifacts/operator-proof/primary-card/primary_card.json
+          grep -q '"card_count": 1' artifacts/operator-proof/primary-card/primary_card.json
+          grep -q '"selection_method": "M1_TOP15_M2_TIEBREAK_V1"' artifacts/operator-proof/primary-card/primary_card.json
+          grep -q '"target_contest": 3780' artifacts/operator-proof/primary-card/primary_card.json
+          grep -q '"training_last_contest": 3779' artifacts/operator-proof/primary-card/primary_card.json
           grep -q '"status": "GITHUB_OPERATOR_PORTFOLIO_PASS"' artifacts/operator-proof/portfolio/portfolio.json
+          grep -q '"card_count": 1' artifacts/operator-proof/portfolio/portfolio.json
           grep -q 'CARTEIRA COMBINATÓRIA — SEM VANTAGEM PREDITIVA COMPROVADA' artifacts/operator-proof/portfolio/portfolio.json
           grep -q '"status": "GITHUB_OPERATOR_EXPORT_PASS"' artifacts/operator-proof/export/operational_report.json
           test -s artifacts/operator-proof/export/operational_report.md
@@ -88,12 +96,21 @@ jobs:
           python - <<'PY'
           import json, os
           from pathlib import Path
+          primary = json.loads(Path('artifacts/operator-proof/primary-card/primary_card.json').read_text(encoding='utf-8'))
           payload = {
               "status": "SARE_OPERATOR_CONSOLE_PROOF_PASS",
               "source_sha": os.environ["SOURCE_SHA"],
               "operations_state_sha": os.environ["STATE_SHA"],
               "workflow_run_id": os.environ["RUN_ID"],
-              "actions": ["status", "audit", "analyze", "ris", "portfolio", "export"],
+              "actions": ["status", "audit", "analyze", "ris", "primary-card", "portfolio", "export"],
+              "primary_card": {
+                  "target_contest": primary["target_contest"],
+                  "training_last_contest": primary["training_last_contest"],
+                  "card": primary["card"],
+                  "decision_sha256": primary["decision_sha256"],
+                  "decision_source": primary["decision_source"],
+                  "selection_method": primary["selection_method"],
+              },
               "regime_calibration_required": True,
               "write_capability": False,
           }
