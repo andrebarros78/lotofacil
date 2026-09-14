@@ -35,7 +35,7 @@ class AnalysisRequest(BaseModel):
 
 
 class PortfolioRequest(BaseModel):
-    card_count: int = Field(ge=3, le=100)
+    card_count: int = Field(ge=1, le=100)
     seed: int
     snapshot_id: str | None = Field(default=None, max_length=128)
     target_contest: int | None = Field(default=None, ge=1)
@@ -137,7 +137,7 @@ def create_app(
             existing = get_idempotency(path, operation, key)
             if not existing or existing.request_hash != digest:
                 raise HTTPException(status_code=409, detail="IDEMPOTENCY_KEY_CONFLICT")
-            return JSONResponse(json.loads(existing.response_json), status_code=existing.status_code)
+            return JSONResponse(response_payload, status_code=status_code)
         return JSONResponse(response_payload, status_code=status_code)
 
     @app.get("/health/live")
