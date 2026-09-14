@@ -4,7 +4,7 @@ Sistema de Análise de Randomicidade e Eventos para a Lotofácil.
 
 ## Release
 
-**SARE Core 1.0 + SARE Operational 1.1 — versão 1.1.4.**
+**SARE Core 1.0 + SARE Operational 1.1 — versão 1.1.5.**
 
 O sistema prioriza integridade dos dados, matemática exata, reprodutibilidade, auditoria e recuperação antes de qualquer alegação preditiva.
 
@@ -33,6 +33,7 @@ A autoridade operacional está documentada em `docs/GITHUB_OPERATIONS.md`.
 - `C(25,15) = 3.268.760`, distribuição hipergeométrica exata e máscaras de 25 bits;
 - M0 uniforme `p_i = 0,6`, Brier `0,24`;
 - M1 frequência regularizada e M2 média exponencial em walk-forward, com `ΔBrier` e IC95%;
+- backtest auditado com proveniência temporal de variáveis/transformações, ledger de janelas e falhas no denominador;
 - ingestão validada, revisões imutáveis e artefatos de fonte;
 - fonte oficial CAIXA e histórico corroborado por checkpoints oficiais;
 - protocolo científico congelado por hash, hipóteses e experimentos auditáveis;
@@ -47,9 +48,20 @@ A autoridade operacional está documentada em `docs/GITHUB_OPERATIONS.md`.
 - reconstrução determinística do SQLite operacional em GitHub Actions com `integrity_check`;
 - CI Python 3.12/3.13, Real History Check, GitHub Operational Cycle e Release Proof.
 
+## Integridade de backtest
+
+A versão 1.1.5 fecha T20–T23 da fase C4 e aplica o mesmo contrato ao walk-forward real M1/M2:
+
+- **T20 — futuro entre as variáveis:** qualquer variável com disponibilidade posterior ao último concurso do treino gera `LOOKAHEAD_LEAKAGE_DETECTED` e bloqueia o experimento antes da pontuação;
+- **T21 — transformação ajustada no futuro:** transformação cujo `fitted_through_contest` ultrapassa o corte de treino gera `TRANSFORM_FIT_LEAKAGE_DETECTED`;
+- **T22 — janela falha:** a janela permanece no denominador e no ledger com estado `FAILED`, tipo e mensagem do erro; não existe omissão silenciosa;
+- **T23 — pouca evidência:** quantidade/cobertura insuficiente de janelas retorna `INCONCLUSIVE`, mantendo `predictive_evidence=NOT_ESTABLISHED` mesmo que as janelas válidas tenham score favorável.
+
+M0 (`Brier=0,24`) aparece em toda janela do ledger. O resultado M1/M2 expõe `planned_windows`, `successful_windows`, `failed_windows`, `success_rate`, `backtest_status`, `failed_window_ids` e um hash SHA-256 do ledger normalizado.
+
 ## Laboratório de alternativas controladas
 
-A versão 1.1.4 adiciona duas provas sintéticas predefinidas da fase científica C3:
+A versão 1.1.4 adicionou duas provas sintéticas predefinidas da fase científica C3:
 
 - **T17 — viés marginal controlado:** uma dezena-alvo recebe probabilidade conhecida maior que 0,6; a família marginal canônica, corrigida por Holm, mede potência empírica em séries independentes.
 - **T18 — memória temporal controlada:** um kernel simétrico retém parte das dezenas do concurso anterior com probabilidade predefinida, preservando 15-de-25 e sem privilegiar uma dezena; o teste temporal deve detectar dependência enquanto a família marginal ajustada permanece sem rejeição.

@@ -41,15 +41,12 @@ def main() -> int:
         rel = str(path.relative_to(ROOT)).replace("\\", "/")
         text = path.read_text(encoding="utf-8")
         lowered = text.lower()
-
         if "self-hosted" in lowered:
             violations.append(f"{rel}: self-hosted runner is forbidden")
-
         for runner in re.findall(r"runs-on:\s*([^\n#]+)", text):
             runner = runner.strip().strip('"\'')
             if runner and runner not in allowed_runners:
                 violations.append(f"{rel}: runner {runner!r} is not allowed")
-
         for action, ref in USES_RE.findall(text):
             if not SHA40.fullmatch(ref):
                 violations.append(f"{rel}: action {action}@{ref} is not pinned to a 40-char SHA")
@@ -57,7 +54,6 @@ def main() -> int:
             expected = pinned.get(action)
             if expected and ref != expected:
                 violations.append(f"{rel}: action {action} SHA differs from governance policy")
-
         has_write = bool(re.search(r"(?m)^\s*contents:\s*write\s*$", text))
         if has_write and rel not in write_workflows:
             violations.append(f"{rel}: contents:write is not authorized")
@@ -67,17 +63,7 @@ def main() -> int:
     operations_path = ROOT / ".github" / "workflows" / "github-operations.yml"
     if operations_path.exists():
         text = operations_path.read_text(encoding="utf-8")
-        required_markers = [
-            "workflow_dispatch:",
-            "schedule:",
-            "ref: main",
-            "ref: operations/state",
-            "cancel-in-progress: false",
-            "verify_github_operational_state.py",
-            "git push origin HEAD:operations/state",
-            "committed-state-audit:",
-        ]
-        for marker in required_markers:
+        for marker in ["workflow_dispatch:","schedule:","ref: main","ref: operations/state","cancel-in-progress: false","verify_github_operational_state.py","git push origin HEAD:operations/state","committed-state-audit:"]:
             if marker not in text:
                 violations.append(f"github-operations.yml missing marker: {marker}")
 
@@ -96,27 +82,7 @@ def main() -> int:
     proof_path = ROOT / ".github" / "workflows" / "operator-console-proof.yml"
     if proof_path.exists():
         text = proof_path.read_text(encoding="utf-8")
-        proof_markers = [
-            "workflow_dispatch:",
-            "push:",
-            "ref: main",
-            "ref: operations/state",
-            "--action status",
-            "--action audit",
-            "--action analyze",
-            "--action ris",
-            "--action portfolio",
-            "--action export",
-            "GITHUB_OPERATOR_RIS_PASS",
-            "RIS_NUMERIC_FORBIDDEN_IN_1_X",
-            "calibrated_global_marginal_change_scan",
-            "RETROSPECTIVE_DISCOVERY",
-            "compatible_with_target",
-            "REGIME_ALERT_IS_RETROSPECTIVE_NOT_REALTIME",
-            "SARE_OPERATOR_CONSOLE_PROOF_PASS",
-            "operations_state_sha",
-        ]
-        for marker in proof_markers:
+        for marker in ["workflow_dispatch:","push:","ref: main","ref: operations/state","--action status","--action audit","--action analyze","--action ris","--action portfolio","--action export","GITHUB_OPERATOR_RIS_PASS","RIS_NUMERIC_FORBIDDEN_IN_1_X","calibrated_global_marginal_change_scan","RETROSPECTIVE_DISCOVERY","compatible_with_target","REGIME_ALERT_IS_RETROSPECTIVE_NOT_REALTIME","SARE_OPERATOR_CONSOLE_PROOF_PASS","operations_state_sha"]:
             if marker not in text:
                 violations.append(f"operator-console-proof.yml missing marker: {marker}")
         if re.search(r"(?m)^\s*contents:\s*write\s*$", text):
@@ -130,12 +96,12 @@ def main() -> int:
             "CATEGORICAL_RIS_RELEASE_PROOF_PASS",
             "REGIME_CALIBRATION_RELEASE_PROOF_PASS",
             "CONTROLLED_ALTERNATIVES_RELEASE_PROOF_PASS",
-            "simulate_marginal_regime_shift",
-            "measure_marginal_bias_power",
-            "assess_temporal_memory_separation",
-            "compatible_with_target",
-            "RETROSPECTIVE_DISCOVERY",
+            "BACKTEST_INTEGRITY_RELEASE_PROOF_PASS",
+            "LOOKAHEAD_LEAKAGE_DETECTED",
+            "TRANSFORM_FIT_LEAKAGE_DETECTED",
+            "run_audited_backtest",
             "controlled-alternatives-release-proof",
+            "backtest-integrity-release-proof",
         ]
         for marker in release_markers:
             if marker not in text:
