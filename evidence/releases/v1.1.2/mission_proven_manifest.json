@@ -1,0 +1,193 @@
+{
+  "schema_version": 1,
+  "release": "1.1.2",
+  "mission_status": "MISSION_PROVEN",
+  "mission_scope": "ENGINEERING_RELEASE",
+  "authority": "GITHUB_ONLY",
+  "release_commit_sha": "05f19e4cf6bc202ce24e641ae1342798cac6a6df",
+  "release_tree_sha": "66b681f1769a57657e04d95e4e17075faee49a8c",
+  "canonical_refs": {
+    "main": "05f19e4cf6bc202ce24e641ae1342798cac6a6df",
+    "release/v1.1.2": "05f19e4cf6bc202ce24e641ae1342798cac6a6df",
+    "operations/state": "ee520540ba375d6c94b0a1ff615382bc102a80e1"
+  },
+  "proof_completed_at_utc": "2026-09-14T19:02:30Z",
+  "runtime_hardening": {
+    "actions/checkout": {
+      "sha": "fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+      "runtime": "node24"
+    },
+    "actions/setup-python": {
+      "sha": "ece7cb06caefa5fff74198d8649806c4678c61a1",
+      "runtime": "node24"
+    },
+    "actions/upload-artifact": {
+      "sha": "b7c566a772e6b6bfb58ed0dc250532a479d7789f",
+      "runtime": "node24"
+    }
+  },
+  "workflows": {
+    "CI": {
+      "run_id": 34884330531,
+      "conclusion": "success",
+      "python_3_12": "success",
+      "python_3_13": "success",
+      "doctor": "success",
+      "governance_gate": "success",
+      "operator_console_smoke": "success"
+    },
+    "Real History Check": {
+      "run_id": 34884330579,
+      "conclusion": "success",
+      "database_integrity": "ok",
+      "snapshot_roundtrip_exact": true,
+      "official_latest_contest": 3779,
+      "predictive_evidence": "NOT_ESTABLISHED",
+      "scientific_conclusion": "EVIDENCIA_PREDITIVA_INSUFICIENTE",
+      "artifact": {
+        "id": 10364626873,
+        "name": "third-party-history-report",
+        "sha256": "aaf26e31607386916aeeeacb87cab70a56bc5638647bbe6fca4449a3f83c4731",
+        "expires_at": "2026-12-13T19:01:10Z"
+      }
+    },
+    "Release Proof": {
+      "run_id": 34884330694,
+      "conclusion": "success",
+      "release_version": "1.1.2",
+      "installed_from_site_packages": true,
+      "mathematical_doctor": "success",
+      "database_backup_restore_integrity": "ok",
+      "categorical_ris_release_proof": "success",
+      "operational_release_journey": "success",
+      "artifacts": [
+        {
+          "id": 10364327234,
+          "name": "sare-lotofacil-wheel",
+          "sha256": "4a2cf92688283022a2b8d28b95fb550c721926afee44a2552f6ab369aa8bde05",
+          "expires_at": "2026-12-13T19:01:10Z"
+        },
+        {
+          "id": 10364596679,
+          "name": "operational-release-proof",
+          "sha256": "957c1354580e503acab1d48b55ea527e390414773236be34d1e38ff21cf36192",
+          "expires_at": "2026-12-13T19:01:10Z"
+        }
+      ]
+    },
+    "GitHub Operational Cycle": {
+      "run_id": 34884330551,
+      "conclusion": "success",
+      "cycle_job": "success",
+      "committed_state_audit_job": "success",
+      "economic_state_proof_job": "success",
+      "canonical_prize_update": "success",
+      "artifacts": [
+        {
+          "id": 10364347219,
+          "name": "github-operational-cycle",
+          "sha256": "bccf83bbb5f158add16104116c53536f5cdfcc4c10f40bf14fa8fdce105d7aea",
+          "expires_at": "2026-12-13T19:01:10Z"
+        },
+        {
+          "id": 10364032121,
+          "name": "github-committed-state-audit",
+          "sha256": "3435a0500e8299eab12be7dbfc62fb548516642247a232b50a224908db408733",
+          "expires_at": "2026-12-13T19:01:10Z"
+        },
+        {
+          "id": 10363862166,
+          "name": "github-economic-state-proof",
+          "sha256": "92d9d5c5c9e78a0ff8a0bdb8f669bc4f13d20831efc24b514bb9f1f71e71772c",
+          "expires_at": "2026-12-13T19:01:10Z"
+        }
+      ]
+    },
+    "SARE Operator Console Proof": {
+      "run_id": 34884330615,
+      "conclusion": "success",
+      "actions": [
+        "status",
+        "audit",
+        "analyze",
+        "ris",
+        "portfolio",
+        "export"
+      ],
+      "write_capability": false,
+      "categorical_ris_proof": "success",
+      "artifact": {
+        "id": 10363797343,
+        "name": "sare-operator-console-proof-34884330615",
+        "sha256": "84e6b0e36a84fe984ef7065a94c368d1f6a29a573a01a9a4225fba1566ea383f",
+        "expires_at": "2026-12-13T19:01:10Z"
+      }
+    }
+  },
+  "categorical_ris": {
+    "schema_version": "ris-categorical-v1",
+    "numeric_ris_enabled": false,
+    "score": null,
+    "dimensions": [
+      "data_integrity",
+      "uniformity",
+      "cooccurrence",
+      "temporal",
+      "regime",
+      "predictive_evidence"
+    ],
+    "guardrails": [
+      "RIS_NUMERIC_FORBIDDEN_IN_1_X",
+      "COMPATIBLE_IS_NOT_PROOF_OF_RANDOMNESS",
+      "ALERT_IS_NOT_PREDICTIVE_ADVANTAGE",
+      "NO_PREDICTIVE_ADVANTAGE_FROM_CATEGORICAL_STATUS"
+    ],
+    "observed_on_canonical_state": {
+      "snapshot_id": "snap-d9b43f9c33702a880495",
+      "contest_count": 3779,
+      "data_integrity": "VERIFIED",
+      "uniformity": "ALERT",
+      "cooccurrence": "ALERT",
+      "temporal": "COMPATIBLE",
+      "regime": "INCONCLUSIVE",
+      "predictive_evidence": "UNDER_TEST"
+    },
+    "interpretation": "Categorical ALERTs are statistical signals for investigation only and do not establish predictive advantage."
+  },
+  "operational_state": {
+    "status": "GITHUB_OPERATIONAL_CYCLE_PASS",
+    "run_at_utc": "2026-09-14T19:01:44.373480+00:00",
+    "database_integrity": "ok",
+    "official_latest_contest": 3779,
+    "next_prediction_target": 3780,
+    "snapshot_id": "snap-d9b43f9c33702a880495",
+    "snapshot_hash": "d9b43f9c33702a880495f99a929ebee0cac90e7c4724a950f678f1c6494d5106",
+    "canonical_history_sha256": "f8c86c1cbdcb88badf85c3d13b029f8404f2e04a49382f190648eb068d63410a",
+    "prospective_state": "UNDER_TEST_COHORT_A",
+    "evaluated_predictions": 0,
+    "pending_predictions": 1,
+    "replication_criteria_met": false,
+    "predictive_evidence": "NOT_ESTABLISHED"
+  },
+  "economic_state": {
+    "canonical_prize_contests": 1,
+    "latest_canonical_prize_contest": 3779,
+    "canonical_prize_updated_at_utc": "2026-09-14T19:01:45.343318+00:00",
+    "economic_state_proof": "success"
+  },
+  "governance": {
+    "status": "GITHUB_GOVERNANCE_PASS",
+    "violations": [],
+    "native_rulesets_observed": 0,
+    "sovereign_hardening_status": "P0_LOGICAL_HARDENING_COMPLETE_NATIVE_RULESET_PENDING",
+    "note": "Native GitHub Rulesets remain an external administrative hardening layer and are not claimed as configured."
+  },
+  "scientific_scope": {
+    "mission_proven_is_engineering_release_status": true,
+    "predictive_evidence": "NOT_ESTABLISHED",
+    "scientific_conclusion": "EVIDENCIA_PREDITIVA_INSUFICIENTE",
+    "predictive_advantage_claimed": false,
+    "portfolio_label": "CARTEIRA COMBINATÓRIA — SEM VANTAGEM PREDITIVA COMPROVADA"
+  },
+  "integrity_note": "This manifest preserves canonical refs, workflow runs, artifact identifiers and digests, release/RIS invariants, governance status, operational state and scientific conclusions for future audit after transient GitHub Actions Artifacts expire."
+}
