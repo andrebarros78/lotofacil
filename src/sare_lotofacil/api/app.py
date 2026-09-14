@@ -134,7 +134,7 @@ def create_app(db_path: str | Path, *, write_token: str | None = None, max_body_
             existing = get_idempotency(path, operation, key)
             if not existing or existing.request_hash != digest:
                 raise HTTPException(409, "IDEMPOTENCY_KEY_CONFLICT")
-            return JSONResponse(payload, status_code=status)
+            return JSONResponse(json.loads(existing.response_json), status_code=existing.status_code)
         return JSONResponse(payload, status_code=status)
 
     @app.get("/v1/contests")
