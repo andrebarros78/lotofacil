@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterable, Sequence
 
 from sare_lotofacil.persistence.backup import database_integrity
 from sare_lotofacil.persistence.db import connect
@@ -54,53 +54,38 @@ def _predictive_state(path: str | Path) -> tuple[str, dict[str, Any]]:
     }
 
 
-def build_categorical_ris(
-    path: str | Path,
+def build_categorical_ris_from_draws(
+    draws: Sequence[Iterable[int]],
     *,
+    snapshot_id: str | None,
+    data_state: str,
+    data_evidence: dict[str, Any],
+    predictive_state: str,
+    predictive_evidence: dict[str, Any],
     alpha: float = DEFAULT_ALPHA,
     temporal_lags: tuple[int, ...] = DEFAULT_TEMPORAL_LAGS,
     temporal_replications: int = DEFAULT_TEMPORAL_REPLICATIONS,
     temporal_seed: int = DEFAULT_TEMPORAL_SEED,
 ) -> dict[str, Any]:
-    """Constrói o RIS categórico sem produzir nota numérica.
-
-    O painel resume evidência já calculável pelo SARE e preserva ``INCONCLUSIVE``
-    quando uma dimensão ainda não possui calibração suficiente. Nenhum estado
-    ``COMPATIBLE`` deve ser interpretado como prova de aleatoriedade ou vantagem
-    preditiva.
-    """
+    """Calcula o painel RIS categórico a partir dos mesmos motores analíticos do SARE."""
     if not 0.0 < alpha < 1.0:
         raise ValueError("alpha deve estar entre 0 e 1")
     if temporal_replications <= 0:
         raise ValueError("temporal_replications deve ser positivo")
+    if data_state not in {"VERIFIED", "LIMITED", "INVALID"}:
+        raise ValueError("data_state inválido")
+    if predictive_state not in {"NOT_ESTABLISHED", "UNDER_TEST", "REPLICATED"}:
+        raise ValueError("predictive_state inválido")
 
-    snapshots = list_snapshots(path)
-    integrity = database_integrity(path)
-    checks = verify_source_artifacts(path)
-    invalid_artifacts = [check.artifact_id for check in checks if not check.valid]
-
-    if integrity != "ok" or invalid_artifacts:
-        data_state = "INVALID"
-    elif snapshots and checks:
-        data_state = "VERIFIED"
-    else:
-        data_state = "LIMITED"
-
+    normalized_draws = tuple(tuple(draw) for draw in draws)
     dimensions: dict[str, dict[str, Any]] = {
         "data_integrity": {
             "state": data_state,
-            "evidence": {
-                "database_integrity": integrity,
-                "snapshots": len(snapshots),
-                "source_artifacts": len(checks),
-                "invalid_source_artifacts": invalid_artifacts,
-            },
+            "evidence": data_evidence,
         }
     }
 
-    predictive_state, predictive_evidence = _predictive_state(path)
-
-    if not snapshots:
+    if not normalized_draws:
         reason = "Nenhum snapshot publicado está disponível para análise categórica."
         for key in ("uniformity", "cooccurrence", "temporal", "regime"):
             dimensions[key] = {"state": "INCONCLUSIVE", "evidence": {"reason": reason}}
@@ -112,7 +97,7 @@ def build_categorical_ris(
             "schema_version": RIS_SCHEMA_VERSION,
             "numeric_ris_enabled": False,
             "score": None,
-            "snapshot_id": None,
+            "snapshot_id": snapshot_id,
             "contest_count": 0,
             "alpha": alpha,
             "dimensions": dimensions,
@@ -123,11 +108,7 @@ def build_categorical_ris(
             ],
         }
 
-    snapshot = snapshots[0]
-    snapshot_id = str(snapshot["snapshot_id"])
-    draws = load_snapshot_draws(path, snapshot_id)
-
-    marginal = marginal_tests(draws)
+    marginal = marginal_tests(normalized_draws)
     marginal_alerts = [item for item in marginal if item.p_holm < alpha]
     dimensions["uniformity"] = {
         "state": "ALERT" if marginal_alerts else "COMPATIBLE",
@@ -144,7 +125,7 @@ def build_categorical_ris(
         },
     }
 
-    pairs = pair_tests(draws)
+    pairs = pair_tests(normalized_draws)
     pair_alerts = [item for item in pairs if item.p_holm < alpha]
     dimensions["cooccurrence"] = {
         "state": "ALERT" if pair_alerts else "COMPATIBLE",
@@ -161,10 +142,10 @@ def build_categorical_ris(
         },
     }
 
-    usable_lags = tuple(lag for lag in temporal_lags if 0 < lag < len(draws))
+    usable_lags = tuple(lag for lag in temporal_lags if 0 < lag < len(normalized_draws))
     if usable_lags:
         temporal = temporal_lag_permutation_tests(
-            draws,
+            normalized_draws,
             lags=usable_lags,
             replications=temporal_replications,
             seed=temporal_seed,
@@ -201,9 +182,9 @@ def build_categorical_ris(
             "evidence": {"reason": "Amostra insuficiente para os lags temporais predefinidos."},
         }
 
-    if len(draws) >= 2:
-        split_index = len(draws) // 2
-        regime_stats = fixed_split_frequency_shift(draws, split_index=split_index)
+    if len(normalized_draws) >= 2:
+        split_index = len(normalized_draws) // 2
+        regime_stats = fixed_split_frequency_shift(normalized_draws, split_index=split_index)
         dimensions["regime"] = {
             "state": "INCONCLUSIVE",
             "evidence": {
@@ -234,7 +215,7 @@ def build_categorical_ris(
         "numeric_ris_enabled": False,
         "score": None,
         "snapshot_id": snapshot_id,
-        "contest_count": len(draws),
+        "contest_count": len(normalized_draws),
         "alpha": alpha,
         "dimensions": dimensions,
         "guardrails": [
@@ -244,3 +225,63 @@ def build_categorical_ris(
             "NO_PREDICTIVE_ADVANTAGE_FROM_CATEGORICAL_STATUS",
         ],
     }
+
+
+def build_categorical_ris(
+    path: str | Path,
+    *,
+    alpha: float = DEFAULT_ALPHA,
+    temporal_lags: tuple[int, ...] = DEFAULT_TEMPORAL_LAGS,
+    temporal_replications: int = DEFAULT_TEMPORAL_REPLICATIONS,
+    temporal_seed: int = DEFAULT_TEMPORAL_SEED,
+) -> dict[str, Any]:
+    """Constrói o RIS categórico para uma base SQLite reconstruída pelo SARE."""
+    snapshots = list_snapshots(path)
+    integrity = database_integrity(path)
+    checks = verify_source_artifacts(path)
+    invalid_artifacts = [check.artifact_id for check in checks if not check.valid]
+
+    if integrity != "ok" or invalid_artifacts:
+        data_state = "INVALID"
+    elif snapshots and checks:
+        data_state = "VERIFIED"
+    else:
+        data_state = "LIMITED"
+
+    predictive_state, predictive_evidence = _predictive_state(path)
+    data_evidence = {
+        "database_integrity": integrity,
+        "snapshots": len(snapshots),
+        "source_artifacts": len(checks),
+        "invalid_source_artifacts": invalid_artifacts,
+    }
+
+    if not snapshots:
+        return build_categorical_ris_from_draws(
+            (),
+            snapshot_id=None,
+            data_state=data_state,
+            data_evidence=data_evidence,
+            predictive_state=predictive_state,
+            predictive_evidence=predictive_evidence,
+            alpha=alpha,
+            temporal_lags=temporal_lags,
+            temporal_replications=temporal_replications,
+            temporal_seed=temporal_seed,
+        )
+
+    snapshot = snapshots[0]
+    snapshot_id = str(snapshot["snapshot_id"])
+    draws = load_snapshot_draws(path, snapshot_id)
+    return build_categorical_ris_from_draws(
+        draws,
+        snapshot_id=snapshot_id,
+        data_state=data_state,
+        data_evidence=data_evidence,
+        predictive_state=predictive_state,
+        predictive_evidence=predictive_evidence,
+        alpha=alpha,
+        temporal_lags=temporal_lags,
+        temporal_replications=temporal_replications,
+        temporal_seed=temporal_seed,
+    )
