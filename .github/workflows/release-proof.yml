@@ -74,7 +74,7 @@ jobs:
       - name: Prove release integrity suite and PRIMARY_CARD from installed wheel
         run: |
           mkdir -p artifacts
-          /tmp/sare-clean/bin/python scripts/prove_release_integrity.py | tee artifacts/release_integrity_suite.log
+          /tmp/sare-clean/bin/python scripts/prove_release_integrity_v118.py | tee artifacts/release_integrity_suite.log
           grep -q 'REGIME_CALIBRATION_RELEASE_PROOF_PASS' artifacts/release_integrity_suite.log
           grep -q 'CONTROLLED_ALTERNATIVES_RELEASE_PROOF_PASS' artifacts/release_integrity_suite.log
           grep -q 'BACKTEST_INTEGRITY_RELEASE_PROOF_PASS' artifacts/release_integrity_suite.log
