@@ -4,6 +4,8 @@ import hashlib
 import json
 from dataclasses import asdict, dataclass
 
+from sare_lotofacil.experiments.integrity import enforce_temporal_integrity
+
 
 @dataclass(frozen=True, slots=True)
 class ExperimentProtocol:
@@ -77,6 +79,11 @@ class ExperimentProtocol:
             raise ValueError("transform_fit_scope inválido")
         if self.window_failure_policy not in {"COUNT_IN_DENOMINATOR", "DROP_FAILED"}:
             raise ValueError("window_failure_policy inválido")
+        enforce_temporal_integrity(
+            feature_offsets=self.feature_offsets,
+            transform_fit_scope=self.transform_fit_scope,
+            window_failure_policy=self.window_failure_policy,
+        )
 
     def canonical_json(self) -> str:
         self.validate()
