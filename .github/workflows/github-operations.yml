@@ -59,12 +59,22 @@ jobs:
             --state-dir state-store/operations \
             --runtime-dir artifacts/github-runtime | tee artifacts/github_operational_cycle.json
           grep -q '"status": "GITHUB_OPERATIONAL_CYCLE_PASS"' artifacts/github_operational_cycle.json
+      - name: Update canonical prize state
+        run: |
+          python app/scripts/update_canonical_prizes.py \
+            --state-dir state-store/operations \
+            --out artifacts/canonical_prize_state.json
+          grep -q '"status": "CANONICAL_PRIZE_STATE_PASS"' artifacts/canonical_prize_state.json
       - name: Verify state before commit
         run: |
           python app/scripts/verify_github_operational_state.py \
             --state-dir state-store/operations \
             --out artifacts/github_operational_audit_precommit.json
           grep -q '"status": "GITHUB_OPERATIONAL_AUDIT_PASS"' artifacts/github_operational_audit_precommit.json
+          python app/scripts/verify_canonical_prizes.py \
+            --state-dir state-store/operations \
+            --out artifacts/canonical_prize_audit_precommit.json
+          grep -q '"status": "CANONICAL_PRIZE_AUDIT_PASS"' artifacts/canonical_prize_audit_precommit.json
       - name: Persist operational state in GitHub
         working-directory: state-store
         run: |
@@ -74,7 +84,7 @@ jobs:
           if git diff --cached --quiet; then
             echo "STATE_UNCHANGED"
           else
-            git commit -m "ops: advance Lotofacil canonical and prospective state"
+            git commit -m "ops: advance Lotofacil canonical prospective and prize state"
             git push origin HEAD:operations/state
           fi
       - name: Upload cycle evidence
@@ -84,6 +94,8 @@ jobs:
           path: |
             artifacts/github_operational_cycle.json
             artifacts/github_operational_audit_precommit.json
+            artifacts/canonical_prize_state.json
+            artifacts/canonical_prize_audit_precommit.json
             artifacts/github-runtime/sare.db
             state-store/operations/*.json
           if-no-files-found: error
@@ -119,6 +131,10 @@ jobs:
             --state-dir state-store/operations \
             --out artifacts/github_operational_audit_committed.json
           grep -q '"status": "GITHUB_OPERATIONAL_AUDIT_PASS"' artifacts/github_operational_audit_committed.json
+          python app/scripts/verify_canonical_prizes.py \
+            --state-dir state-store/operations \
+            --out artifacts/canonical_prize_audit_committed.json
+          grep -q '"status": "CANONICAL_PRIZE_AUDIT_PASS"' artifacts/canonical_prize_audit_committed.json
           git -C state-store log --format='%H %cI %s' -- operations/ > artifacts/operational_git_history.txt
           test -s artifacts/operational_git_history.txt
       - name: Upload committed-state proof
@@ -127,5 +143,44 @@ jobs:
           name: github-committed-state-audit
           path: |
             artifacts/github_operational_audit_committed.json
+            artifacts/canonical_prize_audit_committed.json
             artifacts/operational_git_history.txt
+          if-no-files-found: error
+
+  economic-state-proof:
+    needs: committed-state-audit
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout engine
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: main
+          path: app
+      - name: Checkout committed state
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: operations/state
+          path: state-store
+      - name: Setup Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: "3.13"
+      - name: Install engine
+        run: python -m pip install ./app
+      - name: Prove canonical economic calculation
+        run: |
+          mkdir -p artifacts
+          python app/scripts/prove_economic_state.py \
+            --state-dir state-store/operations \
+            --out artifacts/github_economic_state_proof.json
+          grep -q '"status": "GITHUB_ECONOMIC_STATE_PROOF_PASS"' artifacts/github_economic_state_proof.json
+          grep -q '"purchase_recorded": false' artifacts/github_economic_state_proof.json
+      - name: Upload economic proof
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: github-economic-state-proof
+          path: artifacts/github_economic_state_proof.json
           if-no-files-found: error
