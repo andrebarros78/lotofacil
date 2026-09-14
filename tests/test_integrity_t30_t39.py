@@ -17,10 +17,12 @@ from sare_lotofacil.portfolios.coverage import exact_jackpot_coverage
 from sare_lotofacil.portfolios.search import PortfolioSearchPolicy, search_bounded_portfolio
 
 
-def test_t30_operational_card_count_outside_3_100_is_rejected() -> None:
-    with pytest.raises(ValueError, match="3 e 100"):
-        generate_uniform_portfolio(2, seed=1)
-    with pytest.raises(ValueError, match="3 e 100"):
+def test_t30_operational_card_count_outside_1_100_is_rejected() -> None:
+    single = generate_uniform_portfolio(1, seed=1)
+    assert len(single.cards) == 1
+    with pytest.raises(ValueError, match="1 e 100"):
+        generate_uniform_portfolio(0, seed=1)
+    with pytest.raises(ValueError, match="1 e 100"):
         generate_uniform_portfolio(101, seed=1)
 
 
