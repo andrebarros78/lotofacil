@@ -26,6 +26,7 @@ def _sha256(path: Path) -> str:
 def _state_summary(state_dir: Path) -> dict:
     latest = _load(state_dir / "latest.json")
     ledger = _load(state_dir / "prospective_ledger.json")
+    portfolio_path = state_dir / "portfolio_ledger.json"
     return {
         "status": "GITHUB_OPERATOR_STATE_PASS",
         "official_latest_contest": latest["official_latest_contest"],
@@ -39,6 +40,8 @@ def _state_summary(state_dir: Path) -> dict:
         "pending_predictions": ledger["summary"]["pending_predictions"],
         "canonical_history_sha256": latest["canonical_history_sha256"],
         "prospective_ledger_sha256": _sha256(state_dir / "prospective_ledger.json"),
+        "portfolio_ledger_available": portfolio_path.exists(),
+        "portfolio_ledger_sha256": _sha256(portfolio_path) if portfolio_path.exists() else None,
     }
 
 
@@ -79,10 +82,33 @@ def _portfolio(state_dir: Path, card_count: int, seed: int) -> dict:
     }
 
 
+def _recover_portfolio(state_dir: Path, portfolio_id: str) -> dict:
+    if not portfolio_id:
+        raise ValueError("portfolio_id é obrigatório para portfolio_get")
+    ledger_path = state_dir / "portfolio_ledger.json"
+    if not ledger_path.exists():
+        raise KeyError("PORTFOLIO_LEDGER_NOT_FOUND")
+    ledger = _load(ledger_path)
+    entry = next((item for item in ledger.get("portfolios", []) if item.get("portfolio_id") == portfolio_id), None)
+    if entry is None:
+        raise KeyError("PORTFOLIO_NOT_FOUND")
+    return {
+        "status": "GITHUB_OPERATOR_PORTFOLIO_RECOVERY_PASS",
+        "recovered_at_utc": datetime.now(timezone.utc).isoformat(),
+        "portfolio_ledger_sha256": _sha256(ledger_path),
+        "portfolio": entry,
+        "cards_display": [" ".join(f"{int(number):02d}" for number in card) for card in entry["cards"]],
+    }
+
+
 def _export(state_dir: Path) -> tuple[dict, str]:
     summary = _state_summary(state_dir)
     latest = _load(state_dir / "latest.json")
     ledger = _load(state_dir / "prospective_ledger.json")
+    state_names = ["bootstrap_manifest.json", "canonical_history.json", "prospective_ledger.json", "latest.json"]
+    for optional in ("canonical_prizes.json", "portfolio_ledger.json"):
+        if (state_dir / optional).exists():
+            state_names.append(optional)
     payload = {
         "status": "GITHUB_OPERATOR_EXPORT_PASS",
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
@@ -90,10 +116,7 @@ def _export(state_dir: Path) -> tuple[dict, str]:
         "retrospective_core": latest["retrospective_core"],
         "prospective": latest["prospective"],
         "protocol": ledger["protocol"],
-        "state_files": {
-            name: _sha256(state_dir / name)
-            for name in ("bootstrap_manifest.json", "canonical_history.json", "prospective_ledger.json", "latest.json")
-        },
+        "state_files": {name: _sha256(state_dir / name) for name in state_names},
     }
     md = "\n".join([
         "# SARE Lotofácil — Relatório Operacional GitHub",
@@ -105,6 +128,7 @@ def _export(state_dir: Path) -> tuple[dict, str]:
         f"- previsões avaliadas: `{summary['evaluated_predictions']}`",
         f"- previsões pendentes: `{summary['pending_predictions']}`",
         f"- integridade do banco reconstruído: `{summary['database_integrity']}`",
+        f"- ledger de carteiras disponível: `{summary['portfolio_ledger_available']}`",
         "",
         "**Não há promoção automática de vantagem preditiva.**",
         "",
@@ -114,11 +138,16 @@ def _export(state_dir: Path) -> tuple[dict, str]:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Read-only operator console for the canonical GitHub state")
-    parser.add_argument("--action", choices=("status", "audit", "analyze", "portfolio", "export"), required=True)
+    parser.add_argument(
+        "--action",
+        choices=("status", "audit", "analyze", "portfolio", "portfolio_get", "export"),
+        required=True,
+    )
     parser.add_argument("--state-dir", type=Path, required=True)
     parser.add_argument("--out-dir", type=Path, required=True)
     parser.add_argument("--card-count", type=int, default=10)
     parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--portfolio-id", default="")
     return parser
 
 
@@ -136,6 +165,9 @@ def main() -> int:
     elif args.action == "portfolio":
         payload = _portfolio(args.state_dir, args.card_count, args.seed)
         _write_json(args.out_dir / "portfolio.json", payload)
+    elif args.action == "portfolio_get":
+        payload = _recover_portfolio(args.state_dir, args.portfolio_id)
+        _write_json(args.out_dir / "portfolio_recovery.json", payload)
     elif args.action == "export":
         payload, md = _export(args.state_dir)
         _write_json(args.out_dir / "operational_report.json", payload)
