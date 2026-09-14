@@ -4,7 +4,7 @@ Sistema de Análise de Randomicidade e Eventos para a Lotofácil.
 
 ## Release
 
-**SARE Core 1.0 + SARE Operational 1.1 — versão 1.1.3.**
+**SARE Core 1.0 + SARE Operational 1.1 — versão 1.1.4.**
 
 O sistema prioriza integridade dos dados, matemática exata, reprodutibilidade, auditoria e recuperação antes de qualquer alegação preditiva.
 
@@ -40,11 +40,21 @@ A autoridade operacional está documentada em `docs/GITHUB_OPERATIONS.md`.
 - RIS categórico auditável com seis dimensões, sem score numérico na linha 1.x;
 - temporal RIS por permutação de concursos completos nos lags predefinidos 1, 2, 3, 5 e 10, com correção de Holm;
 - regime RIS por scan global retrospectivo, limiar calibrado em nulo e falso alarme validado em amostra nula independente;
-- simulador de alternativa controlada para provar sensibilidade a mudança conhecida sem atribuir causalidade;
+- laboratório de alternativas controladas com T17 para potência sob viés marginal e T18 para memória temporal sem confusão marginal;
+- simuladores de alternativa controlada para medir sensibilidade sem atribuir causalidade;
 - carteiras uniformes com etiqueta obrigatória de ausência de vantagem comprovada;
 - verificação SHA-256 de evidências persistidas;
 - reconstrução determinística do SQLite operacional em GitHub Actions com `integrity_check`;
 - CI Python 3.12/3.13, Real History Check, GitHub Operational Cycle e Release Proof.
+
+## Laboratório de alternativas controladas
+
+A versão 1.1.4 adiciona duas provas sintéticas predefinidas da fase científica C3:
+
+- **T17 — viés marginal controlado:** uma dezena-alvo recebe probabilidade conhecida maior que 0,6; a família marginal canônica, corrigida por Holm, mede potência empírica em séries independentes.
+- **T18 — memória temporal controlada:** um kernel simétrico retém parte das dezenas do concurso anterior com probabilidade predefinida, preservando 15-de-25 e sem privilegiar uma dezena; o teste temporal deve detectar dependência enquanto a família marginal ajustada permanece sem rejeição.
+
+Essas provas medem sensibilidade e separação de mecanismos em dados sintéticos conhecidos. Elas **não constituem evidência de vantagem preditiva no histórico real**.
 
 ## RIS categórico
 
