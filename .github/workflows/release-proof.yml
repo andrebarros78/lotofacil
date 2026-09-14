@@ -20,7 +20,7 @@ permissions:
 jobs:
   clean-install:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
@@ -41,7 +41,7 @@ jobs:
           from pathlib import Path
           import sare_lotofacil
           from sare_lotofacil.api.app import create_app
-          expected = "1.1.2"
+          expected = "1.1.3"
           module = Path(sare_lotofacil.__file__).resolve()
           assert "site-packages" in str(module), module
           assert version("sare-lotofacil") == expected
@@ -76,6 +76,66 @@ jobs:
           print('CATEGORICAL_RIS_RELEASE_PROOF_PASS')
           print('RELEASE_PROOF_BASE_PASS')
           PY
+      - name: Prove calibrated regime detector from installed wheel
+        run: |
+          mkdir -p artifacts
+          /tmp/sare-clean/bin/python - <<'PY' | tee artifacts/regime_calibration_release_proof.json
+          import json
+          from sare_lotofacil.analysis.regime import assess_marginal_regime
+          from sare_lotofacil.simulation.alternative import simulate_marginal_regime_shift
+          from sare_lotofacil.simulation.null import simulate_uniform_draws
+
+          null_draws = simulate_uniform_draws(500, seed=17).draws
+          null_assessment = assess_marginal_regime(
+              null_draws,
+              min_segment=60,
+              candidate_stride=10,
+              calibration_replications=99,
+              validation_replications=99,
+              seed=20260914,
+          )
+          assert null_assessment.calibration.compatible_with_target is True
+          assert null_assessment.state == 'STABLE'
+          assert null_assessment.calibration.validation_ci95_low <= 0.05 <= null_assessment.calibration.validation_ci95_high
+
+          shifted = simulate_marginal_regime_shift(
+              500,
+              change_index=250,
+              target_number=16,
+              post_probability=0.85,
+              seed=321,
+          )
+          labels = tuple(f'contest-{index:04d}' for index in range(1, 501))
+          alert_assessment = assess_marginal_regime(
+              shifted.draws,
+              candidate_labels=labels,
+              min_segment=60,
+              candidate_stride=10,
+              calibration_replications=99,
+              validation_replications=99,
+              seed=20260914,
+          )
+          assert alert_assessment.state == 'ALERT'
+          assert alert_assessment.scan.strongest.candidate_index == 250
+          assert alert_assessment.scan.strongest.strongest_number == 16
+          assert alert_assessment.mode == 'RETROSPECTIVE_DISCOVERY'
+
+          payload = {
+              'status': 'REGIME_CALIBRATION_RELEASE_PROOF_PASS',
+              'null_state': null_assessment.state,
+              'false_alarm_target': null_assessment.calibration.target_alpha,
+              'false_alarm_rate': null_assessment.calibration.validation_false_alarm_rate,
+              'false_alarm_ci95_low': null_assessment.calibration.validation_ci95_low,
+              'false_alarm_ci95_high': null_assessment.calibration.validation_ci95_high,
+              'calibration_compatible': null_assessment.calibration.compatible_with_target,
+              'controlled_shift_state': alert_assessment.state,
+              'controlled_shift_candidate_index': alert_assessment.scan.strongest.candidate_index,
+              'controlled_shift_number': alert_assessment.scan.strongest.strongest_number,
+              'mode': alert_assessment.mode,
+          }
+          print(json.dumps(payload, sort_keys=True))
+          PY
+          grep -q 'REGIME_CALIBRATION_RELEASE_PROOF_PASS' artifacts/regime_calibration_release_proof.json
       - name: Prove Operational 1.1 journey from installed wheel
         run: |
           mkdir -p artifacts
@@ -92,4 +152,10 @@ jobs:
         with:
           name: operational-release-proof
           path: artifacts/operational_release_proof.json
+          if-no-files-found: error
+      - name: Upload regime calibration proof
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: regime-calibration-release-proof
+          path: artifacts/regime_calibration_release_proof.json
           if-no-files-found: error
