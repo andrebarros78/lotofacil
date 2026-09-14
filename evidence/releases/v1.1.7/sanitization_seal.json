@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "seal_type": "SANITIZATION_SCOPE_SEAL",
+  "release": "1.1.7",
+  "sealed_at_utc": "2026-09-14T20:55:10Z",
+  "authority": "GITHUB_ONLY",
+  "canonical_refs": {
+    "main": "6c1ad238116870adca7569a13718a0e6b3d9464f",
+    "release/v1.1.7": "6c1ad238116870adca7569a13718a0e6b3d9464f",
+    "operations/state": "3a44d32240f06d7148652835c6ff41f5242975a8"
+  },
+  "baseline": {
+    "main_equals_release": true,
+    "ahead_by": 0,
+    "behind_by": 0,
+    "open_pull_requests": 0,
+    "mission_proven_manifest": "evidence/releases/v1.1.7/mission_proven_manifest.json",
+    "mission_status": "MISSION_PROVEN",
+    "mission_scope": "ENGINEERING_RELEASE"
+  },
+  "sanitization": {
+    "closed_superseded_prs": [1, 8],
+    "closed_sanitization_generated_draft_prs": [16, 17, 18, 19, 20, 21],
+    "merged_from_these_prs": false,
+    "main_modified_by_sanitization": false,
+    "release_modified_by_sanitization": false,
+    "operations_state_modified_by_sanitization": false,
+    "historical_noncanonical_branches_retained": true,
+    "historical_noncanonical_branches_policy": "retained for provenance only; no canonical authority"
+  },
+  "verification": {
+    "ci_run_id": 34894241454,
+    "release_proof_run_id": 34894241417,
+    "real_history_check_run_id": 34894241463,
+    "github_operational_cycle_run_id": 34894241416,
+    "operator_console_proof_run_id": 34894241470,
+    "all_required_workflows_success": true,
+    "database_integrity": "ok",
+    "snapshot_roundtrip_exact": true
+  },
+  "scientific_scope": {
+    "predictive_evidence": "NOT_ESTABLISHED",
+    "scientific_conclusion": "EVIDENCIA_PREDITIVA_INSUFICIENTE",
+    "prospective_state": "UNDER_TEST_COHORT_A",
+    "next_prediction_target": 3780,
+    "predictive_advantage_claimed": false
+  },
+  "security": {
+    "logical_github_only_hardening": "PASS",
+    "native_rulesets_observed": 0,
+    "native_ruleset_status": "P0_LOGICAL_HARDENING_COMPLETE_NATIVE_RULESET_PENDING",
+    "scope_sealed_with_known_residual": true
+  },
+  "versioning": {
+    "canonical_version_ref": "release/v1.1.7",
+    "git_tag_created": false,
+    "git_tag_reason": "canonical project release contract uses release branch; no tag-mutation action is available through the connected GitHub tool"
+  },
+  "seal_statement": "SARE Lotofacil 1.1.7 engineering scope sanitized, reconciled, baseline-clean and sealed. No predictive advantage is claimed. Native GitHub rulesets remain the only known external administrative hardening residual."
+}
