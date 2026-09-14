@@ -13,7 +13,11 @@ from sare_lotofacil.persistence.repository import persist_caixa_contest
 from sare_lotofacil.portfolios.core import generate_uniform_portfolio, normalize_portfolio_cards
 from sare_lotofacil.portfolios.coverage import exact_jackpot_coverage
 from sare_lotofacil.portfolios.search import PortfolioSearchPolicy, search_bounded_portfolio
-from scripts import prove_release_integrity as legacy
+
+try:
+    import prove_release_integrity as legacy
+except ModuleNotFoundError:
+    from scripts import prove_release_integrity as legacy
 
 
 def prove_portfolio_economics_v118() -> None:
