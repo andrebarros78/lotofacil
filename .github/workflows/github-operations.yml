@@ -2,6 +2,30 @@ name: GitHub Operational Cycle
 
 on:
   workflow_dispatch:
+    inputs:
+      operation:
+        description: Operação canônica
+        required: true
+        default: cycle
+        type: choice
+        options:
+          - cycle
+          - register_portfolio
+      card_count:
+        description: Quantidade de cartões da carteira
+        required: true
+        default: 10
+        type: number
+      seed:
+        description: Seed; zero usa o concurso-alvo
+        required: true
+        default: 0
+        type: number
+      target_contest:
+        description: Concurso-alvo; zero usa o próximo concurso congelado
+        required: true
+        default: 0
+        type: number
   schedule:
     - cron: "15 3 * * *"
   push:
@@ -26,6 +50,7 @@ concurrency:
 
 jobs:
   cycle:
+    if: ${{ github.event_name != 'workflow_dispatch' || inputs.operation == 'cycle' }}
     permissions:
       contents: write
     runs-on: ubuntu-latest
@@ -75,6 +100,12 @@ jobs:
             --state-dir state-store/operations \
             --out artifacts/canonical_prize_audit_precommit.json
           grep -q '"status": "CANONICAL_PRIZE_AUDIT_PASS"' artifacts/canonical_prize_audit_precommit.json
+          if test -f state-store/operations/portfolio_ledger.json; then
+            python app/scripts/verify_portfolio_ledger.py \
+              --state-dir state-store/operations \
+              --out artifacts/github_portfolio_ledger_audit_precommit.json
+            grep -q '"status": "GITHUB_PORTFOLIO_LEDGER_AUDIT_PASS"' artifacts/github_portfolio_ledger_audit_precommit.json
+          fi
       - name: Persist operational state in GitHub
         working-directory: state-store
         run: |
@@ -96,12 +127,14 @@ jobs:
             artifacts/github_operational_audit_precommit.json
             artifacts/canonical_prize_state.json
             artifacts/canonical_prize_audit_precommit.json
+            artifacts/github_portfolio_ledger_audit_precommit.json
             artifacts/github-runtime/sare.db
             state-store/operations/*.json
           if-no-files-found: error
 
   committed-state-audit:
     needs: cycle
+    if: ${{ needs.cycle.result == 'success' }}
     permissions:
       contents: read
     runs-on: ubuntu-latest
@@ -135,6 +168,12 @@ jobs:
             --state-dir state-store/operations \
             --out artifacts/canonical_prize_audit_committed.json
           grep -q '"status": "CANONICAL_PRIZE_AUDIT_PASS"' artifacts/canonical_prize_audit_committed.json
+          if test -f state-store/operations/portfolio_ledger.json; then
+            python app/scripts/verify_portfolio_ledger.py \
+              --state-dir state-store/operations \
+              --out artifacts/github_portfolio_ledger_audit_committed.json
+            grep -q '"status": "GITHUB_PORTFOLIO_LEDGER_AUDIT_PASS"' artifacts/github_portfolio_ledger_audit_committed.json
+          fi
           git -C state-store log --format='%H %cI %s' -- operations/ > artifacts/operational_git_history.txt
           test -s artifacts/operational_git_history.txt
       - name: Upload committed-state proof
@@ -144,11 +183,13 @@ jobs:
           path: |
             artifacts/github_operational_audit_committed.json
             artifacts/canonical_prize_audit_committed.json
+            artifacts/github_portfolio_ledger_audit_committed.json
             artifacts/operational_git_history.txt
           if-no-files-found: error
 
   economic-state-proof:
     needs: committed-state-audit
+    if: ${{ needs.committed-state-audit.result == 'success' }}
     permissions:
       contents: read
     runs-on: ubuntu-latest
@@ -183,4 +224,119 @@ jobs:
         with:
           name: github-economic-state-proof
           path: artifacts/github_economic_state_proof.json
+          if-no-files-found: error
+
+  register-portfolio:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.operation == 'register_portfolio' }}
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout engine
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: main
+          path: app
+      - name: Checkout persistent state
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: operations/state
+          fetch-depth: 0
+          path: state-store
+      - name: Setup Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: "3.13"
+      - name: Install and verify canonical inputs
+        run: |
+          python -m pip install ./app
+          python app/scripts/verify_github_operational_state.py --state-dir state-store/operations --out artifacts/pre_register_state_audit.json
+          python app/scripts/verify_canonical_prizes.py --state-dir state-store/operations --out artifacts/pre_register_prize_audit.json
+      - name: Register immutable portfolio
+        env:
+          CARD_COUNT: ${{ inputs.card_count }}
+          SEED: ${{ inputs.seed }}
+          TARGET_CONTEST: ${{ inputs.target_contest }}
+          SOURCE_CODE_SHA: ${{ github.sha }}
+        run: |
+          STATE_PARENT_SHA="$(git -C state-store rev-parse HEAD)"
+          python app/scripts/register_github_portfolio.py \
+            --state-dir state-store/operations \
+            --card-count "$CARD_COUNT" \
+            --seed "$SEED" \
+            --target-contest "$TARGET_CONTEST" \
+            --source-code-sha "$SOURCE_CODE_SHA" \
+            --operations-state-parent-sha "$STATE_PARENT_SHA" \
+            --out artifacts/github_portfolio_register.json
+          grep -q '"status": "GITHUB_PORTFOLIO_REGISTER_PASS"' artifacts/github_portfolio_register.json
+      - name: Verify portfolio ledger before commit
+        run: |
+          python app/scripts/verify_portfolio_ledger.py \
+            --state-dir state-store/operations \
+            --out artifacts/github_portfolio_ledger_audit_precommit.json
+          grep -q '"status": "GITHUB_PORTFOLIO_LEDGER_AUDIT_PASS"' artifacts/github_portfolio_ledger_audit_precommit.json
+      - name: Persist portfolio ledger in GitHub
+        working-directory: state-store
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add operations/portfolio_ledger.json
+          if git diff --cached --quiet; then
+            echo "PORTFOLIO_LEDGER_UNCHANGED"
+          else
+            git commit -m "ops: register immutable Lotofacil portfolio"
+            git push origin HEAD:operations/state
+          fi
+      - name: Upload portfolio registration evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: github-portfolio-register-${{ github.run_id }}
+          path: |
+            artifacts/github_portfolio_register.json
+            artifacts/github_portfolio_ledger_audit_precommit.json
+            state-store/operations/portfolio_ledger.json
+          if-no-files-found: error
+
+  portfolio-ledger-audit:
+    needs: register-portfolio
+    if: ${{ needs.register-portfolio.result == 'success' }}
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout engine
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: main
+          path: app
+      - name: Checkout committed portfolio ledger
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: operations/state
+          fetch-depth: 0
+          path: state-store
+      - name: Setup Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: "3.13"
+      - name: Install engine
+        run: python -m pip install ./app
+      - name: Audit committed portfolio ledger
+        run: |
+          mkdir -p artifacts
+          python app/scripts/verify_portfolio_ledger.py \
+            --state-dir state-store/operations \
+            --out artifacts/github_portfolio_ledger_audit_committed.json
+          grep -q '"status": "GITHUB_PORTFOLIO_LEDGER_AUDIT_PASS"' artifacts/github_portfolio_ledger_audit_committed.json
+          git -C state-store log -1 --format='%H %cI %s' -- operations/portfolio_ledger.json > artifacts/portfolio_ledger_git_provenance.txt
+          test -s artifacts/portfolio_ledger_git_provenance.txt
+      - name: Upload committed portfolio proof
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: github-portfolio-ledger-audit-${{ github.run_id }}
+          path: |
+            artifacts/github_portfolio_ledger_audit_committed.json
+            artifacts/portfolio_ledger_git_provenance.txt
           if-no-files-found: error
