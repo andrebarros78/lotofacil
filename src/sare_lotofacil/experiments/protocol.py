@@ -25,6 +25,10 @@ class ExperimentProtocol:
     sample_plan: str = "frozen_snapshot_walk_forward"
     stopping_rule: str = "fixed_snapshot_no_optional_stopping"
     code_environment: str = "release_commit_and_runtime_recorded_by_run"
+    feature_offsets: tuple[int, ...] = (-1,)
+    transform_fit_scope: str = "TRAIN_ONLY"
+    min_eval_windows: int = 30
+    window_failure_policy: str = "COUNT_IN_DENOMINATOR"
 
     def validate(self) -> None:
         required = {
@@ -41,10 +45,14 @@ class ExperimentProtocol:
             "sample_plan": self.sample_plan,
             "stopping_rule": self.stopping_rule,
             "code_environment": self.code_environment,
+            "transform_fit_scope": self.transform_fit_scope,
+            "window_failure_policy": self.window_failure_policy,
         }
         empty = [name for name, value in required.items() if not str(value).strip()]
         if not self.comparators or any(not str(value).strip() for value in self.comparators):
             empty.append("comparators")
+        if not self.feature_offsets:
+            empty.append("feature_offsets")
         if empty:
             raise ValueError(f"campos obrigatórios vazios: {', '.join(empty)}")
         if self.metric_primary != "brier_score":
@@ -57,10 +65,18 @@ class ExperimentProtocol:
             raise ValueError("evidence_mode inválido")
         if self.min_train <= 0:
             raise ValueError("min_train deve ser positivo")
+        if self.min_eval_windows <= 0:
+            raise ValueError("min_eval_windows deve ser positivo")
         if self.delta_min < 0:
             raise ValueError("delta_min não pode ser negativo")
         if "uniform_p_0_6" not in self.comparators:
             raise ValueError("comparadores precisam incluir o M0 uniforme")
+        if any(isinstance(offset, bool) or not isinstance(offset, int) for offset in self.feature_offsets):
+            raise ValueError("feature_offsets devem ser inteiros relativos ao alvo")
+        if self.transform_fit_scope not in {"TRAIN_ONLY", "FULL_HISTORY", "EXTERNAL"}:
+            raise ValueError("transform_fit_scope inválido")
+        if self.window_failure_policy not in {"COUNT_IN_DENOMINATOR", "DROP_FAILED"}:
+            raise ValueError("window_failure_policy inválido")
 
     def canonical_json(self) -> str:
         self.validate()
