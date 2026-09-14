@@ -81,6 +81,8 @@ Cada execução reconstrói os artefatos transitórios a partir desse estado. Re
 
 A política executável está em `governance/github-only-policy.json`. O gate `scripts/verify_github_governance.py` impede runners self-hosted, Actions não fixados por SHA e workflows não autorizados com `contents: write`.
 
+A release 1.1.1 migra os Actions oficiais canônicos para variantes com runtime Node 24, preservando o pin por SHA.
+
 A configuração-alvo dos Rulesets nativos está em `docs/GITHUB_NATIVE_RULESET.md`. A ativação administrativa desses Rulesets é a única etapa de P0 que o conector GitHub atual não consegue realizar diretamente.
 
 ## Provas e documentação
@@ -89,8 +91,7 @@ A configuração-alvo dos Rulesets nativos está em `docs/GITHUB_NATIVE_RULESET.
 - console operacional: `docs/OPERATOR_CONSOLE.md`;
 - rulesets nativos: `docs/GITHUB_NATIVE_RULESET.md`;
 - operação e política GitHub-only: `docs/OPERACAO.md`;
-- matriz de comprovação ativa: `docs/MISSION_PROVEN.md`;
-- contrato preservado da 1.1.0: `docs/MISSION_PROVEN_1_1_0.md`;
+- matriz de comprovação: `docs/MISSION_PROVEN.md`;
 - identidade da especificação-fonte: `docs/SOURCE_SPEC.md`;
 - testes automatizados: `tests/`;
 - workflows: `.github/workflows/`.
