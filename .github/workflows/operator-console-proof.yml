@@ -64,12 +64,15 @@ jobs:
           grep -q 'CARTEIRA COMBINATÓRIA — SEM VANTAGEM PREDITIVA COMPROVADA' artifacts/operator-proof/portfolio/portfolio.json
           grep -q '"status": "GITHUB_OPERATOR_EXPORT_PASS"' artifacts/operator-proof/export/operational_report.json
           test -s artifacts/operator-proof/export/operational_report.md
+      - name: Resolve state SHA
+        id: state
+        run: echo "sha=$(git -C state-store rev-parse HEAD)" >> "$GITHUB_OUTPUT"
       - name: Record provenance
         env:
           SOURCE_SHA: ${{ github.sha }}
           RUN_ID: ${{ github.run_id }}
+          STATE_SHA: ${{ steps.state.outputs.sha }}
         run: |
-          STATE_SHA="$(git -C state-store rev-parse HEAD)"
           python - <<'PY'
           import json, os
           from pathlib import Path
@@ -85,13 +88,6 @@ jobs:
               json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
           )
           PY
-        env:
-          SOURCE_SHA: ${{ github.sha }}
-          RUN_ID: ${{ github.run_id }}
-          STATE_SHA: ${{ steps.state.outputs.sha }}
-      - name: Resolve state SHA
-        id: state
-        run: echo "sha=$(git -C state-store rev-parse HEAD)" >> "$GITHUB_OUTPUT"
       - name: Upload operator console proof
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
