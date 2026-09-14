@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "source_name": "Lotofacil.xlsx",
+  "source_type": "XLSX_TRAINING_CORROBORATION",
+  "reconciled_at_utc": "2026-09-14T21:21:45Z",
+  "source_file_sha256": "758838e1732be458ef317802ef9ead315631e7b6d09e9e4dd3d8fecbdca25988",
+  "sheet": "LOTOFÁCIL",
+  "column_count": 33,
+  "record_count": 3779,
+  "contest_first": 1,
+  "contest_last": 3779,
+  "last_draw_date": "2026-09-03",
+  "training_fields": ["Concurso", "Data Sorteio", "Bola1", "Bola2", "Bola3", "Bola4", "Bola5", "Bola6", "Bola7", "Bola8", "Bola9", "Bola10", "Bola11", "Bola12", "Bola13", "Bola14", "Bola15"],
+  "validation": {
+    "contest_sequence_contiguous": true,
+    "duplicate_contest_ids": 0,
+    "rows_with_invalid_number_count": 0,
+    "rows_with_duplicate_numbers": 0,
+    "rows_with_numbers_outside_1_25": 0,
+    "rows_with_unsorted_numbers": 0,
+    "parse_issues": 0,
+    "duplicate_draw_dates": [
+      {"date": "2026-06-20", "contests": [3715, 3716], "accepted": true, "reason": "present identically in canonical history"}
+    ]
+  },
+  "xlsx_structure": {
+    "declared_dimension": "A1:AG1",
+    "data_rows_after_header": 3779,
+    "non_header_rows_without_explicit_cell_references": true,
+    "semantic_data_recovered": true,
+    "note": "Workbook OpenXML structure is non-standard for row/cell references, but all 33 ordered values per contest are present and parseable."
+  },
+  "canonical_reconciliation": {
+    "canonical_ref": "operations/state",
+    "canonical_path": "operations/canonical_history.json",
+    "canonical_record_count": 3779,
+    "canonical_history_sha256": "2854c22e090ca96a9aa3e535f555370c40edbf77b71aca3f51905e7373dc689e",
+    "xlsx_reconstructed_canonical_history_sha256": "2854c22e090ca96a9aa3e535f555370c40edbf77b71aca3f51905e7373dc689e",
+    "exact_match": true,
+    "record_delta": 0,
+    "state_mutation_required": false
+  },
+  "training_ingestion": {
+    "status": "ACCEPTED_EXACT_CANONICAL_MATCH",
+    "effective_training_history": "operations/state/operations/canonical_history.json",
+    "duplicate_import_performed": false,
+    "reason": "The Excel training draw history is byte-for-byte reproducible as the current canonical history payload after canonical serialization; importing duplicate draw rows would add no information.",
+    "non_training_columns": "Prize, winner, collection and observation fields remain outside the predictive training path for M0/M1/M2 and were not promoted into model features."
+  },
+  "scientific_scope": {
+    "predictive_evidence": "NOT_ESTABLISHED",
+    "predictive_advantage_claimed": false,
+    "note": "Reconciliation validates data identity only; it does not establish predictive advantage."
+  }
+}
