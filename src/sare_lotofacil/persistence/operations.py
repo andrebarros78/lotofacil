@@ -64,6 +64,17 @@ class EvaluationRecord:
 
 
 @dataclass(frozen=True, slots=True)
+class RevisionEvaluationRecord:
+    evaluation_id: str
+    portfolio_id: str
+    contest_id: int
+    revision: int
+    result: tuple[int, ...]
+    hits: tuple[int, ...]
+    max_hits: int
+
+
+@dataclass(frozen=True, slots=True)
 class IdempotencyRecord:
     request_hash: str
     response_json: str
@@ -204,6 +215,50 @@ def evaluate_portfolio(path: str | Path, portfolio_id: str, draw: Iterable[int])
             {"portfolio_id": portfolio_id, "max_hits": max(hits)},
         )
     return EvaluationRecord(evaluation_id, portfolio_id, result, hits, max(hits))
+
+
+def evaluate_portfolio_revision(
+    path: str | Path,
+    portfolio_id: str,
+    contest_id: int,
+    revision: int,
+) -> RevisionEvaluationRecord:
+    initialize_database(path)
+    record = get_portfolio(path, portfolio_id)
+    with connect(path) as connection:
+        row = connection.execute(
+            "SELECT result_mask FROM contest_revisions WHERE contest_id=? AND revision=?",
+            (contest_id, revision),
+        ).fetchone()
+    if not row:
+        raise KeyError((contest_id, revision))
+
+    result_mask = int(row[0])
+    result = mask_to_numbers(result_mask)
+    portfolio = Portfolio(
+        seed=record.seed,
+        cards=record.cards,
+        cost_cents=record.cost_cents,
+        evidence_label=record.evidence_label,
+    )
+    hits = audit_portfolio(portfolio, result)
+    identity = {"portfolio_id": portfolio_id, "contest_id": contest_id, "revision": revision}
+    evaluation_id = f"revision-evaluation-{payload_hash(identity)[:24]}"
+    hits_json = canonical_json(hits)
+    with connect(path) as connection:
+        connection.execute(
+            "INSERT OR IGNORE INTO revision_evaluations(evaluation_id, portfolio_id, contest_id, revision, result_mask, hits_json, max_hits) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (evaluation_id, portfolio_id, contest_id, revision, result_mask, hits_json, max(hits)),
+        )
+        _audit(
+            connection,
+            "PORTFOLIO_REVISION_EVALUATED",
+            "revision_evaluation",
+            evaluation_id,
+            {**identity, "max_hits": max(hits)},
+        )
+    return RevisionEvaluationRecord(evaluation_id, portfolio_id, contest_id, revision, result, hits, max(hits))
 
 
 def list_snapshots(path: str | Path) -> tuple[dict[str, Any], ...]:
