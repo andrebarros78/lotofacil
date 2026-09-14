@@ -1,7 +1,7 @@
 {
   "bootstrap_manifest_sha256": "716feea67b3b5a2ee712a498adcd9975578b9bc6837431584578ba1e7b7aefe5",
   "bootstrap_official_patches": [],
-  "canonical_history_sha256": "b52b66d3576f606a41d0452e2d3fd840a93a3176424a1f876ebb525037152100",
+  "canonical_history_sha256": "4dba72b0c3dbc83e140e28da3afe82ffbf09df6b61d11c15337d384b6ff62d64",
   "database_integrity": "ok",
   "inserted_official_contests": [],
   "next_prediction_target": 3780,
@@ -40,24 +40,38 @@
   "retrospective_core": {
     "contest_count": 3779,
     "m1_frequency": {
+      "backtest_status": "VALID",
       "delta_brier": 9.718438004777736e-05,
       "delta_brier_ci_high": 0.0002197420895402509,
       "delta_brier_ci_low": -2.5373329444696203e-05,
       "delta_min": 0.0,
+      "failed_window_ids": [],
+      "failed_windows": 0,
       "mean_brier": 0.2399028156199522,
       "model_name": "M1_frequency_regularized_lambda_100",
+      "planned_windows": 1512,
       "predictions": 1512,
-      "uniform_brier": 0.24
+      "success_rate": 1.0,
+      "successful_windows": 1512,
+      "uniform_brier": 0.24,
+      "window_ledger_hash": "89e044df58a03fc71c8153e3c3c28398ab82da7c6b6b85acbb05abf83fdeb814"
     },
     "m2_exponential": {
+      "backtest_status": "VALID",
       "delta_brier": -0.0062211806667410285,
       "delta_brier_ci_high": -0.005419340394413374,
       "delta_brier_ci_low": -0.007023020939068683,
       "delta_min": 0.0,
+      "failed_window_ids": [],
+      "failed_windows": 0,
       "mean_brier": 0.24622118066674104,
       "model_name": "M2_exponential_alpha_0.05",
+      "planned_windows": 1512,
       "predictions": 1512,
-      "uniform_brier": 0.24
+      "success_rate": 1.0,
+      "successful_windows": 1512,
+      "uniform_brier": 0.24,
+      "window_ledger_hash": "abe0ed8364cd228836b0b889e9022d0ae55c4ddfb33df2c0148f9db0e7f2be12"
     },
     "max_abs_marginal_z": 3.5662371068688166,
     "max_marginal_frequency": 0.6237099761841757,
@@ -67,7 +81,7 @@
     "predictive_evidence": "NOT_ESTABLISHED",
     "scientific_conclusion": "EVIDENCIA_PREDITIVA_INSUFICIENTE"
   },
-  "run_at_utc": "2026-09-14T19:38:22.894134+00:00",
+  "run_at_utc": "2026-09-14T19:52:42.179385+00:00",
   "snapshot_contests": 3779,
   "snapshot_hash": "d9b43f9c33702a880495f99a929ebee0cac90e7c4724a950f678f1c6494d5106",
   "snapshot_id": "snap-d9b43f9c33702a880495",
