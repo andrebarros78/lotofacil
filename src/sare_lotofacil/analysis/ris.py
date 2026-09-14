@@ -3,17 +3,21 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Iterable, Sequence
 
+from sare_lotofacil.analysis.regime import (
+    DEFAULT_REGIME_ALPHA,
+    DEFAULT_REGIME_CALIBRATION_REPLICATIONS,
+    DEFAULT_REGIME_CANDIDATE_STRIDE,
+    DEFAULT_REGIME_MIN_SEGMENT,
+    DEFAULT_REGIME_SEED,
+    DEFAULT_REGIME_VALIDATION_REPLICATIONS,
+    assess_marginal_regime,
+)
 from sare_lotofacil.persistence.backup import database_integrity
 from sare_lotofacil.persistence.db import connect
 from sare_lotofacil.persistence.evidence import verify_source_artifacts
 from sare_lotofacil.persistence.operations import list_snapshots
-from sare_lotofacil.persistence.repository import load_snapshot_draws
-from sare_lotofacil.statistics.inference import (
-    fixed_split_frequency_shift,
-    marginal_tests,
-    pair_tests,
-    temporal_lag_permutation_tests,
-)
+from sare_lotofacil.persistence.repository import load_snapshot_records
+from sare_lotofacil.statistics.inference import marginal_tests, pair_tests, temporal_lag_permutation_tests
 
 RIS_SCHEMA_VERSION = "ris-categorical-v1"
 DEFAULT_ALPHA = 0.05
@@ -62,10 +66,17 @@ def build_categorical_ris_from_draws(
     data_evidence: dict[str, Any],
     predictive_state: str,
     predictive_evidence: dict[str, Any],
+    candidate_labels: Sequence[str] | None = None,
     alpha: float = DEFAULT_ALPHA,
     temporal_lags: tuple[int, ...] = DEFAULT_TEMPORAL_LAGS,
     temporal_replications: int = DEFAULT_TEMPORAL_REPLICATIONS,
     temporal_seed: int = DEFAULT_TEMPORAL_SEED,
+    regime_alpha: float = DEFAULT_REGIME_ALPHA,
+    regime_min_segment: int = DEFAULT_REGIME_MIN_SEGMENT,
+    regime_candidate_stride: int = DEFAULT_REGIME_CANDIDATE_STRIDE,
+    regime_calibration_replications: int = DEFAULT_REGIME_CALIBRATION_REPLICATIONS,
+    regime_validation_replications: int = DEFAULT_REGIME_VALIDATION_REPLICATIONS,
+    regime_seed: int = DEFAULT_REGIME_SEED,
 ) -> dict[str, Any]:
     """Calcula o painel RIS categórico a partir dos mesmos motores analíticos do SARE."""
     if not 0.0 < alpha < 1.0:
@@ -78,6 +89,9 @@ def build_categorical_ris_from_draws(
         raise ValueError("predictive_state inválido")
 
     normalized_draws = tuple(tuple(draw) for draw in draws)
+    if candidate_labels is not None and len(candidate_labels) != len(normalized_draws):
+        raise ValueError("candidate_labels deve ter o mesmo tamanho de draws")
+
     dimensions: dict[str, dict[str, Any]] = {
         "data_integrity": {
             "state": data_state,
@@ -182,27 +196,33 @@ def build_categorical_ris_from_draws(
             "evidence": {"reason": "Amostra insuficiente para os lags temporais predefinidos."},
         }
 
-    if len(normalized_draws) >= 2:
-        split_index = len(normalized_draws) // 2
-        regime_stats = fixed_split_frequency_shift(normalized_draws, split_index=split_index)
+    if len(normalized_draws) < 2 * regime_min_segment:
         dimensions["regime"] = {
             "state": "INCONCLUSIVE",
             "evidence": {
-                "diagnostic": "fixed_midpoint_frequency_shift",
-                "split_index": split_index,
-                "family_size": len(regime_stats),
-                "correction": "holm",
-                "min_adjusted_p": min(item.p_holm for item in regime_stats),
-                "max_abs_effect": max(abs(item.effect) for item in regime_stats),
-                "strongest": _strongest(regime_stats),
-                "false_alarm_calibration": "NOT_ESTABLISHED",
-                "reason": "Mudança de regime exige detector e taxa de falso alarme calibrados antes de STABLE/ALERT.",
+                "method": "calibrated_global_marginal_change_scan",
+                "false_alarm_calibration": "NOT_RUN",
+                "min_segment": regime_min_segment,
+                "candidate_stride": regime_candidate_stride,
+                "reason": "Amostra insuficiente para dois segmentos mínimos do detector de regime.",
             },
         }
     else:
+        assessment = assess_marginal_regime(
+            normalized_draws,
+            candidate_labels=candidate_labels,
+            alpha=regime_alpha,
+            min_segment=regime_min_segment,
+            candidate_stride=regime_candidate_stride,
+            calibration_replications=regime_calibration_replications,
+            validation_replications=regime_validation_replications,
+            seed=regime_seed,
+        )
+        assessment_payload = assessment.to_dict()
+        regime_state = str(assessment_payload.pop("state"))
         dimensions["regime"] = {
-            "state": "INCONCLUSIVE",
-            "evidence": {"reason": "Amostra insuficiente para diagnóstico de estabilidade."},
+            "state": regime_state,
+            "evidence": assessment_payload,
         }
 
     dimensions["predictive_evidence"] = {
@@ -222,6 +242,7 @@ def build_categorical_ris_from_draws(
             "RIS_NUMERIC_FORBIDDEN_IN_1_X",
             "COMPATIBLE_IS_NOT_PROOF_OF_RANDOMNESS",
             "ALERT_IS_NOT_PREDICTIVE_ADVANTAGE",
+            "REGIME_ALERT_IS_RETROSPECTIVE_NOT_REALTIME",
             "NO_PREDICTIVE_ADVANTAGE_FROM_CATEGORICAL_STATUS",
         ],
     }
@@ -234,6 +255,12 @@ def build_categorical_ris(
     temporal_lags: tuple[int, ...] = DEFAULT_TEMPORAL_LAGS,
     temporal_replications: int = DEFAULT_TEMPORAL_REPLICATIONS,
     temporal_seed: int = DEFAULT_TEMPORAL_SEED,
+    regime_alpha: float = DEFAULT_REGIME_ALPHA,
+    regime_min_segment: int = DEFAULT_REGIME_MIN_SEGMENT,
+    regime_candidate_stride: int = DEFAULT_REGIME_CANDIDATE_STRIDE,
+    regime_calibration_replications: int = DEFAULT_REGIME_CALIBRATION_REPLICATIONS,
+    regime_validation_replications: int = DEFAULT_REGIME_VALIDATION_REPLICATIONS,
+    regime_seed: int = DEFAULT_REGIME_SEED,
 ) -> dict[str, Any]:
     """Constrói o RIS categórico para uma base SQLite reconstruída pelo SARE."""
     snapshots = list_snapshots(path)
@@ -268,11 +295,19 @@ def build_categorical_ris(
             temporal_lags=temporal_lags,
             temporal_replications=temporal_replications,
             temporal_seed=temporal_seed,
+            regime_alpha=regime_alpha,
+            regime_min_segment=regime_min_segment,
+            regime_candidate_stride=regime_candidate_stride,
+            regime_calibration_replications=regime_calibration_replications,
+            regime_validation_replications=regime_validation_replications,
+            regime_seed=regime_seed,
         )
 
     snapshot = snapshots[0]
     snapshot_id = str(snapshot["snapshot_id"])
-    draws = load_snapshot_draws(path, snapshot_id)
+    records = load_snapshot_records(path, snapshot_id)
+    draws = tuple(record.numbers for record in records)
+    candidate_labels = tuple(f"{record.contest_id}:{record.draw_date.isoformat()}" for record in records)
     return build_categorical_ris_from_draws(
         draws,
         snapshot_id=snapshot_id,
@@ -280,8 +315,15 @@ def build_categorical_ris(
         data_evidence=data_evidence,
         predictive_state=predictive_state,
         predictive_evidence=predictive_evidence,
+        candidate_labels=candidate_labels,
         alpha=alpha,
         temporal_lags=temporal_lags,
         temporal_replications=temporal_replications,
         temporal_seed=temporal_seed,
+        regime_alpha=regime_alpha,
+        regime_min_segment=regime_min_segment,
+        regime_candidate_stride=regime_candidate_stride,
+        regime_calibration_replications=regime_calibration_replications,
+        regime_validation_replications=regime_validation_replications,
+        regime_seed=regime_seed,
     )
