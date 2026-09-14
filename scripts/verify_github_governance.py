@@ -86,6 +86,8 @@ def main() -> int:
             violations.append("operator-console.yml must remain read-only")
         if "ref: operations/state" not in text:
             violations.append("operator-console.yml must read the canonical operations/state branch")
+        if "ris-categorical" not in text or "ACTION=ris" not in text:
+            violations.append("operator-console.yml must expose categorical RIS")
 
     proof_path = ROOT / ".github" / "workflows" / "operator-console-proof.yml"
     if proof_path.exists():
@@ -98,8 +100,11 @@ def main() -> int:
             "--action status",
             "--action audit",
             "--action analyze",
+            "--action ris",
             "--action portfolio",
             "--action export",
+            "GITHUB_OPERATOR_RIS_PASS",
+            "RIS_NUMERIC_FORBIDDEN_IN_1_X",
             "SARE_OPERATOR_CONSOLE_PROOF_PASS",
             "operations_state_sha",
         ]
