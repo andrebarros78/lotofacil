@@ -59,15 +59,35 @@ Fluxo canônico:
 
 Falha em qualquer gate impede alteração do estado operacional canônico.
 
+### Console do operador
+
+`SARE Operator Console` permite executar diretamente pelo GitHub, sem terminal externo:
+
+- status do estado canônico;
+- auditoria de `operations/state`;
+- análise Core;
+- geração de carteira combinatória uniforme;
+- exportação de relatório operacional.
+
+A console é read-only. A atualização do histórico e do ledger prospectivo continua exclusiva do `GitHub Operational Cycle`.
+
 ## Persistência e recuperação
 
 O Git não usa SQLite como memória permanente. O estado canônico é textual, versionável e auditável no branch `operations/state`, incluindo os manifests e ledgers definidos pelo contrato operacional.
 
 Cada execução reconstrói os artefatos transitórios a partir desse estado. Recuperação significa reproduzir o estado a partir do histórico Git e comprovar novamente integridade e proveniência dentro do GitHub Actions.
 
+## Hardening GitHub-only
+
+A política executável está em `governance/github-only-policy.json`. O gate `scripts/verify_github_governance.py` impede runners self-hosted, Actions não fixados por SHA e workflows não autorizados com `contents: write`.
+
+A configuração-alvo dos Rulesets nativos está em `docs/GITHUB_NATIVE_RULESET.md`. A ativação administrativa desses Rulesets é a única etapa de P0 que o conector GitHub atual não consegue realizar diretamente.
+
 ## Provas e documentação
 
 - autoridade operacional: `docs/GITHUB_OPERATIONS.md`;
+- console operacional: `docs/OPERATOR_CONSOLE.md`;
+- rulesets nativos: `docs/GITHUB_NATIVE_RULESET.md`;
 - operação e política GitHub-only: `docs/OPERACAO.md`;
 - matriz de comprovação: `docs/MISSION_PROVEN.md`;
 - identidade da especificação-fonte: `docs/SOURCE_SPEC.md`;
