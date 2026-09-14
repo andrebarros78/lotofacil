@@ -30,6 +30,18 @@ class MonteCarloResult:
     seed: int
 
 
+@dataclass(frozen=True, slots=True)
+class TemporalLagStat:
+    lag: int
+    observed: float
+    expected: float
+    effect: float
+    p_value: float
+    p_holm: float
+    replications: int
+    seed: int
+
+
 def _binomial_logpmf(k: int, n: int, p: float) -> float:
     if k < 0 or k > n:
         return float("-inf")
@@ -125,6 +137,72 @@ def temporal_repetition_monte_carlo(
         p_value=(extreme + 1) / (replications + 1),
         replications=replications,
         seed=seed,
+    )
+
+
+def temporal_lag_permutation_tests(
+    draws: Sequence[Iterable[int]],
+    *,
+    lags: Sequence[int] = (1, 2, 3, 5, 10),
+    replications: int = 999,
+    seed: int = 0,
+) -> tuple[TemporalLagStat, ...]:
+    """Testa repetição temporal em lags predefinidos por permutação de concursos completos.
+
+    A permutação opera sobre linhas completas, preservando cada concurso e sua
+    estrutura intraconcurso. A família de lags é corrigida por Holm.
+    """
+    normalized = tuple(normalize_numbers(draw) for draw in draws)
+    if len(normalized) < 2:
+        raise ValueError("são necessários ao menos dois concursos")
+    if replications <= 0:
+        raise ValueError("replications deve ser positivo")
+    ordered_lags = tuple(dict.fromkeys(int(lag) for lag in lags))
+    if not ordered_lags:
+        raise ValueError("é necessário ao menos um lag")
+    if any(lag <= 0 or lag >= len(normalized) for lag in ordered_lags):
+        raise ValueError("lags devem estar entre 1 e n-1")
+
+    masks = tuple(numbers_to_mask(draw) for draw in normalized)
+
+    def lag_mean(sequence: Sequence[int], lag: int) -> float:
+        return fmean(
+            intersection_hits(sequence[index], sequence[index + lag])
+            for index in range(len(sequence) - lag)
+        )
+
+    observed = tuple(lag_mean(masks, lag) for lag in ordered_lags)
+    simulated_by_lag: list[list[float]] = [[] for _ in ordered_lags]
+    rng = random.Random(seed)
+    shuffled = list(masks)
+    for _ in range(replications):
+        shuffled[:] = masks
+        rng.shuffle(shuffled)
+        for index, lag in enumerate(ordered_lags):
+            simulated_by_lag[index].append(lag_mean(shuffled, lag))
+
+    expected = tuple(fmean(values) for values in simulated_by_lag)
+    raw: list[float] = []
+    for observed_value, expected_value, simulated in zip(observed, expected, simulated_by_lag):
+        deviation = abs(observed_value - expected_value)
+        extreme = sum(abs(value - expected_value) >= deviation - 1e-15 for value in simulated)
+        raw.append((extreme + 1) / (replications + 1))
+    adjusted = holm_adjust(raw)
+
+    return tuple(
+        TemporalLagStat(
+            lag=lag,
+            observed=observed_value,
+            expected=expected_value,
+            effect=observed_value - expected_value,
+            p_value=p_value,
+            p_holm=p_holm,
+            replications=replications,
+            seed=seed,
+        )
+        for lag, observed_value, expected_value, p_value, p_holm in zip(
+            ordered_lags, observed, expected, raw, adjusted
+        )
     )
 
 

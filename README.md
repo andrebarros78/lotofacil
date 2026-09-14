@@ -4,7 +4,7 @@ Sistema de Análise de Randomicidade e Eventos para a Lotofácil.
 
 ## Release
 
-**SARE Core 1.0 + SARE Operational 1.1 — versão 1.1.1.**
+**SARE Core 1.0 + SARE Operational 1.1 — versão 1.1.2.**
 
 O sistema prioriza integridade dos dados, matemática exata, reprodutibilidade, auditoria e recuperação antes de qualquer alegação preditiva.
 
@@ -37,10 +37,27 @@ A autoridade operacional está documentada em `docs/GITHUB_OPERATIONS.md`.
 - fonte oficial CAIXA e histórico corroborado por checkpoints oficiais;
 - protocolo científico congelado por hash, hipóteses e experimentos auditáveis;
 - promoção de modelo bloqueada enquanto a evidência não for `REPLICATED`;
+- RIS categórico auditável com seis dimensões, sem score numérico na linha 1.x;
+- temporal RIS por permutação de concursos completos nos lags predefinidos 1, 2, 3, 5 e 10, com correção de Holm;
+- estado de regime mantido `INCONCLUSIVE` enquanto não existir calibração formal de falso alarme;
 - carteiras uniformes com etiqueta obrigatória de ausência de vantagem comprovada;
 - verificação SHA-256 de evidências persistidas;
 - reconstrução determinística do SQLite operacional em GitHub Actions com `integrity_check`;
 - CI Python 3.12/3.13, Real History Check, GitHub Operational Cycle e Release Proof.
+
+## RIS categórico
+
+A linha 1.x **não produz RIS numérico**. São invariantes:
+
+- `numeric_ris_enabled = false`;
+- `score = null`;
+- `COMPATIBLE` não significa prova de aleatoriedade;
+- `ALERT` não significa vantagem preditiva;
+- estado categórico não promove modelo automaticamente.
+
+As seis dimensões canônicas são: integridade dos dados, uniformidade, coocorrência, temporal, regime e evidência preditiva. O contrato completo está em `docs/RIS_CATEGORICAL.md`.
+
+A API `GET /v1/ris` e a Operator Console usam a mesma autoridade matemática em `sare_lotofacil.analysis.ris`; não existe fórmula paralela por canal.
 
 ## Operação
 
@@ -66,6 +83,7 @@ Falha em qualquer gate impede alteração do estado operacional canônico.
 - status do estado canônico;
 - auditoria de `operations/state`;
 - análise Core;
+- RIS categórico auditável;
 - geração de carteira combinatória uniforme;
 - exportação de relatório operacional.
 
@@ -81,7 +99,7 @@ Cada execução reconstrói os artefatos transitórios a partir desse estado. Re
 
 A política executável está em `governance/github-only-policy.json`. O gate `scripts/verify_github_governance.py` impede runners self-hosted, Actions não fixados por SHA e workflows não autorizados com `contents: write`.
 
-A release 1.1.1 migra os Actions oficiais canônicos para variantes com runtime Node 24, preservando o pin por SHA.
+Desde a release 1.1.1, os Actions oficiais canônicos usam variantes com runtime Node 24, preservando o pin por SHA.
 
 A configuração-alvo dos Rulesets nativos está em `docs/GITHUB_NATIVE_RULESET.md`. A ativação administrativa desses Rulesets é a única etapa de P0 que o conector GitHub atual não consegue realizar diretamente.
 
@@ -89,6 +107,7 @@ A configuração-alvo dos Rulesets nativos está em `docs/GITHUB_NATIVE_RULESET.
 
 - autoridade operacional: `docs/GITHUB_OPERATIONS.md`;
 - console operacional: `docs/OPERATOR_CONSOLE.md`;
+- contrato RIS: `docs/RIS_CATEGORICAL.md`;
 - rulesets nativos: `docs/GITHUB_NATIVE_RULESET.md`;
 - operação e política GitHub-only: `docs/OPERACAO.md`;
 - matriz de comprovação: `docs/MISSION_PROVEN.md`;

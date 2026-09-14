@@ -120,9 +120,20 @@ def test_api_evaluation_and_ris_are_categorical(tmp_path) -> None:
     assert any(item["action"] == "PORTFOLIO_EVALUATED" for item in audit)
 
     ris = client.get("/v1/ris").json()
+    assert ris["schema_version"] == "ris-categorical-v1"
     assert ris["numeric_ris_enabled"] is False
     assert ris["score"] is None
-    assert ris["dimensions"]["predictive_evidence"] == "NOT_ESTABLISHED"
+    assert set(ris["dimensions"]) == {
+        "data_integrity",
+        "uniformity",
+        "cooccurrence",
+        "temporal",
+        "regime",
+        "predictive_evidence",
+    }
+    assert ris["dimensions"]["predictive_evidence"]["state"] == "NOT_ESTABLISHED"
+    assert ris["dimensions"]["regime"]["state"] == "INCONCLUSIVE"
+    assert "RIS_NUMERIC_FORBIDDEN_IN_1_X" in ris["guardrails"]
 
 
 def test_api_body_limit_and_read_only_mode(tmp_path) -> None:

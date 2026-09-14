@@ -30,8 +30,11 @@ Ações disponíveis:
 - `status`: resumo do estado canônico;
 - `audit-state`: auditoria do estado e hashes;
 - `analyze-state`: análise Core do histórico canônico;
+- `ris-categorical`: executa o painel RIS categórico nas seis dimensões canônicas; nunca produz nota numérica e preserva `score=null`;
 - `generate-portfolio`: gera carteira combinatória uniforme como artefato, preservando a etiqueta `CARTEIRA COMBINATÓRIA — SEM VANTAGEM PREDITIVA COMPROVADA`;
 - `export-report`: exporta relatório operacional JSON + Markdown.
+
+O contrato científico do RIS está em `docs/RIS_CATEGORICAL.md`. A mesma autoridade de cálculo é usada pela API e pela Console; não existe fórmula matemática duplicada no workflow.
 
 Os resultados são publicados como GitHub Artifacts e não alteram o estado canônico.
 
@@ -51,6 +54,6 @@ Constrói o wheel, instala em ambiente limpo GitHub-hosted e executa a prova ope
 
 `governance/github-only-policy.json` define a autoridade, branches canônicos, runners permitidos, workflow escritor e SHAs dos Actions permitidos.
 
-`scripts/verify_github_governance.py` é gate obrigatório em CI e nos principais workflows.
+`scripts/verify_github_governance.py` é gate obrigatório em CI e nos principais workflows. O gate também exige que o RIS categórico permaneça exposto e materialmente provado pela Console.
 
 A proteção nativa de branches por Ruleset é descrita em `docs/GITHUB_NATIVE_RULESET.md`; essa configuração administrativa é a única etapa que não pode ser aplicada pelo conector GitHub atual.

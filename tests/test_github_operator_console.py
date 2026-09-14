@@ -3,17 +3,28 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from scripts.github_operator_console import _portfolio, _state_summary
+from scripts.github_operator_console import _portfolio, _ris, _state_summary
 from sare_lotofacil.portfolios.core import UNPROVEN_LABEL
+from sare_lotofacil.simulation.null import simulate_uniform_draws
 
 
 def _write(path: Path, payload: dict) -> None:
     path.write_text(json.dumps(payload), encoding="utf-8")
 
 
-def test_operator_status_and_portfolio_are_read_only_derivations(tmp_path: Path) -> None:
+def _state_fixture(tmp_path: Path) -> Path:
     state = tmp_path / "operations"
     state.mkdir()
+    draws = simulate_uniform_draws(105, seed=20260911).draws
+    _write(
+        state / "canonical_history.json",
+        {
+            "records": [
+                {"contest_id": index, "numbers": list(numbers)}
+                for index, numbers in enumerate(draws, start=1)
+            ]
+        },
+    )
     _write(
         state / "latest.json",
         {
@@ -26,6 +37,8 @@ def test_operator_status_and_portfolio_are_read_only_derivations(tmp_path: Path)
             "prospective": {
                 "predictive_evidence": "NOT_ESTABLISHED",
                 "prospective_state": "UNDER_TEST_COHORT_A",
+                "evaluated_predictions": 0,
+                "pending_predictions": 1,
             },
         },
     )
@@ -38,6 +51,11 @@ def test_operator_status_and_portfolio_are_read_only_derivations(tmp_path: Path)
             }
         },
     )
+    return state
+
+
+def test_operator_status_and_portfolio_are_read_only_derivations(tmp_path: Path) -> None:
+    state = _state_fixture(tmp_path)
 
     summary = _state_summary(state)
     assert summary["status"] == "GITHUB_OPERATOR_STATE_PASS"
@@ -53,3 +71,18 @@ def test_operator_status_and_portfolio_are_read_only_derivations(tmp_path: Path)
     assert len(portfolio["cards"]) == 3
     assert portfolio["evidence_label"] == UNPROVEN_LABEL
     assert portfolio["predictive_evidence"] == "NOT_ESTABLISHED"
+
+
+def test_operator_ris_uses_canonical_state_without_numeric_score(tmp_path: Path) -> None:
+    state = _state_fixture(tmp_path)
+    ris = _ris(state)
+
+    assert ris["status"] == "GITHUB_OPERATOR_RIS_PASS"
+    assert ris["numeric_ris_enabled"] is False
+    assert ris["score"] is None
+    assert ris["snapshot_id"] == "snap-test"
+    assert ris["dimensions"]["data_integrity"]["state"] == "VERIFIED"
+    assert ris["dimensions"]["predictive_evidence"]["state"] == "UNDER_TEST"
+    assert ris["dimensions"]["predictive_evidence"]["evidence"]["predictive_evidence"] == "NOT_ESTABLISHED"
+    assert ris["dimensions"]["regime"]["state"] == "INCONCLUSIVE"
+    assert "RIS_NUMERIC_FORBIDDEN_IN_1_X" in ris["guardrails"]

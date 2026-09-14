@@ -12,6 +12,7 @@ on:
           - status
           - audit-state
           - analyze-state
+          - ris-categorical
           - generate-portfolio
           - export-report
       card_count:
@@ -68,6 +69,7 @@ jobs:
             status) ACTION=status ;;
             audit-state) ACTION=audit ;;
             analyze-state) ACTION=analyze ;;
+            ris-categorical) ACTION=ris ;;
             generate-portfolio) ACTION=portfolio ;;
             export-report) ACTION=export ;;
             *) echo "Unsupported action: $OPERATOR_ACTION" >&2; exit 2 ;;

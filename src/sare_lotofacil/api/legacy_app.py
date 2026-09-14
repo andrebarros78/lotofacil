@@ -10,6 +10,7 @@ from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
+from sare_lotofacil.analysis.ris import build_categorical_ris
 from sare_lotofacil.persistence.backup import database_integrity
 from sare_lotofacil.persistence.db import SCHEMA_VERSION, connect, initialize_database
 from sare_lotofacil.persistence.operations import (
@@ -243,7 +244,6 @@ def create_app(
 
         return idempotent("CREATE_EVALUATION", idempotency_key, payload, execute)
 
-
     @app.get("/v1/audit")
     def audit_events(limit: int = 100) -> dict[str, Any]:
         try:
@@ -253,16 +253,6 @@ def create_app(
 
     @app.get("/v1/ris")
     def ris_panel() -> dict[str, Any]:
-        snapshots_count = len(list_snapshots(path))
-        return {
-            "numeric_ris_enabled": False,
-            "score": None,
-            "dimensions": {
-                "data": "AVAILABLE" if snapshots_count else "NO_SNAPSHOT",
-                "mathematics": "REFERENCE_IMPLEMENTED",
-                "predictive_evidence": "NOT_ESTABLISHED",
-                "portfolio_policy": "COMBINATORIAL_ONLY_UNLESS_REPLICATED",
-            },
-        }
+        return build_categorical_ris(path)
 
     return app

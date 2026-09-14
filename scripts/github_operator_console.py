@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from sare_lotofacil.analysis.core_report import analyze_core
+from sare_lotofacil.analysis.ris import build_categorical_ris_from_draws
 from sare_lotofacil.portfolios.core import UNPROVEN_LABEL, generate_uniform_portfolio
 
 
@@ -56,6 +57,47 @@ def _analyze(state_dir: Path) -> dict:
     }
 
 
+def _ris(state_dir: Path) -> dict:
+    history = _load(state_dir / "canonical_history.json")
+    latest = _load(state_dir / "latest.json")
+    draws = tuple(tuple(record["numbers"]) for record in history["records"])
+    prospective = latest["prospective"]
+    prospective_state = str(prospective["prospective_state"])
+    predictive_evidence = str(prospective["predictive_evidence"])
+    if predictive_evidence == "REPLICATED":
+        ris_predictive_state = "REPLICATED"
+    elif prospective_state.startswith("UNDER_TEST"):
+        ris_predictive_state = "UNDER_TEST"
+    else:
+        ris_predictive_state = "NOT_ESTABLISHED"
+
+    panel = build_categorical_ris_from_draws(
+        draws,
+        snapshot_id=str(latest["snapshot_id"]),
+        data_state="VERIFIED" if latest["database_integrity"] == "ok" else "INVALID",
+        data_evidence={
+            "database_integrity": latest["database_integrity"],
+            "canonical_history_sha256": latest["canonical_history_sha256"],
+            "history_file_sha256": _sha256(state_dir / "canonical_history.json"),
+            "official_latest_contest": latest["official_latest_contest"],
+            "source": "operations/state",
+        },
+        predictive_state=ris_predictive_state,
+        predictive_evidence={
+            "predictive_evidence": predictive_evidence,
+            "prospective_state": prospective_state,
+            "evaluated_predictions": prospective["evaluated_predictions"],
+            "pending_predictions": prospective["pending_predictions"],
+            "source": "operations/state/latest.json",
+        },
+    )
+    return {
+        "status": "GITHUB_OPERATOR_RIS_PASS",
+        "generated_at_utc": datetime.now(timezone.utc).isoformat(),
+        **panel,
+    }
+
+
 def _portfolio(state_dir: Path, card_count: int, seed: int) -> dict:
     latest = _load(state_dir / "latest.json")
     target = int(latest["next_prediction_target"])
@@ -83,6 +125,9 @@ def _export(state_dir: Path) -> tuple[dict, str]:
     summary = _state_summary(state_dir)
     latest = _load(state_dir / "latest.json")
     ledger = _load(state_dir / "prospective_ledger.json")
+    state_names = ["bootstrap_manifest.json", "canonical_history.json", "prospective_ledger.json", "latest.json"]
+    if (state_dir / "canonical_prizes.json").exists():
+        state_names.append("canonical_prizes.json")
     payload = {
         "status": "GITHUB_OPERATOR_EXPORT_PASS",
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
@@ -90,10 +135,7 @@ def _export(state_dir: Path) -> tuple[dict, str]:
         "retrospective_core": latest["retrospective_core"],
         "prospective": latest["prospective"],
         "protocol": ledger["protocol"],
-        "state_files": {
-            name: _sha256(state_dir / name)
-            for name in ("bootstrap_manifest.json", "canonical_history.json", "prospective_ledger.json", "latest.json")
-        },
+        "state_files": {name: _sha256(state_dir / name) for name in state_names},
     }
     md = "\n".join([
         "# SARE Lotofácil — Relatório Operacional GitHub",
@@ -114,7 +156,7 @@ def _export(state_dir: Path) -> tuple[dict, str]:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Read-only operator console for the canonical GitHub state")
-    parser.add_argument("--action", choices=("status", "audit", "analyze", "portfolio", "export"), required=True)
+    parser.add_argument("--action", choices=("status", "audit", "analyze", "ris", "portfolio", "export"), required=True)
     parser.add_argument("--state-dir", type=Path, required=True)
     parser.add_argument("--out-dir", type=Path, required=True)
     parser.add_argument("--card-count", type=int, default=10)
@@ -133,6 +175,9 @@ def main() -> int:
     elif args.action == "analyze":
         payload = _analyze(args.state_dir)
         _write_json(args.out_dir / "analysis.json", payload)
+    elif args.action == "ris":
+        payload = _ris(args.state_dir)
+        _write_json(args.out_dir / "ris.json", payload)
     elif args.action == "portfolio":
         payload = _portfolio(args.state_dir, args.card_count, args.seed)
         _write_json(args.out_dir / "portfolio.json", payload)
