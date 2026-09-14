@@ -8,8 +8,6 @@ A identidade canônica e imutável da release é o **SHA Git completo de `main`*
 
 O estado operacional persistente e auditável vive em `operations/state`. GitHub Actions é o executor canônico; GitHub Artifacts contém bancos reconstruídos, relatórios e evidências transitórias; o histórico Git fornece proveniência temporal.
 
-O contrato comprovado da release anterior permanece preservado em `docs/MISSION_PROVEN_1_1_0.md` e no branch `evidence/release-v1.1.0`.
-
 ## Regra de MISSION_PROVEN
 
 A release só pode ser declarada `MISSION_PROVEN` quando as provas abaixo estiverem materialmente ligadas ao mesmo SHA canônico de `main`, com artefatos e estado operacional verificáveis. Nenhuma simples existência de arquivo, workflow ou teste encerra a missão isoladamente.
@@ -29,7 +27,7 @@ Cadeia mínima exigida:
 | P-CARTEIRA | `tests/test_portfolios.py`, `tests/test_end_to_end.py`, `tests/test_hardening.py`, `SARE Operator Console Proof` | cartões válidos, auditáveis e com etiqueta obrigatória de ausência de vantagem comprovada |
 | P-PERSISTENCIA | `GitHub Operational Cycle`, `operations/state`, `tests/test_repository.py`, `tests/test_persistence.py` | estado textual versionado, reconstrução determinística e continuidade entre execuções independentes do GitHub |
 | P-RECUPERACAO | `tests/test_backup.py`, `tests/test_end_to_end.py`, `Release Proof`, reconstrução do SQLite a partir de `operations/state` | recuperação com `integrity_check=ok` e continuidade da jornada sem depender de máquina externa |
-| P-SEGURANCA | `scripts/verify_github_governance.py`, `tests/test_api.py`, `tests/test_hardening.py` | Actions pinados por SHA, runtime Node 24 nos Actions oficiais, permissões mínimas, writer operacional único, autenticação/limites de entrada e ausência de runner `self-hosted` canônico |
+| P-SEGURANCA | `scripts/verify_github_governance.py`, `tests/test_api.py`, `tests/test_hardening.py` | Actions pinados por SHA, permissões mínimas, writer operacional único, autenticação/limites de entrada e ausência de runner `self-hosted` canônico |
 | P-FILA | `tests/test_jobs.py`, `tests/test_hardening.py` | lease, fencing token, checkpoint, retomada, cancelamento e falha sem falso sucesso |
 | P-EVIDENCIA | `tests/test_evidence.py`, `verify-evidence`, GitHub Artifacts | SHA-256 reprodutível, adulteração detectada e evidência vinculada ao workflow/commit |
 | P-RELEASE | `tests/test_version.py`, workflow `Release Proof` | wheel 1.1.1 instalado em ambiente limpo, módulo em `site-packages`, `MATHEMATICAL_CHECKS_PASS` e `OPERATIONAL_RELEASE_PROOF_PASS` |
@@ -68,6 +66,8 @@ A conclusão prospectiva não é requisito para `MISSION_PROVEN` de engenharia d
 ## Estado de hardening soberano
 
 A governança lógica GitHub-only é comprovada pelo CI e por `verify_github_governance.py`.
+
+A release 1.1.1 exige Actions oficiais fixados por SHA em variantes com runtime Node 24.
 
 Os **Rulesets nativos do GitHub** para `main` e `operations/state` são uma camada administrativa adicional de defesa. Enquanto não estiverem configurados, o estado deve ser registrado como:
 
