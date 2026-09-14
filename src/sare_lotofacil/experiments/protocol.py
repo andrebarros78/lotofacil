@@ -4,6 +4,8 @@ import hashlib
 import json
 from dataclasses import asdict, dataclass
 
+from sare_lotofacil.experiments.integrity import enforce_confirmatory_stopping_rule
+
 
 @dataclass(frozen=True, slots=True)
 class ExperimentProtocol:
@@ -61,6 +63,7 @@ class ExperimentProtocol:
             raise ValueError("delta_min não pode ser negativo")
         if "uniform_p_0_6" not in self.comparators:
             raise ValueError("comparadores precisam incluir o M0 uniforme")
+        enforce_confirmatory_stopping_rule(self.stopping_rule)
 
     def canonical_json(self) -> str:
         self.validate()
