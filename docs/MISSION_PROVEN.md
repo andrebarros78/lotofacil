@@ -133,6 +133,10 @@ Antes de declarar 1.1.8 `MISSION_PROVEN`, o SHA de `main` precisa ter todos os s
 
 O manifesto permanente da release precisa registrar IDs dos runs, IDs/digests dos Artifacts, SHA do estado operacional e a decisão real de `PRIMARY_CARD` observada no Operator Console Proof.
 
+## Sincronização final dos gates
+
+O fechamento da 1.1.8 usa este próprio contrato como ponto de sincronização dos cinco workflows obrigatórios. A alteração de fechamento em `docs/MISSION_PROVEN.md` deve passar por PR/CI e, após merge em `main`, disparar no mesmo SHA final `CI`, `Release Proof`, `Real History Check`, `GitHub Operational Cycle` e `SARE Operator Console Proof`. O alias `release/v1.1.8` só pode ser criado depois de todos concluírem com `success` no mesmo SHA.
+
 ## Resultado científico
 
 `MISSION_PROVEN` continua sendo exclusivamente status de engenharia.
