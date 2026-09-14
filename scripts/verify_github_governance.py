@@ -105,6 +105,10 @@ def main() -> int:
             "--action export",
             "GITHUB_OPERATOR_RIS_PASS",
             "RIS_NUMERIC_FORBIDDEN_IN_1_X",
+            "calibrated_global_marginal_change_scan",
+            "RETROSPECTIVE_DISCOVERY",
+            "compatible_with_target",
+            "REGIME_ALERT_IS_RETROSPECTIVE_NOT_REALTIME",
             "SARE_OPERATOR_CONSOLE_PROOF_PASS",
             "operations_state_sha",
         ]
@@ -113,6 +117,21 @@ def main() -> int:
                 violations.append(f"operator-console-proof.yml missing marker: {marker}")
         if re.search(r"(?m)^\s*contents:\s*write\s*$", text):
             violations.append("operator-console-proof.yml must remain read-only")
+
+    release_path = ROOT / ".github" / "workflows" / "release-proof.yml"
+    if release_path.exists():
+        text = release_path.read_text(encoding="utf-8")
+        release_markers = [
+            'expected = "1.1.3"',
+            "CATEGORICAL_RIS_RELEASE_PROOF_PASS",
+            "REGIME_CALIBRATION_RELEASE_PROOF_PASS",
+            "simulate_marginal_regime_shift",
+            "compatible_with_target",
+            "RETROSPECTIVE_DISCOVERY",
+        ]
+        for marker in release_markers:
+            if marker not in text:
+                violations.append(f"release-proof.yml missing marker: {marker}")
 
     native = policy.get("native_ruleset", {})
     if native.get("status") != "ENFORCED":
