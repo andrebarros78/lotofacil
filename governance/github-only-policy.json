@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "authority": "GITHUB_ONLY",
+  "canonical_code_branch": "main",
+  "canonical_state_branch": "operations/state",
+  "allowed_runners": ["ubuntu-latest"],
+  "write_workflows": [".github/workflows/github-operations.yml"],
+  "required_workflows": [
+    ".github/workflows/ci.yml",
+    ".github/workflows/github-operations.yml",
+    ".github/workflows/operator-console.yml",
+    ".github/workflows/real-history-check.yml",
+    ".github/workflows/release-proof.yml"
+  ],
+  "pinned_actions": {
+    "actions/checkout": "11d5960a326750d5838078e36cf38b85af677262",
+    "actions/setup-python": "a26af69be951a213d495a4c3e4e4022e16d87065",
+    "actions/upload-artifact": "ea165f8d65b6e75b540449e92b4886f43607fa02"
+  },
+  "native_ruleset": {
+    "status": "REQUIRED_EXTERNAL_ADMIN_ACTION",
+    "main": {
+      "require_pull_request": true,
+      "require_ci": true,
+      "block_force_push": true,
+      "block_deletion": true
+    },
+    "operations/state": {
+      "block_force_push": true,
+      "block_deletion": true,
+      "expected_writer": "GitHub Operational Cycle"
+    }
+  }
+}
