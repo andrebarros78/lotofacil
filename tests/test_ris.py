@@ -16,18 +16,16 @@ def _database_with_snapshot(tmp_path, contest_count: int = 105):
     draws = simulate_uniform_draws(contest_count, seed=20260911).draws
     start = date(2026, 1, 1)
     for index, numbers in enumerate(draws, start=1):
-        record = validate_contest(index, start + timedelta(days=index - 1), numbers)
-        persist_caixa_contest(
-            db,
-            CaixaContest(
-                record=record,
-                prize_tiers=(),
-                source_url=f"fixture://ris/{index}",
-                captured_at=datetime(2026, 9, 14, tzinfo=timezone.utc),
-                raw_payload={"numero": index, "listaDezenas": list(numbers)},
-            ),
-            source_class="SINTETICO",
+        draw_date = start + timedelta(days=index - 1)
+        record = validate_contest(index, draw_date, numbers)
+        contest = CaixaContest(
+            record=record,
+            prize_tiers=(),
+            source_url=f"fixture://contest/{index}",
+            captured_at=datetime(2026, 9, 11, tzinfo=timezone.utc),
+            raw_payload={"numero": index, "listaDezenas": list(numbers)},
         )
+        persist_caixa_contest(db, contest, source_class="SINTETICO")
     snapshot = create_latest_snapshot(db)
     return db, snapshot, draws
 
@@ -83,12 +81,42 @@ def test_ris_exposes_six_canonical_dimensions_with_evidence(tmp_path) -> None:
 
     regime = ris["dimensions"]["regime"]
     assert regime["state"] == "INCONCLUSIVE"
-    assert regime["evidence"]["false_alarm_calibration"] == "NOT_ESTABLISHED"
+    assert regime["evidence"]["false_alarm_calibration"] == "NOT_RUN"
+    assert regime["evidence"]["min_segment"] == 100
 
     predictive = ris["dimensions"]["predictive_evidence"]
     assert predictive["state"] == "NOT_ESTABLISHED"
     assert predictive["evidence"]["replicated_promotions"] == 0
     assert "RIS_NUMERIC_FORBIDDEN_IN_1_X" in ris["guardrails"]
+    assert "REGIME_ALERT_IS_RETROSPECTIVE_NOT_REALTIME" in ris["guardrails"]
+
+
+def test_ris_regime_becomes_calibrated_when_sample_is_sufficient(tmp_path) -> None:
+    db, snapshot, _ = _database_with_snapshot(tmp_path, contest_count=240)
+    ris = build_categorical_ris(
+        db,
+        temporal_replications=49,
+        temporal_seed=77,
+        regime_min_segment=60,
+        regime_candidate_stride=10,
+        regime_calibration_replications=49,
+        regime_validation_replications=49,
+        regime_seed=20260914,
+    )
+
+    regime = ris["dimensions"]["regime"]
+    assert regime["state"] in {"STABLE", "ALERT", "INCONCLUSIVE"}
+    evidence = regime["evidence"]
+    assert evidence["method"] == "calibrated_global_marginal_change_scan"
+    assert evidence["mode"] == "RETROSPECTIVE_DISCOVERY"
+    assert evidence["candidate_count"] > 0
+    assert len(evidence["candidate_points"]) == evidence["candidate_count"]
+    assert all(item["candidate_label"] is not None for item in evidence["candidate_points"])
+    calibration = evidence["false_alarm_calibration"]
+    assert calibration["calibration_replications"] == 49
+    assert calibration["validation_replications"] == 49
+    assert 0.0 <= calibration["validation_false_alarm_rate"] <= 1.0
+    assert ris["snapshot_id"] == snapshot.snapshot_id
 
 
 def test_temporal_lag_permutation_is_deterministic() -> None:
