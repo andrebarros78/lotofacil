@@ -1,0 +1,147 @@
+{
+  "schema_version": 1,
+  "release": "1.1.7",
+  "mission_status": "MISSION_PROVEN",
+  "mission_scope": "ENGINEERING_RELEASE",
+  "authority": "GITHUB_ONLY",
+  "release_commit_sha": "6c1ad238116870adca7569a13718a0e6b3d9464f",
+  "release_tree_sha": "6c30061400b990f8b26e75651555a667aca3226b",
+  "canonical_refs": {
+    "main": "6c1ad238116870adca7569a13718a0e6b3d9464f",
+    "release/v1.1.7": "6c1ad238116870adca7569a13718a0e6b3d9464f",
+    "operations/state": "3a44d32240f06d7148652835c6ff41f5242975a8"
+  },
+  "proof_completed_at_utc": "2026-09-14T20:45:31Z",
+  "workflows": {
+    "CI": {
+      "run_id": 34894241454,
+      "conclusion": "success",
+      "python_3_12": "success",
+      "python_3_13": "success",
+      "doctor": "success",
+      "governance_gate": "success",
+      "operator_console_smoke": "success"
+    },
+    "Release Proof": {
+      "run_id": 34894241417,
+      "conclusion": "success",
+      "release_version": "1.1.7",
+      "installed_from_site_packages": true,
+      "mathematical_doctor": "success",
+      "database_backup_restore_integrity": "ok",
+      "categorical_ris_release_proof": "success",
+      "regime_calibration_release_proof": "success",
+      "controlled_alternatives_release_proof": "success",
+      "backtest_integrity_release_proof": "success",
+      "risk_repro_joint_coverage_release_proof": "success",
+      "portfolio_economic_integrity_release_proof": "success",
+      "operational_release_journey": "success",
+      "artifacts": [
+        {"id": 10368137858, "name": "sare-lotofacil-wheel", "sha256": "24c9ca35753d1104ccd0fc0ca5743cdaccdce74dbfe37a529b3e58f44cf88d4b", "expires_at": "2026-12-13T20:39:26Z"},
+        {"id": 10368013529, "name": "operational-release-proof", "sha256": "f16eb3e51d99b2eefccac1ba16f355cff742df1536c0d18e4003195e1e79e115", "expires_at": "2026-12-13T20:39:26Z"},
+        {"id": 10367868912, "name": "regime-calibration-release-proof", "sha256": "5ebddc3dc6ee4aebb437c5f76d04bd726318b836ebea84d6bc5e42352aa9baee", "expires_at": "2026-12-13T20:39:26Z"},
+        {"id": 10368098047, "name": "controlled-alternatives-release-proof", "sha256": "945bd0de40ffabcd5e415cc08716fb94a43c11dbb86757a9ef2d4ffd8cd0a6c8", "expires_at": "2026-12-13T20:39:26Z"},
+        {"id": 10367589768, "name": "backtest-integrity-release-proof", "sha256": "ee911be4f2df9cb17bd92c070e218ab261b20101d4ed474ef2056a7f80663c72", "expires_at": "2026-12-13T20:39:26Z"},
+        {"id": 10368013544, "name": "risk-repro-joint-coverage-release-proof", "sha256": "f3baf4bb1d4677818c14b70833abcbb77700b5e3fac41fbcdf41e555276a8321", "expires_at": "2026-12-13T20:39:26Z"},
+        {"id": 10367669462, "name": "portfolio-economic-integrity-release-proof", "sha256": "a04c9baf3f11190b235ee2821901ffa55907269e07d7767f7cea90691c708bd3", "expires_at": "2026-12-13T20:39:26Z"}
+      ]
+    },
+    "Real History Check": {
+      "run_id": 34894241463,
+      "conclusion": "success",
+      "database_integrity": "ok",
+      "snapshot_roundtrip_exact": true,
+      "official_latest_contest": 3779,
+      "predictive_evidence": "NOT_ESTABLISHED",
+      "scientific_conclusion": "EVIDENCIA_PREDITIVA_INSUFICIENTE",
+      "artifact": {"id": 10366979542, "name": "third-party-history-report", "sha256": "7bdb534132c6752d64b65f766a8e982f1af649e90f1b2fe53bac4b4670a41449", "expires_at": "2026-12-13T20:39:26Z"}
+    },
+    "GitHub Operational Cycle": {
+      "run_id": 34894241416,
+      "conclusion": "success",
+      "cycle_job": "success",
+      "committed_state_audit_job": "success",
+      "economic_state_proof_job": "success",
+      "artifacts": [
+        {"id": 10366969775, "name": "github-operational-cycle", "sha256": "b41ae6ef41466ad8740fbe5a8492da6c1104cc8c563ad15f113b2001d76b24c6", "expires_at": "2026-12-13T20:39:26Z"},
+        {"id": 10367288878, "name": "github-committed-state-audit", "sha256": "14ec491d78e085178d42b576d1dd73cc1707b78c51780c7839a1ecf2626bf6e6", "expires_at": "2026-12-13T20:39:26Z"},
+        {"id": 10367799133, "name": "github-economic-state-proof", "sha256": "2672731293e95022ecbab6f6af0ab1e40515ddef976b6cde7196eee42b7a4cad", "expires_at": "2026-12-13T20:39:26Z"}
+      ]
+    },
+    "SARE Operator Console Proof": {
+      "run_id": 34894241470,
+      "conclusion": "success",
+      "actions": ["status", "audit", "analyze", "ris", "portfolio", "export"],
+      "write_capability": false,
+      "artifact": {"id": 10368202501, "name": "sare-operator-console-proof-34894241470", "sha256": "a84306e423c71b06d49ff0f11c2f8568489cc6c7661ba4e875c245ab6c32b94e", "expires_at": "2026-12-13T20:39:26Z"}
+    }
+  },
+  "portfolio_economic_integrity": {
+    "status": "PORTFOLIO_ECONOMIC_INTEGRITY_RELEASE_PROOF_PASS",
+    "t30": {"blocked_counts": [2, 101]},
+    "t31": {"delivered_count": 10, "duplicate_blocked": true},
+    "t32": {"requested_card_count": 3, "attempts": 12, "status": "SEARCH_LIMIT_REACHED", "policy_id": "portfolio-policy-52c4178eefb557aab878384e"},
+    "t33": {"strict_policy_id": "portfolio-policy-52c4178eefb557aab878384e", "relaxed_policy_id": "portfolio-policy-b737d70364f5b8792b866d82"},
+    "t34": {"card_count": 5, "covered_outcomes": 5, "total_outcomes": 3268760, "probability": 0.0000015296320317184497, "method": "EXACT_DISTINCT_CARD_JACKPOT_IDENTITY"},
+    "t35": {"purchase_recorded": false, "theoretical_cost_cents": 1050, "actual_cost_cents": null, "actual_net_cents": null},
+    "t36": {"round_id": "contest-500/revision-1", "prize_by_card_cents": [80000000, 125000]},
+    "t37": {"prize_by_card_cents": [98765, 98765, 50000000]},
+    "t38": {"one_contest_horizon": 1, "one_contest_net_loss_cents": 300, "one_contest_cannot_fund_next": false, "prolonged_horizon": 4, "prolonged_net_loss_cents": 1200, "prolonged_cannot_fund_next": true},
+    "t39": {"contest_id": 500, "revision": 1, "revision_rows": 1, "audit_rows": 1, "schema_version": 6}
+  },
+  "risk_repro_joint_coverage": {
+    "status": "RISK_REPRO_JOINT_COVERAGE_RELEASE_PROOF_PASS",
+    "t24": {"events": 0, "replications": 1000, "probability": 0.0, "confidence": 0.95, "interval_low": 0.0, "interval_high": 0.0038267584855551217, "interval_method": "WILSON_SCORE"},
+    "t25": {"zero_replications_blocked": true},
+    "t26": {"train_metric": 0.24, "test_metric": 0.2, "leakage_detected": false, "basis": "TEMPORAL_PROVENANCE_ONLY"},
+    "t27": {"optional_stopping_blocked": true, "error_marker": "OPTIONAL_STOPPING_FORBIDDEN"},
+    "t28": {"content_hash": "087231ba7188cdc27a9da32c46f85e1b90b6cd4edc7d3823f250d4a983387151"},
+    "t29": {"card_count": 2, "min_hits": 14, "covered_outcomes": 277, "total_outcomes": 3268760, "probability": 0.00008474161455720212, "naive_independence_probability": 0.00009238764074814831, "independence_assumption_used": false, "method": "EXACT_JOINT_ENUMERATION_25_CHOOSE_15"}
+  },
+  "backtest_integrity": {
+    "status": "BACKTEST_INTEGRITY_RELEASE_PROOF_PASS",
+    "t20_future_variable_blocked": true,
+    "t21_future_fitted_transform_blocked": true,
+    "t22_planned_windows": 5,
+    "t22_successful_windows": 4,
+    "t22_failed_windows": 1,
+    "t22_success_rate": 0.8,
+    "t23_status": "INCONCLUSIVE",
+    "t23_predictive_evidence": "NOT_ESTABLISHED"
+  },
+  "real_walk_forward_ledgers": {
+    "m1_frequency": {"backtest_status": "VALID", "planned_windows": 1512, "successful_windows": 1512, "failed_windows": 0, "success_rate": 1.0, "window_ledger_hash": "89e044df58a03fc71c8153e3c3c28398ab82da7c6b6b85acbb05abf83fdeb814", "mean_brier": 0.2399028156199522, "delta_brier": 0.00009718438004777736, "delta_brier_ci95_low": -0.000025373329444696203, "delta_brier_ci95_high": 0.0002197420895402509},
+    "m2_exponential": {"backtest_status": "VALID", "planned_windows": 1512, "successful_windows": 1512, "failed_windows": 0, "success_rate": 1.0, "window_ledger_hash": "abe0ed8364cd228836b0b889e9022d0ae55c4ddfb33df2c0148f9db0e7f2be12", "mean_brier": 0.24622118066674104, "delta_brier": -0.0062211806667410285, "delta_brier_ci95_low": -0.007023020939068683, "delta_brier_ci95_high": -0.005419340394413374}
+  },
+  "operational_state": {
+    "status": "GITHUB_OPERATIONAL_CYCLE_PASS",
+    "run_at_utc": "2026-09-14T20:40:03.341904+00:00",
+    "database_integrity": "ok",
+    "official_latest_contest": 3779,
+    "next_prediction_target": 3780,
+    "snapshot_id": "snap-d9b43f9c33702a880495",
+    "snapshot_hash": "d9b43f9c33702a880495f99a929ebee0cac90e7c4724a950f678f1c6494d5106",
+    "canonical_history_sha256": "2854c22e090ca96a9aa3e535f555370c40edbf77b71aca3f51905e7373dc689e",
+    "prospective_state": "UNDER_TEST_COHORT_A",
+    "evaluated_predictions": 0,
+    "pending_predictions": 1,
+    "replication_criteria_met": false,
+    "predictive_evidence": "NOT_ESTABLISHED"
+  },
+  "governance": {
+    "status": "GITHUB_GOVERNANCE_PASS",
+    "canonical_release_version": "1.1.7",
+    "violations": [],
+    "native_rulesets_observed": 0,
+    "sovereign_hardening_status": "P0_LOGICAL_HARDENING_COMPLETE_NATIVE_RULESET_PENDING"
+  },
+  "scientific_scope": {
+    "mission_proven_is_engineering_release_status": true,
+    "predictive_evidence": "NOT_ESTABLISHED",
+    "scientific_conclusion": "EVIDENCIA_PREDITIVA_INSUFICIENTE",
+    "predictive_advantage_claimed": false,
+    "t30_t39_are_portfolio_economic_audit_integrity_tests_not_predictive_evidence": true,
+    "portfolio_label": "CARTEIRA COMBINATÓRIA — SEM VANTAGEM PREDITIVA COMPROVADA"
+  },
+  "integrity_note": "Permanent evidence ledger for audit after transient GitHub Actions Artifacts expire. T30-T39 establish portfolio-constraint and economic/audit integrity, including revision-aware idempotence; they do not establish predictive advantage on real Lotofacil history. Native GitHub Rulesets remain an external administrative hardening item and are not represented as completed."
+}
