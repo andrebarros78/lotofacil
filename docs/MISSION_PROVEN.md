@@ -1,8 +1,8 @@
-# SARE Lotofácil 1.1.5 — Evidências de MISSION_PROVEN
+# SARE Lotofácil 1.1.6 — Evidências de MISSION_PROVEN
 
 ## Autoridade canônica
 
-O SARE Lotofácil é **GitHub-only**. A identidade imutável da release é o SHA Git completo de `main`; `release/v1.1.5` só pode ser criado após todos os gates pós-merge do mesmo SHA terminarem com sucesso.
+O SARE Lotofácil é **GitHub-only**. A identidade imutável da release é o SHA Git completo de `main`; `release/v1.1.6` só pode ser criado após todos os gates pós-merge do mesmo SHA terminarem com sucesso.
 
 O estado persistente vive em `operations/state`; GitHub Actions é o executor canônico; GitHub Artifacts guarda evidências transitórias; Git history fornece proveniência.
 
@@ -21,60 +21,97 @@ Cadeia mínima:
 | P-REGIME | T16/T19 | falso alarme calibrado e mudança conhecida detectada |
 | P-ALTERNATIVAS | T17/T18 | potência marginal medida e memória temporal separada do viés marginal |
 | P-BACKTEST | `experiments.backtest`, M1/M2 e T20–T23 | anti-leakage fail-closed, falhas no denominador, baixa cobertura = `INCONCLUSIVE` |
+| P-RISCO | `simulation.risk` + T24/T25 | zero observado não vira risco zero; amostra vazia é erro |
+| P-PARADA | `experiments.integrity` + T26/T27 | desempenho não diagnostica leakage; optional stopping confirmatório é bloqueado |
+| P-REPRODUTIBILIDADE | `experiments.reproducibility` + T28 | contexto científico fixo gera conteúdo normalizado/hashes idênticos |
+| P-COBERTURA-CONJUNTA | `portfolios.coverage` + T29 | carteira calculada conjuntamente sobre `C(25,15)`, sem independência automática |
 | P-PERSISTENCIA | `GitHub Operational Cycle` | estado textual versionado e reconstrução determinística |
-| P-SEGURANCA | governance gate | Actions pinados, permissões mínimas, writer único e Release Proof obrigatório |
-| P-RELEASE | `Release Proof` | wheel 1.1.5 limpo com provas matemática, RIS, regime, alternativas e backtest |
+| P-SEGURANCA | governance gate | Actions pinados, permissões mínimas, writer único e provas de release obrigatórias |
+| P-RELEASE | `Release Proof` | wheel 1.1.6 limpo com provas matemática, RIS, regime, T17–T29 e jornada operacional |
 | P-REGRESSAO | `CI` | Python 3.12 e 3.13 aprovados |
 | P-OPERACAO | ciclo + auditoria + prova econômica | operação GitHub-native ponta a ponta |
 | P-CONSOLE | `SARE Operator Console Proof` | ações read-only sobre estado canônico |
 
-## Contrato T20 — lookahead em variável
+## T20–T23 — integridade de backtest preservada
 
-Para cada janela existe um `training_last_contest` e um `target_contest`. Toda variável usada na janela declara `available_through_contest`.
+T20/T21 continuam bloqueando lookahead de variável e transformação por proveniência temporal; T22 mantém janelas falhas no denominador/ledger; T23 mantém cobertura insuficiente como `INCONCLUSIVE` com `predictive_evidence=NOT_ESTABLISHED`.
 
-Se qualquer variável tiver `available_through_contest > training_last_contest`, o experimento é bloqueado **antes da pontuação** com:
+O walk-forward real M1/M2 continua usando a mesma camada auditada e M0 (`Brier=0,24`) em cada janela.
 
-`LOOKAHEAD_LEAKAGE_DETECTED`
+## Contrato T24 — zero eventos de ruína
 
-Leakage não é tratado como mera janela falha; é erro fatal do experimento.
+Um evento binário de risco é resumido com intervalo de Wilson e resolução Monte Carlo explícita. Para amostra não vazia com zero eventos:
 
-## Contrato T21 — transformação ajustada fora do treino
+- estimativa pontual pode ser `0`;
+- limite inferior é `0`;
+- limite superior do intervalo deve ser **maior que zero**;
+- zero eventos observados não pode ser rotulado como risco zero.
 
-Toda transformação ajustável declara `fitted_through_contest`. Se o ajuste usar concurso posterior a `training_last_contest`, o experimento é bloqueado com:
+A resolução registrada é `1 / replications`.
 
-`TRANSFORM_FIT_LEAKAGE_DETECTED`
+## Contrato T25 — zero replicações
 
-Isso inclui o caso explícito de ajuste sobre o histórico completo antes de avaliar uma janela passada.
+`replications` precisa ser inteiro positivo. `replications=0` é erro de entrada e não produz:
 
-## Contrato T22 — falhas de janela
+- probabilidade `0`;
+- intervalo `[0,0]`;
+- VaR, ruína ou qualquer outra métrica artificialmente nula.
 
-Janelas planejadas não podem desaparecer silenciosamente. Cada janela gera `WindowOutcome` com:
+## Contrato T26 — teste melhor que treino
 
-- ID da janela;
-- último concurso de treino;
-- concurso-alvo;
-- estado `SUCCESS` ou `FAILED`;
-- Brier M0 (`0,24`) sempre visível;
-- Brier/ΔBrier do modelo quando disponível;
-- tipo e mensagem de erro quando falha.
+Diferença de desempenho entre treino e teste não é critério de leakage. O diagnóstico canônico usa **proveniência temporal** da janela.
 
-O relatório registra `planned_windows`, `successful_windows`, `failed_windows`, `success_rate`, `failed_window_ids` e SHA-256 do ledger normalizado.
+Se variáveis e transformações respeitam o corte de treino, `test_metric < train_metric` (para métrica em que menor é melhor) permanece uma observação de desempenho e retorna:
 
-## Contrato T23 — evidência insuficiente
+`NO_LEAKAGE_EVIDENCE_FROM_PERFORMANCE_GAP`
 
-A cobertura mínima é predefinida por `min_successful_windows` e `min_success_rate`. Se qualquer requisito não for atingido:
+Isso não prova ausência universal de leakage; apenas impede o falso positivo “teste melhor que treino = vazamento”.
 
-- `status = INCONCLUSIVE`;
-- `predictive_evidence = NOT_ESTABLISHED`;
-- um score favorável nas poucas janelas válidas não autoriza promoção.
+## Contrato T27 — parada oportunista
 
-No walk-forward canônico M1/M2, a cobertura exigida é de pelo menos 30 janelas válidas e taxa de sucesso 100%. O estado de backtest fica exposto no próprio `WalkForwardResult`.
+Protocolos confirmatórios exigem regra de parada fixa/predefinida e auditável. São aceitas regras explicitamente fixas e sem parada oportunista, inclusive texto humano equivalente.
 
-## Relação com M1/M2
+Regras dependentes do resultado — por exemplo “inspecionar repetidamente até p<0,05”, parar ao atingir significância ou conveniência — são bloqueadas antes do hash/protocolo válido com:
 
-O caminho real M1 frequência regularizada e M2 exponencial usa a mesma camada auditada. Cada janela declara que `history_prefix` e o estado/transformação do modelo estão disponíveis/ajustados apenas até o corte de treino. Não existe uma implementação paralela exclusiva para os testes T20–T23.
+`OPTIONAL_STOPPING_FORBIDDEN`
 
-A matemática preditiva permanece inalterada: M0 continua obrigatório em toda janela e as métricas agregadas continuam Brier, ΔBrier e IC95%.
+A aprovação de modelo continua exigindo `predictive_evidence=REPLICATED`; inspeções repetidas não promovem evidência.
+
+## Contrato T28 — conteúdo científico normalizado
+
+A identidade científica fixa:
+
+- `seed`;
+- `data_hash`;
+- `code_commit`;
+- `environment_hash`;
+- `protocol_hash`;
+- payload científico normalizado.
+
+Campos voláteis operacionais como `run_id`, timestamps e IDs de workflow não participam do conteúdo científico normalizado.
+
+Com seed, dados, código, ambiente, protocolo e valores científicos iguais, a serialização canônica e o SHA-256 precisam ser idênticos independentemente da ordem de chaves ou de IDs/timestamps voláteis.
+
+Alterar um elemento científico fixado, como a seed, deve alterar o hash.
+
+## Contrato T29 — cobertura conjunta de carteira
+
+Para uma carteira `P` e limiar `h`, a autoridade é:
+
+`Q_h(P) = # {d em Ω : max_c |c ∩ d| >= h} / |Ω|`
+
+com `|Ω| = C(25,15) = 3.268.760`.
+
+A versão 1.1.6 calcula essa cobertura por enumeração exata conjunta com máscaras de 25 bits. Em cada resultado possível, todos os cartões enfrentam o **mesmo** sorteio e o resultado é contado uma única vez quando ao menos um cartão atinge o limiar.
+
+Invariantes:
+
+- `method = EXACT_JOINT_ENUMERATION_25_CHOOSE_15`;
+- `independence_assumption_used = false`;
+- cartões precisam ser válidos e distintos;
+- uma aproximação de independência pode ser exibida apenas como diagnóstico comparativo e nunca substitui a cobertura conjunta.
+
+T29 não atribui vantagem preditiva à carteira; mede cobertura combinatória sob H0.
 
 ## Gates finais do mesmo SHA
 
@@ -82,18 +119,19 @@ Antes de declarar `MISSION_PROVEN`, o SHA canônico precisa apresentar simultane
 
 - `CI` `completed/success` em Python 3.12 e 3.13;
 - `Real History Check` `completed/success` com `database_integrity=ok` e `snapshot_roundtrip_exact=true`;
-- `Release Proof` `completed/success`, incluindo `RELEASE_VERSION=1.1.5`, `MATHEMATICAL_CHECKS_PASS`, `CATEGORICAL_RIS_RELEASE_PROOF_PASS`, `REGIME_CALIBRATION_RELEASE_PROOF_PASS`, `CONTROLLED_ALTERNATIVES_RELEASE_PROOF_PASS`, `BACKTEST_INTEGRITY_RELEASE_PROOF_PASS` e `OPERATIONAL_RELEASE_PROOF_PASS`;
-- Artifact `backtest-integrity-release-proof` com T20 bloqueado, T21 bloqueado, T22 contabilizado e T23 `INCONCLUSIVE`;
+- `Release Proof` `completed/success`, incluindo `RELEASE_VERSION=1.1.6`, `MATHEMATICAL_CHECKS_PASS`, `CATEGORICAL_RIS_RELEASE_PROOF_PASS`, `REGIME_CALIBRATION_RELEASE_PROOF_PASS`, `CONTROLLED_ALTERNATIVES_RELEASE_PROOF_PASS`, `BACKTEST_INTEGRITY_RELEASE_PROOF_PASS`, `RISK_REPRO_JOINT_COVERAGE_RELEASE_PROOF_PASS` e `OPERATIONAL_RELEASE_PROOF_PASS`;
+- Artifact `backtest-integrity-release-proof` com T20–T23;
+- Artifact `risk-repro-joint-coverage-release-proof` com T24–T29 quantitativos do wheel instalado;
 - `GitHub Operational Cycle`: `cycle`, `committed-state-audit` e `economic-state-proof` em `success`;
 - `SARE Operator Console Proof` `completed/success`;
 - governance gate em PASS;
-- `main` e `release/v1.1.5` resolvendo para o mesmo SHA.
+- `main` e `release/v1.1.6` resolvendo para o mesmo SHA.
 
-O alias `release/v1.1.5` só é criado **depois** desses gates.
+O alias `release/v1.1.6` só é criado **depois** desses gates.
 
 ## Resultado científico e guardrails
 
-`EVIDENCIA_PREDITIVA_INSUFICIENTE` e `predictive_evidence=NOT_ESTABLISHED` continuam resultados válidos. T16–T23 são provas de calibração, sensibilidade ou integridade metodológica; não alteram o protocolo prospectivo nem promovem modelo.
+`EVIDENCIA_PREDITIVA_INSUFICIENTE` e `predictive_evidence=NOT_ESTABLISHED` continuam resultados válidos. T16–T29 são provas de calibração, sensibilidade, integridade metodológica, risco, reprodutibilidade ou cobertura combinatória; nenhuma substitui o protocolo prospectivo nem promove modelo.
 
 Carteiras permanecem rotuladas:
 
@@ -107,9 +145,12 @@ A governança lógica GitHub-only é obrigatória. Enquanto Rulesets nativos nã
 
 `P0_LOGICAL_HARDENING_COMPLETE_NATIVE_RULESET_PENDING`
 
-## Limitações 1.1.5
+## Limitações 1.1.6
 
-- T20–T23 comprovam integridade temporal/contábil para o contrato de backtest implementado; não provam vantagem preditiva;
+- o resumo T24 é para evento binário observado em replicações e não substitui um simulador econômico completo de trajetórias, VaR/cauda e regimes de prêmio;
+- T27 valida a regra declarada e marcadores de parada oportunista; não torna semanticamente decidível todo texto arbitrário possível;
+- T28 normaliza conteúdo científico declarado, mas não substitui captura de ambiente/dependências no workflow;
+- T29 faz cobertura exata combinatória, não retorno econômico nem vantagem preditiva;
 - T17/T18 permanecem alternativas sintéticas controladas;
 - detector de regime permanece retrospectivo e inicialmente marginal;
 - SQLite é transitório/reconstruível, não memória permanente;
@@ -117,4 +158,4 @@ A governança lógica GitHub-only é obrigatória. Enquanto Rulesets nativos nã
 - Rulesets nativos continuam pendentes de ação administrativa externa;
 - não existe vantagem preditiva comprovada.
 
-Somente após observação material de todos os gates finais no mesmo SHA e alinhamento de `release/v1.1.5` o estado técnico desta release pode ser registrado como `MISSION_PROVEN`.
+Somente após observação material de todos os gates finais no mesmo SHA e alinhamento de `release/v1.1.6` o estado técnico desta release pode ser registrado como `MISSION_PROVEN`.
