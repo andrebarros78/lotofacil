@@ -13,10 +13,11 @@ on:
           - audit-state
           - analyze-state
           - ris-categorical
+          - generate-primary-card
           - generate-portfolio
           - export-report
       card_count:
-        description: "Quantidade de cartões para generate-portfolio (3-100)"
+        description: "Quantidade de cartões para generate-portfolio (1-100)"
         required: false
         default: "10"
         type: string
@@ -70,6 +71,7 @@ jobs:
             audit-state) ACTION=audit ;;
             analyze-state) ACTION=analyze ;;
             ris-categorical) ACTION=ris ;;
+            generate-primary-card) ACTION=primary-card ;;
             generate-portfolio) ACTION=portfolio ;;
             export-report) ACTION=export ;;
             *) echo "Unsupported action: $OPERATOR_ACTION" >&2; exit 2 ;;
