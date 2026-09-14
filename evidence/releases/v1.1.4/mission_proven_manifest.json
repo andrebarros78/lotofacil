@@ -1,0 +1,198 @@
+{
+  "schema_version": 1,
+  "release": "1.1.4",
+  "mission_status": "MISSION_PROVEN",
+  "mission_scope": "ENGINEERING_RELEASE",
+  "authority": "GITHUB_ONLY",
+  "release_commit_sha": "6c760c30d7ae793700bff088dcc208b987c01a3f",
+  "release_tree_sha": "a9105ecc0b5ef2571cafd3d0b120d229012d1e21",
+  "canonical_refs": {
+    "main": "6c760c30d7ae793700bff088dcc208b987c01a3f",
+    "release/v1.1.4": "6c760c30d7ae793700bff088dcc208b987c01a3f",
+    "operations/state": "22c2d17983a1ec67a7ef31258685fd83829158be"
+  },
+  "proof_completed_at_utc": "2026-09-14T19:38:56Z",
+  "workflows": {
+    "CI": {
+      "run_id": 34888069679,
+      "conclusion": "success",
+      "python_3_12": "success",
+      "python_3_13": "success",
+      "doctor": "success",
+      "governance_gate": "success",
+      "operator_console_smoke": "success"
+    },
+    "Release Proof": {
+      "run_id": 34888069625,
+      "conclusion": "success",
+      "release_version": "1.1.4",
+      "installed_from_site_packages": true,
+      "mathematical_doctor": "success",
+      "database_backup_restore_integrity": "ok",
+      "categorical_ris_release_proof": "success",
+      "regime_calibration_release_proof": "success",
+      "controlled_alternatives_release_proof": "success",
+      "operational_release_journey": "success",
+      "artifacts": [
+        {
+          "id": 10365811362,
+          "name": "sare-lotofacil-wheel",
+          "sha256": "2bc5f6cea3371149a8c17bdc4ba7d5539e3081038dbc0b09f4fa05d16319a540",
+          "expires_at": "2026-12-13T19:37:52Z"
+        },
+        {
+          "id": 10365706598,
+          "name": "operational-release-proof",
+          "sha256": "897648f80e82fcf136239899a736b6e73b4dec963471002934851e55a60a1f78",
+          "expires_at": "2026-12-13T19:37:52Z"
+        },
+        {
+          "id": 10365441967,
+          "name": "regime-calibration-release-proof",
+          "sha256": "bc626cf2dbcf37ac2c5cfec5b17952df3033089c19f169d523f03c27a9fdb6da",
+          "expires_at": "2026-12-13T19:37:52Z"
+        },
+        {
+          "id": 10366085702,
+          "name": "controlled-alternatives-release-proof",
+          "sha256": "4ff009440c52f385cb8e81e276ae50cfe44b96d0afa69df61317a1016838ea41",
+          "expires_at": "2026-12-13T19:37:52Z"
+        }
+      ]
+    },
+    "Real History Check": {
+      "run_id": 34888069796,
+      "conclusion": "success",
+      "database_integrity": "ok",
+      "snapshot_roundtrip_exact": true,
+      "official_latest_contest": 3779,
+      "predictive_evidence": "NOT_ESTABLISHED",
+      "scientific_conclusion": "EVIDENCIA_PREDITIVA_INSUFICIENTE",
+      "artifact": {
+        "id": 10365133800,
+        "name": "third-party-history-report",
+        "sha256": "fc934abfb05d49e9eaf1e78124cac99e18230e2d2bfd6ee6cc338d4a856e3143",
+        "expires_at": "2026-12-13T19:37:53Z"
+      }
+    },
+    "GitHub Operational Cycle": {
+      "run_id": 34888069584,
+      "conclusion": "success",
+      "cycle_job": "success",
+      "committed_state_audit_job": "success",
+      "economic_state_proof_job": "success",
+      "artifacts": [
+        {
+          "id": 10365846342,
+          "name": "github-operational-cycle",
+          "sha256": "e88410ed62db9bde1194467d2109c9ad192661c56f094bc58600805d19b0a113"
+        },
+        {
+          "id": 10365183830,
+          "name": "github-committed-state-audit",
+          "sha256": "4b280492a71d03a6e5cdacf310f37fcf5fd3369ceac55d9add7d4aa32b2c9071"
+        },
+        {
+          "id": 10365238431,
+          "name": "github-economic-state-proof",
+          "sha256": "86703e17b9eb87d1d26e0e0614c4854d08761e6f517d47908436b458d2e08c82"
+        }
+      ]
+    },
+    "SARE Operator Console Proof": {
+      "run_id": 34888069574,
+      "conclusion": "success",
+      "operations_state_sha_observed": "7b25bbf4572e668a127f771e2874ca2dc9042dd1",
+      "actions": ["status", "audit", "analyze", "ris", "portfolio", "export"],
+      "write_capability": false,
+      "artifact": {
+        "id": 10364814174,
+        "name": "sare-operator-console-proof-34888069574",
+        "sha256": "ce187b74550a4f72f074cb928302f0b38b243515e3e6ba84d0d2abd17207c8c7"
+      }
+    }
+  },
+  "controlled_alternatives": {
+    "status": "CONTROLLED_ALTERNATIVES_RELEASE_PROOF_PASS",
+    "interpretation": "Synthetic sensitivity/separation proof only; no predictive advantage is inferred for real Lotofacil history.",
+    "t17": {
+      "replications": 30,
+      "draw_count": 400,
+      "target_number": 16,
+      "target_probability": 0.72,
+      "alpha": 0.05,
+      "detections": 30,
+      "power": 1.0,
+      "mean_target_effect": 0.12333333333333335,
+      "base_seed": 20260914
+    },
+    "t18": {
+      "draw_count": 600,
+      "memory_probability": 0.3,
+      "retained_count": 12,
+      "alpha": 0.05,
+      "marginal_alerts": 0,
+      "temporal_alerts": 1,
+      "lag1_effect": 0.8891845640813205,
+      "lag1_p_holm": 0.0125,
+      "max_abs_marginal_effect": 0.053333333333333344,
+      "seed": 20260914,
+      "permutation_replications": 399
+    }
+  },
+  "regime_calibration": {
+    "status": "REGIME_CALIBRATION_RELEASE_PROOF_PASS",
+    "null_state": "STABLE",
+    "false_alarm_target": 0.05,
+    "false_alarm_rate": 0.050505050505050504,
+    "false_alarm_ci95_low": 0.021763234491416865,
+    "false_alarm_ci95_high": 0.11282702686248855,
+    "calibration_compatible": true,
+    "controlled_shift_state": "ALERT",
+    "controlled_shift_candidate_index": 250,
+    "controlled_shift_number": 16,
+    "mode": "RETROSPECTIVE_DISCOVERY"
+  },
+  "categorical_ris_observed": {
+    "schema_version": "ris-categorical-v1",
+    "numeric_ris_enabled": false,
+    "score": null,
+    "data_integrity": "VERIFIED",
+    "uniformity": "ALERT",
+    "cooccurrence": "ALERT",
+    "temporal": "COMPATIBLE",
+    "regime": "STABLE",
+    "predictive_evidence": "UNDER_TEST"
+  },
+  "operational_state": {
+    "status": "GITHUB_OPERATIONAL_CYCLE_PASS",
+    "run_at_utc": "2026-09-14T19:38:22.894134+00:00",
+    "database_integrity": "ok",
+    "official_latest_contest": 3779,
+    "next_prediction_target": 3780,
+    "snapshot_id": "snap-d9b43f9c33702a880495",
+    "snapshot_hash": "d9b43f9c33702a880495f99a929ebee0cac90e7c4724a950f678f1c6494d5106",
+    "canonical_history_sha256": "b52b66d3576f606a41d0452e2d3fd840a93a3176424a1f876ebb525037152100",
+    "prospective_state": "UNDER_TEST_COHORT_A",
+    "evaluated_predictions": 0,
+    "pending_predictions": 1,
+    "replication_criteria_met": false,
+    "predictive_evidence": "NOT_ESTABLISHED"
+  },
+  "governance": {
+    "status": "GITHUB_GOVERNANCE_PASS",
+    "canonical_release_version": "1.1.4",
+    "violations": [],
+    "native_rulesets_observed": 0,
+    "sovereign_hardening_status": "P0_LOGICAL_HARDENING_COMPLETE_NATIVE_RULESET_PENDING"
+  },
+  "scientific_scope": {
+    "mission_proven_is_engineering_release_status": true,
+    "predictive_evidence": "NOT_ESTABLISHED",
+    "scientific_conclusion": "EVIDENCIA_PREDITIVA_INSUFICIENTE",
+    "predictive_advantage_claimed": false,
+    "t17_t18_are_synthetic_controlled_tests": true,
+    "portfolio_label": "CARTEIRA COMBINATÓRIA — SEM VANTAGEM PREDITIVA COMPROVADA"
+  },
+  "integrity_note": "Permanent evidence ledger for audit after transient GitHub Actions Artifacts expire. T17/T18 are controlled synthetic sensitivity tests and do not establish predictive advantage on real Lotofacil history."
+}
