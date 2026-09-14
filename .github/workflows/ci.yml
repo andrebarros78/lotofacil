@@ -27,3 +27,5 @@ jobs:
         run: python -m sare_lotofacil doctor
       - name: GitHub-only governance gate
         run: python scripts/verify_github_governance.py
+      - name: Operator console smoke
+        run: python scripts/github_operator_console.py --help >/dev/null
