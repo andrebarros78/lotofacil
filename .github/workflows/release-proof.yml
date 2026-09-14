@@ -41,7 +41,7 @@ jobs:
           from pathlib import Path
           import sare_lotofacil
           from sare_lotofacil.api.app import create_app
-          expected = "1.1.1"
+          expected = "1.1.2"
           module = Path(sare_lotofacil.__file__).resolve()
           assert "site-packages" in str(module), module
           assert version("sare-lotofacil") == expected
@@ -53,17 +53,27 @@ jobs:
           PY
       - name: Prove mathematical doctor
         run: /tmp/sare-clean/bin/python -m sare_lotofacil doctor
-      - name: Prove persistence backup restore and API import
+      - name: Prove persistence backup restore API import and categorical RIS
         run: |
           /tmp/sare-clean/bin/python -m sare_lotofacil init-db --path /tmp/sare.db
           /tmp/sare-clean/bin/python -m sare_lotofacil backup-db --db /tmp/sare.db --out /tmp/sare.backup.db
           /tmp/sare-clean/bin/python -m sare_lotofacil restore-db --backup /tmp/sare.backup.db --out /tmp/sare.restored.db
           /tmp/sare-clean/bin/python - <<'PY'
+          from sare_lotofacil.analysis.ris import build_categorical_ris
           from sare_lotofacil.api.app import create_app
           app = create_app('/tmp/sare.restored.db', write_token='release-proof')
           paths = {route.path for route in app.routes}
           required = {'/health/live', '/health/ready', '/v1/analyses', '/v1/portfolios', '/v1/evaluations', '/v1/ris'}
           assert required <= paths
+          ris = build_categorical_ris('/tmp/sare.restored.db', temporal_replications=49)
+          assert ris['schema_version'] == 'ris-categorical-v1'
+          assert ris['numeric_ris_enabled'] is False
+          assert ris['score'] is None
+          assert set(ris['dimensions']) == {
+              'data_integrity', 'uniformity', 'cooccurrence', 'temporal', 'regime', 'predictive_evidence'
+          }
+          assert 'RIS_NUMERIC_FORBIDDEN_IN_1_X' in ris['guardrails']
+          print('CATEGORICAL_RIS_RELEASE_PROOF_PASS')
           print('RELEASE_PROOF_BASE_PASS')
           PY
       - name: Prove Operational 1.1 journey from installed wheel
