@@ -82,6 +82,10 @@ jobs:
           grep -q 'PORTFOLIO_ECONOMIC_INTEGRITY_RELEASE_PROOF_PASS' artifacts/release_integrity_suite.log
           grep -q 'PRIMARY_CARD_RELEASE_PROOF_PASS' artifacts/release_integrity_suite.log
           grep -q 'RELEASE_INTEGRITY_SUITE_PASS' artifacts/release_integrity_suite.log
+          grep -q '"selection_method": "M1_TOP15_M2_TIEBREAK_V1"' artifacts/primary_card_release_proof.json
+          grep -q '"card_count": 1' artifacts/primary_card_release_proof.json
+          grep -q '"number_count": 15' artifacts/primary_card_release_proof.json
+          grep -q '"deterministic": true' artifacts/primary_card_release_proof.json
       - name: Prove Operational 1.1 journey from installed wheel
         run: |
           /tmp/sare-clean/bin/python scripts/prove_operational_release.py | tee artifacts/operational_release_proof.json
