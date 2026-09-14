@@ -74,8 +74,8 @@ def simulate_marginal_bias(
 def simulate_temporal_memory(
     count: int,
     *,
-    memory_probability: float = 0.35,
-    retained_count: int = 13,
+    memory_probability: float = 0.30,
+    retained_count: int = 12,
     seed: int,
 ) -> TemporalMemorySimulation:
     """Gera dependência temporal sem escolher uma dezena privilegiada.
