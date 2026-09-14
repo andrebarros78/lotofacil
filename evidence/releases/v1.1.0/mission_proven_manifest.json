@@ -1,0 +1,124 @@
+{
+  "schema_version": 1,
+  "release": "1.1.0",
+  "mission_status": "MISSION_PROVEN",
+  "authority": "GITHUB_ONLY",
+  "release_commit_sha": "d9885ff5aca837c359045a2ca0753fd07c22c562",
+  "release_tree_sha": "d7c8f2ac791d53e27ca8cfb1b76e8057eeda6681",
+  "canonical_refs": {
+    "main": "d9885ff5aca837c359045a2ca0753fd07c22c562",
+    "release/v1.1.0": "d9885ff5aca837c359045a2ca0753fd07c22c562",
+    "operations/state": "a6309ea4163218f77b84f446b67377556451c7c7"
+  },
+  "proof_completed_at_utc": "2026-09-14T18:18:16Z",
+  "workflows": {
+    "CI": {
+      "run_id": 34879874488,
+      "conclusion": "success",
+      "python_3_12": "success",
+      "python_3_13": "success",
+      "governance_gate": "success",
+      "operator_console_smoke": "success"
+    },
+    "Real History Check": {
+      "run_id": 34879874468,
+      "conclusion": "success",
+      "artifact": {
+        "id": 10361884983,
+        "name": "third-party-history-report",
+        "sha256": "fd4b0a02e31ba02f1eab1787a87b996264d433ad42dde9a14c60bacaa8fcae48",
+        "expires_at": "2026-12-13T18:17:16Z"
+      },
+      "database_integrity": "ok",
+      "snapshot_roundtrip_exact": true,
+      "official_latest_contest": 3779,
+      "scientific_conclusion": "EVIDENCIA_PREDITIVA_INSUFICIENTE",
+      "predictive_evidence": "NOT_ESTABLISHED"
+    },
+    "Release Proof": {
+      "run_id": 34879874520,
+      "conclusion": "success",
+      "clean_install": "success",
+      "release_version": "1.1.0",
+      "mathematical_doctor": "success",
+      "persistence_backup_restore": "success",
+      "operational_release_journey": "success",
+      "artifacts": [
+        {
+          "id": 10362766745,
+          "name": "sare-lotofacil-wheel",
+          "sha256": "a52592fdbb06717d30bcbf36535c30011a6f4c2c8ca55b58a21283d4c781b6e8",
+          "expires_at": "2026-12-13T18:17:16Z"
+        },
+        {
+          "id": 10362612539,
+          "name": "operational-release-proof",
+          "sha256": "4d248836a567d3601321c8910ada3153129a4a3a2c63c22fb6e7ff1d22015dfc",
+          "expires_at": "2026-12-13T18:17:16Z"
+        }
+      ]
+    },
+    "GitHub Operational Cycle": {
+      "run_id": 34879874496,
+      "conclusion": "success",
+      "cycle_job": "success",
+      "committed_state_audit_job": "success",
+      "artifacts": [
+        {
+          "id": 10362855523,
+          "name": "github-operational-cycle",
+          "sha256": "4d556d0c2321757e327f7ec3bacc841f81b9c8710a567e506ac9e847b2bcb315",
+          "expires_at": "2026-12-13T18:17:16Z"
+        },
+        {
+          "id": 10361839945,
+          "name": "github-committed-state-audit",
+          "sha256": "94eaf441fa034dc684377047c2c00b36ab4fc0e48c86aeb308b89a0ca138d277",
+          "expires_at": "2026-12-13T18:17:16Z"
+        }
+      ]
+    },
+    "SARE Operator Console Proof": {
+      "run_id": 34879874497,
+      "conclusion": "success",
+      "actions": [
+        "status",
+        "audit",
+        "analyze",
+        "portfolio",
+        "export"
+      ],
+      "write_capability": false,
+      "artifact": {
+        "id": 10362192147,
+        "name": "sare-operator-console-proof-34879874497",
+        "sha256": "8cf4681df786d235f6079f14e101e3f852424380e67d2b745ef5791805ea6661",
+        "expires_at": "2026-12-13T18:17:16Z"
+      }
+    }
+  },
+  "operational_state": {
+    "status": "GITHUB_OPERATIONAL_CYCLE_PASS",
+    "database_integrity": "ok",
+    "official_latest_contest": 3779,
+    "next_prediction_target": 3780,
+    "snapshot_id": "snap-d9b43f9c33702a880495",
+    "snapshot_hash": "d9b43f9c33702a880495f99a929ebee0cac90e7c4724a950f678f1c6494d5106",
+    "prospective_state": "UNDER_TEST_COHORT_A",
+    "evaluated_predictions": 0,
+    "pending_predictions": 1,
+    "predictive_evidence": "NOT_ESTABLISHED"
+  },
+  "governance": {
+    "status": "GITHUB_GOVERNANCE_PASS",
+    "violations": [],
+    "native_rulesets_observed": 0,
+    "sovereign_hardening_status": "P0_LOGICAL_HARDENING_COMPLETE_NATIVE_RULESET_PENDING"
+  },
+  "scientific_scope": {
+    "mission_proven_is_engineering_release_status": true,
+    "predictive_advantage_claimed": false,
+    "portfolio_label": "CARTEIRA COMBINATÓRIA — SEM VANTAGEM PREDITIVA COMPROVADA"
+  },
+  "integrity_note": "Este manifesto preserva identificadores, digests e conclusões materiais da prova para auditoria futura mesmo após a expiração dos GitHub Actions Artifacts. Os artefatos originais permanecem a evidência binária primária enquanto retidos pelo GitHub."
+}
