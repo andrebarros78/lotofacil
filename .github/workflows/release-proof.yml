@@ -41,7 +41,7 @@ jobs:
           from pathlib import Path
           import sare_lotofacil
           from sare_lotofacil.api.app import create_app
-          expected = "1.1.3"
+          expected = "1.1.4"
           module = Path(sare_lotofacil.__file__).resolve()
           assert "site-packages" in str(module), module
           assert version("sare-lotofacil") == expected
@@ -136,6 +136,51 @@ jobs:
           print(json.dumps(payload, sort_keys=True))
           PY
           grep -q 'REGIME_CALIBRATION_RELEASE_PROOF_PASS' artifacts/regime_calibration_release_proof.json
+      - name: Prove T17 and T18 controlled alternatives from installed wheel
+        run: |
+          mkdir -p artifacts
+          /tmp/sare-clean/bin/python - <<'PY' | tee artifacts/controlled_alternatives_release_proof.json
+          import json
+          from dataclasses import asdict
+          from sare_lotofacil.simulation.validation import (
+              assess_temporal_memory_separation,
+              measure_marginal_bias_power,
+          )
+
+          t17 = measure_marginal_bias_power(
+              replications=30,
+              draw_count=400,
+              target_number=16,
+              target_probability=0.72,
+              alpha=0.05,
+              base_seed=20260914,
+          )
+          assert t17.power >= 0.80
+          assert t17.detections >= 24
+          assert t17.mean_target_effect >= 0.08
+
+          t18 = assess_temporal_memory_separation(
+              draw_count=600,
+              memory_probability=0.30,
+              retained_count=12,
+              alpha=0.05,
+              seed=20260914,
+              permutation_replications=399,
+          )
+          assert t18.marginal_alerts == 0
+          assert t18.temporal_alerts >= 1
+          assert t18.lag1_effect > 0.50
+          assert t18.lag1_p_holm < 0.05
+
+          payload = {
+              'status': 'CONTROLLED_ALTERNATIVES_RELEASE_PROOF_PASS',
+              't17': asdict(t17),
+              't18': asdict(t18),
+              'interpretation': 'Synthetic sensitivity/separation proof only; no predictive advantage is inferred for real Lotofacil history.',
+          }
+          print(json.dumps(payload, sort_keys=True))
+          PY
+          grep -q 'CONTROLLED_ALTERNATIVES_RELEASE_PROOF_PASS' artifacts/controlled_alternatives_release_proof.json
       - name: Prove Operational 1.1 journey from installed wheel
         run: |
           mkdir -p artifacts
@@ -158,4 +203,10 @@ jobs:
         with:
           name: regime-calibration-release-proof
           path: artifacts/regime_calibration_release_proof.json
+          if-no-files-found: error
+      - name: Upload controlled alternatives proof
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: controlled-alternatives-release-proof
+          path: artifacts/controlled_alternatives_release_proof.json
           if-no-files-found: error

@@ -2,10 +2,12 @@ from __future__ import annotations
 
 import json
 import re
+import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 POLICY_PATH = ROOT / "governance" / "github-only-policy.json"
+PYPROJECT_PATH = ROOT / "pyproject.toml"
 WORKFLOWS_DIR = ROOT / ".github" / "workflows"
 SHA40 = re.compile(r"^[0-9a-f]{40}$")
 USES_RE = re.compile(r"uses:\s*([^@\s]+)@([^\s#]+)")
@@ -13,6 +15,8 @@ USES_RE = re.compile(r"uses:\s*([^@\s]+)@([^\s#]+)")
 
 def main() -> int:
     policy = json.loads(POLICY_PATH.read_text(encoding="utf-8"))
+    pyproject = tomllib.loads(PYPROJECT_PATH.read_text(encoding="utf-8"))
+    canonical_version = str(pyproject["project"]["version"])
     violations: list[str] = []
     notes: list[str] = []
 
@@ -122,12 +126,16 @@ def main() -> int:
     if release_path.exists():
         text = release_path.read_text(encoding="utf-8")
         release_markers = [
-            'expected = "1.1.3"',
+            f'expected = "{canonical_version}"',
             "CATEGORICAL_RIS_RELEASE_PROOF_PASS",
             "REGIME_CALIBRATION_RELEASE_PROOF_PASS",
+            "CONTROLLED_ALTERNATIVES_RELEASE_PROOF_PASS",
             "simulate_marginal_regime_shift",
+            "measure_marginal_bias_power",
+            "assess_temporal_memory_separation",
             "compatible_with_target",
             "RETROSPECTIVE_DISCOVERY",
+            "controlled-alternatives-release-proof",
         ]
         for marker in release_markers:
             if marker not in text:
@@ -144,6 +152,7 @@ def main() -> int:
         "authority": policy.get("authority"),
         "canonical_code_branch": policy.get("canonical_code_branch"),
         "canonical_state_branch": policy.get("canonical_state_branch"),
+        "canonical_release_version": canonical_version,
     }
     print(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True))
     return 0 if not violations else 1
