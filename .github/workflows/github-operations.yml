@@ -9,12 +9,14 @@ on:
     paths:
       - ".github/workflows/github-operations.yml"
       - ".github/workflows/operator-console.yml"
+      - ".github/workflows/operator-console-proof.yml"
       - "governance/**"
       - "src/**"
       - "scripts/**"
       - "tests/**"
       - "pyproject.toml"
       - "docs/GITHUB_OPERATIONS.md"
+      - "docs/MISSION_PROVEN.md"
 
 permissions: {}
 

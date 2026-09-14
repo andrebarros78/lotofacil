@@ -1,0 +1,96 @@
+name: SARE Operator Console Proof
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/operator-console-proof.yml"
+      - ".github/workflows/operator-console.yml"
+      - "scripts/github_operator_console.py"
+      - "scripts/verify_github_operational_state.py"
+      - "scripts/verify_github_governance.py"
+      - "governance/**"
+      - "docs/MISSION_PROVEN.md"
+      - "src/**"
+      - "tests/test_github_operator_console.py"
+      - "pyproject.toml"
+
+permissions:
+  contents: read
+
+jobs:
+  prove-console:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout canonical engine
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: main
+          path: app
+      - name: Checkout canonical operational state
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: operations/state
+          fetch-depth: 0
+          path: state-store
+      - name: Setup Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: "3.13"
+      - name: Install canonical engine
+        run: python -m pip install ./app
+      - name: Verify GitHub-only governance
+        run: python app/scripts/verify_github_governance.py
+      - name: Audit canonical state
+        run: |
+          mkdir -p artifacts/operator-proof
+          python app/scripts/verify_github_operational_state.py \
+            --state-dir state-store/operations \
+            --out artifacts/operator-proof/state_audit.json
+          grep -q '"status": "GITHUB_OPERATIONAL_AUDIT_PASS"' artifacts/operator-proof/state_audit.json
+      - name: Prove all read-only operator actions
+        run: |
+          python app/scripts/github_operator_console.py --action status --state-dir state-store/operations --out-dir artifacts/operator-proof/status
+          python app/scripts/github_operator_console.py --action audit --state-dir state-store/operations --out-dir artifacts/operator-proof/audit
+          python app/scripts/github_operator_console.py --action analyze --state-dir state-store/operations --out-dir artifacts/operator-proof/analyze
+          python app/scripts/github_operator_console.py --action portfolio --state-dir state-store/operations --out-dir artifacts/operator-proof/portfolio --card-count 10 --seed 0
+          python app/scripts/github_operator_console.py --action export --state-dir state-store/operations --out-dir artifacts/operator-proof/export
+          grep -q '"status": "GITHUB_OPERATOR_STATE_PASS"' artifacts/operator-proof/status/status.json
+          grep -q '"status": "GITHUB_OPERATOR_STATE_PASS"' artifacts/operator-proof/audit/audit.json
+          grep -q '"status": "GITHUB_OPERATOR_ANALYSIS_PASS"' artifacts/operator-proof/analyze/analysis.json
+          grep -q '"status": "GITHUB_OPERATOR_PORTFOLIO_PASS"' artifacts/operator-proof/portfolio/portfolio.json
+          grep -q 'CARTEIRA COMBINATÓRIA — SEM VANTAGEM PREDITIVA COMPROVADA' artifacts/operator-proof/portfolio/portfolio.json
+          grep -q '"status": "GITHUB_OPERATOR_EXPORT_PASS"' artifacts/operator-proof/export/operational_report.json
+          test -s artifacts/operator-proof/export/operational_report.md
+      - name: Resolve state SHA
+        id: state
+        run: echo "sha=$(git -C state-store rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+      - name: Record provenance
+        env:
+          SOURCE_SHA: ${{ github.sha }}
+          RUN_ID: ${{ github.run_id }}
+          STATE_SHA: ${{ steps.state.outputs.sha }}
+        run: |
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          payload = {
+              "status": "SARE_OPERATOR_CONSOLE_PROOF_PASS",
+              "source_sha": os.environ["SOURCE_SHA"],
+              "operations_state_sha": os.environ["STATE_SHA"],
+              "workflow_run_id": os.environ["RUN_ID"],
+              "actions": ["status", "audit", "analyze", "portfolio", "export"],
+              "write_capability": False,
+          }
+          Path("artifacts/operator-proof/provenance.json").write_text(
+              json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+          )
+          PY
+      - name: Upload operator console proof
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: sare-operator-console-proof-${{ github.run_id }}
+          path: artifacts/operator-proof/**
+          if-no-files-found: error
