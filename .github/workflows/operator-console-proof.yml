@@ -77,13 +77,21 @@ jobs:
           grep -q '"status": "GITHUB_OPERATOR_PRIMARY_CARD_PASS"' artifacts/operator-proof/primary-card/primary_card.json
           grep -q '"card_count": 1' artifacts/operator-proof/primary-card/primary_card.json
           grep -q '"selection_method": "M1_TOP15_M2_TIEBREAK_V1"' artifacts/operator-proof/primary-card/primary_card.json
-          grep -q '"target_contest": 3780' artifacts/operator-proof/primary-card/primary_card.json
-          grep -q '"training_last_contest": 3779' artifacts/operator-proof/primary-card/primary_card.json
           grep -q '"status": "GITHUB_OPERATOR_PORTFOLIO_PASS"' artifacts/operator-proof/portfolio/portfolio.json
           grep -q '"card_count": 1' artifacts/operator-proof/portfolio/portfolio.json
           grep -q 'CARTEIRA COMBINATÓRIA — SEM VANTAGEM PREDITIVA COMPROVADA' artifacts/operator-proof/portfolio/portfolio.json
           grep -q '"status": "GITHUB_OPERATOR_EXPORT_PASS"' artifacts/operator-proof/export/operational_report.json
           test -s artifacts/operator-proof/export/operational_report.md
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          status = json.loads(Path('artifacts/operator-proof/status/status.json').read_text(encoding='utf-8'))
+          primary = json.loads(Path('artifacts/operator-proof/primary-card/primary_card.json').read_text(encoding='utf-8'))
+          assert primary['target_contest'] == status['next_prediction_target']
+          assert primary['training_last_contest'] == primary['target_contest'] - 1
+          assert len(primary['card']) == len(set(primary['card'])) == 15
+          assert len(primary['decision_sha256']) == 64
+          PY
       - name: Resolve state SHA
         id: state
         run: echo "sha=$(git -C state-store rev-parse HEAD)" >> "$GITHUB_OUTPUT"
