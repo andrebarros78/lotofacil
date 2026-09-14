@@ -130,12 +130,18 @@ def main() -> int:
             "CATEGORICAL_RIS_RELEASE_PROOF_PASS",
             "REGIME_CALIBRATION_RELEASE_PROOF_PASS",
             "CONTROLLED_ALTERNATIVES_RELEASE_PROOF_PASS",
+            "LEAKAGE_BACKTEST_INTEGRITY_RELEASE_PROOF_PASS",
             "simulate_marginal_regime_shift",
             "measure_marginal_bias_power",
             "assess_temporal_memory_separation",
+            "FUTURE_OR_TARGET_FEATURE_OFFSET",
+            "TRANSFORM_FIT_OUTSIDE_TRAIN",
+            "INCONCLUSIVE_WINDOW_FAILURES",
+            "INCONCLUSIVE_INSUFFICIENT_WINDOWS",
             "compatible_with_target",
             "RETROSPECTIVE_DISCOVERY",
             "controlled-alternatives-release-proof",
+            "leakage-backtest-integrity-release-proof",
         ]
         for marker in release_markers:
             if marker not in text:
