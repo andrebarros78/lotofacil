@@ -41,7 +41,7 @@ jobs:
           from pathlib import Path
           import sare_lotofacil
           from sare_lotofacil.api.app import create_app
-          expected = "1.1.5"
+          expected = "1.1.6"
           module = Path(sare_lotofacil.__file__).resolve()
           assert "site-packages" in str(module), module
           assert version("sare-lotofacil") == expected
@@ -136,6 +136,59 @@ jobs:
           assert t23.status == 'INCONCLUSIVE' and t23.predictive_evidence == 'NOT_ESTABLISHED'
           print(json.dumps({'status':'BACKTEST_INTEGRITY_RELEASE_PROOF_PASS','t20_blocked':blocked_variable,'t21_blocked':blocked_transform,'t22':{'planned':t22.planned_windows,'success':t22.successful_windows,'failed':t22.failed_windows,'success_rate':t22.success_rate,'ledger_hash':t22.content_hash},'t23':{'status':t23.status,'predictive_evidence':t23.predictive_evidence,'planned':t23.planned_windows,'success':t23.successful_windows}}, sort_keys=True))
           PY
+      - name: Prove T24 T29 risk reproducibility and joint coverage from installed wheel
+        run: |
+          /tmp/sare-clean/bin/python - <<'PY' | tee artifacts/risk_repro_joint_coverage_release_proof.json
+          import json
+          from dataclasses import asdict
+          from sare_lotofacil.experiments.backtest import BacktestWindow, FittedTransform, TemporalVariable
+          from sare_lotofacil.experiments.integrity import OptionalStoppingViolation, assess_performance_gap_for_leakage
+          from sare_lotofacil.experiments.protocol import ExperimentProtocol
+          from sare_lotofacil.experiments.reproducibility import ScientificRunIdentity
+          from sare_lotofacil.portfolios.coverage import exact_joint_coverage
+          from sare_lotofacil.simulation.risk import summarize_binary_risk
+
+          t24 = summarize_binary_risk(0, 1000, confidence=0.95)
+          assert t24.probability == 0.0 and t24.interval_low == 0.0 and t24.interval_high > 0.0
+          t25_blocked = False
+          try:
+              summarize_binary_risk(0, 0)
+          except ValueError:
+              t25_blocked = True
+          assert t25_blocked
+
+          clean_window = BacktestWindow('t26',199,200,(TemporalVariable('history_prefix',199),),(FittedTransform('fit',199),))
+          t26 = assess_performance_gap_for_leakage(clean_window, train_metric=0.24, test_metric=0.20)
+          assert t26.test_metric < t26.train_metric and t26.leakage_detected is False
+
+          t27_blocked = False
+          try:
+              ExperimentProtocol(hypothesis_id='t27',question='optional?',h0='h0',h1='h1',snapshot_id='snap',stopping_rule='inspect_repeatedly_until_p_below_0_05').validate()
+          except OptionalStoppingViolation as exc:
+              t27_blocked = exc.code == 'OPTIONAL_STOPPING_FORBIDDEN'
+          assert t27_blocked
+
+          first = ScientificRunIdentity(seed=20260914,data_hash='data-sha',code_commit='code-sha',environment_hash='env-sha',protocol_hash='protocol-sha',scientific_payload={'metric':{'delta':0.001,'brier':0.239},'run_id':'a','created_at_utc':'2026-09-14T10:00:00Z'})
+          second = ScientificRunIdentity(seed=20260914,data_hash='data-sha',code_commit='code-sha',environment_hash='env-sha',protocol_hash='protocol-sha',scientific_payload={'created_at_utc':'2026-09-14T11:00:00Z','run_id':'b','metric':{'brier':0.239,'delta':0.001}})
+          assert first.normalized_json == second.normalized_json and first.content_hash == second.content_hash
+
+          t29 = exact_joint_coverage((tuple(range(1,16)),(*tuple(range(1,15)),16)), min_hits=14)
+          assert t29.total_outcomes == 3268760
+          assert t29.independence_assumption_used is False
+          assert abs(t29.probability - t29.naive_independence_probability) > 1e-8
+
+          print(json.dumps({
+              'status':'RISK_REPRO_JOINT_COVERAGE_RELEASE_PROOF_PASS',
+              't24':asdict(t24),
+              't25_zero_replications_blocked':t25_blocked,
+              't26':asdict(t26),
+              't27_optional_stopping_blocked':t27_blocked,
+              't28_content_hash':first.content_hash,
+              't29':asdict(t29),
+              'interpretation':'T24-T29 prove risk/statistical integrity, reproducibility and joint portfolio coverage; they do not establish predictive advantage.'
+          }, sort_keys=True))
+          PY
+          grep -q 'RISK_REPRO_JOINT_COVERAGE_RELEASE_PROOF_PASS' artifacts/risk_repro_joint_coverage_release_proof.json
       - name: Prove Operational 1.1 journey from installed wheel
         run: |
           /tmp/sare-clean/bin/python scripts/prove_operational_release.py | tee artifacts/operational_release_proof.json
@@ -169,4 +222,10 @@ jobs:
         with:
           name: backtest-integrity-release-proof
           path: artifacts/backtest_integrity_release_proof.json
+          if-no-files-found: error
+      - name: Upload T24 T29 proof
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: risk-repro-joint-coverage-release-proof
+          path: artifacts/risk_repro_joint_coverage_release_proof.json
           if-no-files-found: error

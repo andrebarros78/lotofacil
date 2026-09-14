@@ -4,7 +4,7 @@ Sistema de Análise de Randomicidade e Eventos para a Lotofácil.
 
 ## Release
 
-**SARE Core 1.0 + SARE Operational 1.1 — versão 1.1.5.**
+**SARE Core 1.0 + SARE Operational 1.1 — versão 1.1.6.**
 
 O sistema prioriza integridade dos dados, matemática exata, reprodutibilidade, auditoria e recuperação antes de qualquer alegação preditiva.
 
@@ -34,6 +34,10 @@ A autoridade operacional está documentada em `docs/GITHUB_OPERATIONS.md`.
 - M0 uniforme `p_i = 0,6`, Brier `0,24`;
 - M1 frequência regularizada e M2 média exponencial em walk-forward, com `ΔBrier` e IC95%;
 - backtest auditado com proveniência temporal de variáveis/transformações, ledger de janelas e falhas no denominador;
+- risco binomial com intervalo de Wilson, sem converter zero eventos observados em risco zero;
+- regras confirmatórias de parada fixas, com optional stopping guiado por resultado bloqueado;
+- identidade científica normalizada por seed, dados, código, ambiente e protocolo;
+- cobertura conjunta exata de carteira por enumeração do espaço `C(25,15)`, sem hipótese automática de independência entre cartões;
 - ingestão validada, revisões imutáveis e artefatos de fonte;
 - fonte oficial CAIXA e histórico corroborado por checkpoints oficiais;
 - protocolo científico congelado por hash, hipóteses e experimentos auditáveis;
@@ -48,9 +52,24 @@ A autoridade operacional está documentada em `docs/GITHUB_OPERATIONS.md`.
 - reconstrução determinística do SQLite operacional em GitHub Actions com `integrity_check`;
 - CI Python 3.12/3.13, Real History Check, GitHub Operational Cycle e Release Proof.
 
+## Integridade de risco, parada, reprodutibilidade e carteira
+
+A versão 1.1.6 fecha T24–T29:
+
+- **T24 — zero eventos de ruína:** zero eventos observados mantém estimativa pontual `0`, mas o limite superior do intervalo binomial continua maior que zero; ausência observada não vira ausência de risco.
+- **T25 — zero replicações:** `replications=0` é erro de entrada e não produz métricas de risco iguais a zero.
+- **T26 — teste melhor que treino:** diferença favorável no teste não é classificada como leakage por si só; leakage é decidido pela proveniência temporal das variáveis/transformações.
+- **T27 — inspeção repetida de p-valores:** protocolos confirmatórios exigem regra fixa/predefinida; parada orientada por p-valor, significância ou conveniência é bloqueada com `OPTIONAL_STOPPING_FORBIDDEN`.
+- **T28 — reprodutibilidade:** com seed, hash dos dados, commit de código, hash de ambiente e protocolo fixos, o conteúdo científico normalizado produz o mesmo SHA-256 mesmo quando IDs/timestamps voláteis mudam.
+- **T29 — cartões correlacionados:** a cobertura `Q_h(P)` é calculada conjuntamente sobre os mesmos resultados 15-de-25 por enumeração exata; probabilidades individuais não são multiplicadas como se cartões fossem independentes.
+
+A aproximação de independência pode aparecer apenas como diagnóstico comparativo em T29; o campo canônico `independence_assumption_used` permanece `false`.
+
+Esses testes são controles de risco e integridade metodológica. **Nenhum deles estabelece vantagem preditiva.**
+
 ## Integridade de backtest
 
-A versão 1.1.5 fecha T20–T23 da fase C4 e aplica o mesmo contrato ao walk-forward real M1/M2:
+A versão 1.1.5 fechou T20–T23 da fase C4 e aplica o mesmo contrato ao walk-forward real M1/M2:
 
 - **T20 — futuro entre as variáveis:** qualquer variável com disponibilidade posterior ao último concurso do treino gera `LOOKAHEAD_LEAKAGE_DETECTED` e bloqueia o experimento antes da pontuação;
 - **T21 — transformação ajustada no futuro:** transformação cujo `fitted_through_contest` ultrapassa o corte de treino gera `TRANSFORM_FIT_LEAKAGE_DETECTED`;
