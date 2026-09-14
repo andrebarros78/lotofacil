@@ -1,0 +1,168 @@
+{
+  "release": "1.1.8",
+  "release_name": "Primary Card Optimization",
+  "mission_status": "MISSION_PROVEN",
+  "mission_scope": "ENGINEERING_RELEASE",
+  "authority": "GITHUB_ONLY",
+  "release_commit": "168fdc675c95c6129b571a42a451b9f3dfa2c611",
+  "release_tree": "750da7819976adc185ebd60f8b72c95688c243fa",
+  "canonical_refs": {
+    "main": "168fdc675c95c6129b571a42a451b9f3dfa2c611",
+    "release_v1_1_8": "168fdc675c95c6129b571a42a451b9f3dfa2c611",
+    "operations_state_final": "02ed68a7a5dcd20501bd9c806cea31720b0a47eb",
+    "operations_state_used_by_operator_proof": "f952ddeea9fed9fd6175f64568b25d6c28764795"
+  },
+  "baseline": {
+    "main_equals_release": true,
+    "compare_status": "identical",
+    "ahead_by": 0,
+    "behind_by": 0,
+    "open_pull_requests": 0
+  },
+  "workflow_runs": {
+    "ci": {
+      "id": 34909466275,
+      "status": "completed",
+      "conclusion": "success",
+      "python_3_12": "success",
+      "python_3_13": "success"
+    },
+    "release_proof": {
+      "id": 34909466298,
+      "status": "completed",
+      "conclusion": "success"
+    },
+    "real_history_check": {
+      "id": 34909466299,
+      "status": "completed",
+      "conclusion": "success"
+    },
+    "github_operational_cycle": {
+      "id": 34909466329,
+      "status": "completed",
+      "conclusion": "success",
+      "jobs": {
+        "cycle": "success",
+        "committed_state_audit": "success",
+        "economic_state_proof": "success"
+      }
+    },
+    "operator_console_proof": {
+      "id": 34909466271,
+      "status": "completed",
+      "conclusion": "success"
+    }
+  },
+  "artifacts": [
+    {
+      "name": "sare-lotofacil-wheel",
+      "id": 10373707418,
+      "digest": "sha256:8b80cb11a05ab9cb8a611df86fd0032bea79a151c92c7aa18af289ccd9022828"
+    },
+    {
+      "name": "primary-card-release-proof",
+      "id": 10373702439,
+      "digest": "sha256:3fd050026f3441475a2e56554d3257e8e7647f77ba48e19cfbbb3f8c3e8f14d6"
+    },
+    {
+      "name": "operational-release-proof",
+      "id": 10373747308,
+      "digest": "sha256:5769706704e74ae82ad62df04869b3caa96ba1d123d51f6efd0d0901a7f7cd28"
+    },
+    {
+      "name": "regime-calibration-release-proof",
+      "id": 10373407977,
+      "digest": "sha256:01b7231d5586eb1d8a4ce1066d559d78be0b6c6964adfd51986559d26234546f"
+    },
+    {
+      "name": "controlled-alternatives-release-proof",
+      "id": 10373827038,
+      "digest": "sha256:13d5688fe157975fcb350df0fc299dc4bc11b43b974a2cc55ade1e1ed965d75c"
+    },
+    {
+      "name": "backtest-integrity-release-proof",
+      "id": 10373632644,
+      "digest": "sha256:87d4adf68c3a814ab23170090730f1ce6353caf37d9ff7209ac820b9de56e91a"
+    },
+    {
+      "name": "risk-repro-joint-coverage-release-proof",
+      "id": 10373008694,
+      "digest": "sha256:f7f361808a4a0d4882c9348433f7dde34fb03a9c0cbe19560756f964439c31d2"
+    },
+    {
+      "name": "portfolio-economic-integrity-release-proof",
+      "id": 10373502974,
+      "digest": "sha256:ea5aaddbfd18cff50a310290f3db4c0d47f2017d27e700414cd2a98b2b06583f"
+    },
+    {
+      "name": "third-party-history-report",
+      "id": 10373667674,
+      "digest": "sha256:d82fc01ec164103e7bf6636f164a60edf671a18996f5ac7fca9b549f0c1b58c5"
+    },
+    {
+      "name": "sare-operator-console-proof-34909466271",
+      "id": 10374400082,
+      "digest": "sha256:8bffe9bd6788debeda00a2735ae0155058192c13ed783aaa9defd008333016be"
+    },
+    {
+      "name": "github-operational-cycle",
+      "id": 10373647655,
+      "digest": "sha256:1de40fbcd900a59ae88f3b97e0553066a5a7a5b46c70deede813dd172cb7567e"
+    },
+    {
+      "name": "github-committed-state-audit",
+      "id": 10374230611,
+      "digest": "sha256:fb9545baa64e593ac0e71e269a925bbfa424d95fbaae0c7ea1265517c21b6a8f"
+    },
+    {
+      "name": "github-economic-state-proof",
+      "id": 10373762346,
+      "digest": "sha256:ab99c666373bdad6b7ac017fe7cec1d7d67009999f11ae8e519c8c0776ab7eed"
+    }
+  ],
+  "primary_card": {
+    "target_contest": 3780,
+    "training_last_contest": 3779,
+    "card": [1, 2, 3, 4, 5, 9, 10, 11, 12, 13, 14, 15, 20, 24, 25],
+    "card_display": "01 02 03 04 05 09 10 11 12 13 14 15 20 24 25",
+    "decision_sha256": "5c21bc2e0bdd40bb8ba051ba49485e7819558a6ec117b56b6c8f91054dfa5c51",
+    "decision_source": "DERIVED_FROM_FROZEN_LEGACY_MODEL_SCORES",
+    "selection_method": "M1_TOP15_M2_TIEBREAK_V1",
+    "primary_model": "M1_frequency_regularized_lambda_100",
+    "secondary_model": "M2_exponential_alpha_0.05",
+    "state_snapshot_hash": "d9b43f9c33702a880495f99a929ebee0cac90e7c4724a950f678f1c6494d5106",
+    "operator_proof_run_id": 34909466271,
+    "operator_proof_state_sha": "f952ddeea9fed9fd6175f64568b25d6c28764795"
+  },
+  "persistence": {
+    "schema_version": 7,
+    "portfolio_card_count_min": 1,
+    "portfolio_card_count_max": 100,
+    "database_integrity": "ok"
+  },
+  "scientific_state": {
+    "predictive_evidence": "NOT_ESTABLISHED",
+    "prospective_state": "UNDER_TEST_COHORT_A",
+    "official_latest_contest": 3779,
+    "next_prediction_target": 3780,
+    "pending_predictions": 1,
+    "evaluated_predictions": 0,
+    "claim": "NO_PREDICTIVE_ADVANTAGE_CLAIMED"
+  },
+  "governance": {
+    "rulesets_observed_count": 0,
+    "logical_status": "P0_LOGICAL_HARDENING_COMPLETE_NATIVE_RULESET_PENDING",
+    "known_external_residual": "NATIVE_RULESET_PENDING_EXTERNAL_ADMIN_ACTION"
+  },
+  "versioning": {
+    "canonical_version_ref": "release/v1.1.8",
+    "git_tag_created": false
+  },
+  "closure_history": {
+    "feature_pr": 22,
+    "release_proof_bootstrap_hotfix_pr": 23,
+    "final_gate_sync_pr": 24,
+    "final_same_sha_gate_contract_satisfied": true
+  },
+  "statement": "SARE Lotofacil 1.1.8 Primary Card Optimization is MISSION_PROVEN for engineering scope under GitHub-only authority. All five mandatory workflows passed on the same release SHA. No predictive advantage is claimed. Native GitHub rulesets remain the known external administrative hardening residual."
+}
