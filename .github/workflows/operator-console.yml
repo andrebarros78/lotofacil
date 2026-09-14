@@ -13,6 +13,7 @@ on:
           - audit-state
           - analyze-state
           - generate-portfolio
+          - recover-portfolio
           - export-report
       card_count:
         description: "Quantidade de cartões para generate-portfolio (3-100)"
@@ -23,6 +24,11 @@ on:
         description: "Seed; 0 usa o concurso-alvo"
         required: false
         default: "0"
+        type: string
+      portfolio_id:
+        description: "portfolio_id para recover-portfolio"
+        required: false
+        default: ""
         type: string
 
 permissions:
@@ -58,17 +64,25 @@ jobs:
             --state-dir state-store/operations \
             --out artifacts/operator/state_audit.json
           grep -q '"status": "GITHUB_OPERATIONAL_AUDIT_PASS"' artifacts/operator/state_audit.json
+          if test -f state-store/operations/portfolio_ledger.json; then
+            python app/scripts/verify_portfolio_ledger.py \
+              --state-dir state-store/operations \
+              --out artifacts/operator/portfolio_ledger_audit.json
+            grep -q '"status": "GITHUB_PORTFOLIO_LEDGER_AUDIT_PASS"' artifacts/operator/portfolio_ledger_audit.json
+          fi
       - name: Execute read-only operator action
         env:
           OPERATOR_ACTION: ${{ inputs.action }}
           CARD_COUNT: ${{ inputs.card_count }}
           SEED: ${{ inputs.seed }}
+          PORTFOLIO_ID: ${{ inputs.portfolio_id }}
         run: |
           case "$OPERATOR_ACTION" in
             status) ACTION=status ;;
             audit-state) ACTION=audit ;;
             analyze-state) ACTION=analyze ;;
             generate-portfolio) ACTION=portfolio ;;
+            recover-portfolio) ACTION=portfolio_get ;;
             export-report) ACTION=export ;;
             *) echo "Unsupported action: $OPERATOR_ACTION" >&2; exit 2 ;;
           esac
@@ -77,7 +91,8 @@ jobs:
             --state-dir state-store/operations \
             --out-dir artifacts/operator \
             --card-count "$CARD_COUNT" \
-            --seed "$SEED"
+            --seed "$SEED" \
+            --portfolio-id "$PORTFOLIO_ID"
       - name: Upload operator evidence
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
