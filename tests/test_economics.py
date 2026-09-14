@@ -18,6 +18,16 @@ def test_economic_audit_uses_rateio_per_card_and_keeps_purchase_unrecorded():
     assert dict(audit.prize_count_by_tier) == {15: 1, 14: 1, 13: 1, 12: 0, 11: 1}
 
 
+def test_same_tier_cards_receive_exactly_the_same_official_prize():
+    audit = calculate_economic_audit(
+        [14, 14, 11, 11],
+        {15: 500_000_00, 14: 1_234_56, 13: 35_00, 12: 14_00, 11: 7_00},
+        theoretical_cost_cents=14_00,
+    )
+    assert audit.prize_by_card_cents == (1_234_56, 1_234_56, 7_00, 7_00)
+    assert dict(audit.prize_count_by_tier) == {15: 0, 14: 2, 13: 0, 12: 0, 11: 2}
+
+
 def test_economic_audit_requires_complete_rateio():
     with pytest.raises(ValueError, match="exatamente as faixas"):
         calculate_economic_audit([11], {11: 700}, theoretical_cost_cents=300)
