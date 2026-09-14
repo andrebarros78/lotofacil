@@ -15,6 +15,7 @@ on:
       - "src/**"
       - "tests/test_github_operator_console.py"
       - "tests/test_ris.py"
+      - "tests/test_regime.py"
       - "pyproject.toml"
 
 permissions:
@@ -66,6 +67,11 @@ jobs:
           grep -q '"numeric_ris_enabled": false' artifacts/operator-proof/ris/ris.json
           grep -q '"score": null' artifacts/operator-proof/ris/ris.json
           grep -q 'RIS_NUMERIC_FORBIDDEN_IN_1_X' artifacts/operator-proof/ris/ris.json
+          grep -q '"method": "calibrated_global_marginal_change_scan"' artifacts/operator-proof/ris/ris.json
+          grep -q '"mode": "RETROSPECTIVE_DISCOVERY"' artifacts/operator-proof/ris/ris.json
+          grep -q '"compatible_with_target": true' artifacts/operator-proof/ris/ris.json
+          grep -q '"candidate_label":' artifacts/operator-proof/ris/ris.json
+          grep -q 'REGIME_ALERT_IS_RETROSPECTIVE_NOT_REALTIME' artifacts/operator-proof/ris/ris.json
           grep -q '"status": "GITHUB_OPERATOR_PORTFOLIO_PASS"' artifacts/operator-proof/portfolio/portfolio.json
           grep -q 'CARTEIRA COMBINATÓRIA — SEM VANTAGEM PREDITIVA COMPROVADA' artifacts/operator-proof/portfolio/portfolio.json
           grep -q '"status": "GITHUB_OPERATOR_EXPORT_PASS"' artifacts/operator-proof/export/operational_report.json
@@ -88,6 +94,7 @@ jobs:
               "operations_state_sha": os.environ["STATE_SHA"],
               "workflow_run_id": os.environ["RUN_ID"],
               "actions": ["status", "audit", "analyze", "ris", "portfolio", "export"],
+              "regime_calibration_required": True,
               "write_capability": False,
           }
           Path("artifacts/operator-proof/provenance.json").write_text(
