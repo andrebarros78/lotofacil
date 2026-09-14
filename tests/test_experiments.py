@@ -18,11 +18,18 @@ def test_reference_models_preserve_probability_contract() -> None:
     assert sum(m2) == pytest.approx(15.0)
 
 
-def test_walk_forward_uses_only_past_data() -> None:
+def test_walk_forward_uses_only_past_data_and_reports_window_ledger() -> None:
     draws = simulate_uniform_draws(160, seed=10).draws
     m1 = walk_forward_frequency(draws, min_train=100, lam=100)
     m2 = walk_forward_exponential(draws, min_train=100, alpha=0.05)
-    assert m1.predictions == 60
-    assert m2.predictions == 60
-    assert 0.0 <= m1.mean_brier <= 1.0
-    assert 0.0 <= m2.mean_brier <= 1.0
+
+    for result in (m1, m2):
+        assert result.predictions == 60
+        assert result.planned_windows == 60
+        assert result.successful_windows == 60
+        assert result.failed_windows == 0
+        assert result.success_rate == 1.0
+        assert result.backtest_status == "VALID"
+        assert result.failed_window_ids == ()
+        assert len(result.window_ledger_hash) == 64
+        assert 0.0 <= result.mean_brier <= 1.0
