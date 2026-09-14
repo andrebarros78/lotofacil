@@ -90,6 +90,16 @@ jobs:
             --state-dir state-store/operations \
             --out artifacts/canonical_prize_state.json
           grep -q '"status": "CANONICAL_PRIZE_STATE_PASS"' artifacts/canonical_prize_state.json
+      - name: Update canonical portfolio evaluations
+        run: |
+          if test -f state-store/operations/portfolio_ledger.json; then
+            python app/scripts/update_portfolio_evaluations.py \
+              --state-dir state-store/operations \
+              --out artifacts/github_portfolio_evaluation.json
+            grep -q '"status": "GITHUB_PORTFOLIO_EVALUATION_PASS"' artifacts/github_portfolio_evaluation.json
+          else
+            echo '{"status":"PORTFOLIO_LEDGER_NOT_YET_CREATED"}' > artifacts/github_portfolio_evaluation.json
+          fi
       - name: Verify state before commit
         run: |
           python app/scripts/verify_github_operational_state.py \
@@ -115,7 +125,7 @@ jobs:
           if git diff --cached --quiet; then
             echo "STATE_UNCHANGED"
           else
-            git commit -m "ops: advance Lotofacil canonical prospective and prize state"
+            git commit -m "ops: advance Lotofacil canonical prospective prize and portfolio state"
             git push origin HEAD:operations/state
           fi
       - name: Upload cycle evidence
@@ -127,6 +137,7 @@ jobs:
             artifacts/github_operational_audit_precommit.json
             artifacts/canonical_prize_state.json
             artifacts/canonical_prize_audit_precommit.json
+            artifacts/github_portfolio_evaluation.json
             artifacts/github_portfolio_ledger_audit_precommit.json
             artifacts/github-runtime/sare.db
             state-store/operations/*.json
