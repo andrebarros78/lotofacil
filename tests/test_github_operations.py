@@ -38,6 +38,7 @@ def test_legacy_prediction_without_primary_card_keeps_old_hash_contract():
     records = _records()
     prediction = cycle._build_prediction(6, "snapshot-hash", records, "2026-09-13T12:00:00+00:00")
     prediction.pop("primary_card")
+    prediction.pop("primary_card_evaluation")
     prediction["prediction_sha256"] = cycle._sha256(cycle._prediction_hash_payload(prediction))
     cycle.verify_prediction_hashes({"predictions": [prediction]})
 
@@ -45,11 +46,14 @@ def test_legacy_prediction_without_primary_card_keeps_old_hash_contract():
 def test_prediction_is_scored_only_after_result_and_keeps_uniform_oracle():
     records = _records(6)
     prediction = cycle._build_prediction(6, "snapshot-hash", records[:5], "2026-09-13T12:00:00+00:00")
+    frozen_card = tuple(prediction["primary_card"]["card"])
     cycle._evaluate_prediction(prediction, records[5])
     assert prediction["evaluation"]["scores"]["M0_uniform"] == pytest.approx(UNIFORM_BRIER)
     assert prediction["training_last_contest"] == 5
     assert prediction["target_contest"] == 6
-    assert prediction["primary_card"]["evaluation"]["hits"] == 15
+    assert prediction["primary_card_evaluation"]["hits"] == 15
+    assert tuple(prediction["primary_card"]["card"]) == frozen_card
+    cycle.verify_prediction_hashes({"predictions": [prediction]})
 
 
 def test_prospective_summary_cannot_claim_replication_early():
