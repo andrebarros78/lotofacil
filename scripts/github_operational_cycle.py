@@ -21,12 +21,17 @@ from sare_lotofacil.persistence.repository import (
     persist_caixa_contest,
     persist_history_records,
 )
+from sare_lotofacil.portfolios.primary import (
+    PRIMARY_MODEL_NAME,
+    SECONDARY_MODEL_NAME,
+    select_primary_card,
+)
 from sare_lotofacil.statistics.baseline import UNIFORM_BRIER, brier_score, uniform_baseline
 
 SOURCE_URL = "https://raw.githubusercontent.com/heldersontuc-collab/lotofacil-data/main/data/lotofacil.csv"
 PROTOCOL_VERSION = "prospective-m1-v1"
-PRIMARY_MODEL = "M1_frequency_regularized_lambda_100"
-SECONDARY_MODEL = "M2_exponential_alpha_0.05"
+PRIMARY_MODEL = PRIMARY_MODEL_NAME
+SECONDARY_MODEL = SECONDARY_MODEL_NAME
 DELTA_MIN = 0.0005
 COHORT_SIZE = 100
 MAX_BOOTSTRAP_PATCHES = 1000
@@ -107,7 +112,7 @@ def _load_ledger(path: Path) -> dict[str, object]:
 
 
 def _prediction_hash_payload(prediction: dict[str, object]) -> dict[str, object]:
-    return {
+    payload = {
         "target_contest": prediction["target_contest"],
         "created_at_utc": prediction["created_at_utc"],
         "training_last_contest": prediction["training_last_contest"],
@@ -115,6 +120,11 @@ def _prediction_hash_payload(prediction: dict[str, object]) -> dict[str, object]
         "protocol_hash": prediction["protocol_hash"],
         "models": prediction["models"],
     }
+    # Compatibilidade criptográfica: previsões congeladas antes da 1.1.8 não
+    # possuíam PRIMARY_CARD. Novas previsões passam a selá-lo no mesmo hash.
+    if "primary_card" in prediction:
+        payload["primary_card"] = prediction["primary_card"]
+    return payload
 
 
 def verify_prediction_hashes(ledger: dict[str, object]) -> None:
@@ -132,6 +142,14 @@ def _build_prediction(
     created_at_utc: str | None = None,
 ) -> dict[str, object]:
     draws = tuple(record.numbers for record in records)
+    primary_scores = tuple(frequency_regularized(draws, lam=100.0))
+    secondary_scores = tuple(_m2_next(draws, alpha=0.05))
+    primary_card = select_primary_card(
+        primary_scores,
+        secondary_scores,
+        target_contest=int(target_contest),
+        training_last_contest=int(records[-1].contest_id),
+    )
     prediction = {
         "target_contest": int(target_contest),
         "created_at_utc": created_at_utc or _utcnow(),
@@ -140,10 +158,12 @@ def _build_prediction(
         "protocol_hash": _protocol()["protocol_hash"],
         "models": {
             "M0_uniform": list(uniform_baseline()),
-            PRIMARY_MODEL: list(frequency_regularized(draws, lam=100.0)),
-            SECONDARY_MODEL: list(_m2_next(draws, alpha=0.05)),
+            PRIMARY_MODEL: list(primary_scores),
+            SECONDARY_MODEL: list(secondary_scores),
         },
+        "primary_card": primary_card.to_dict(),
         "evaluation": None,
+        "primary_card_evaluation": None,
     }
     prediction["prediction_sha256"] = _sha256(_prediction_hash_payload(prediction))
     return prediction
@@ -172,6 +192,13 @@ def _evaluate_prediction(prediction: dict[str, object], observed_record) -> None
             SECONDARY_MODEL: m0 - m2,
         },
     }
+    primary_card = prediction.get("primary_card")
+    if isinstance(primary_card, dict) and isinstance(primary_card.get("card"), list):
+        observed = set(observed_record.numbers)
+        prediction["primary_card_evaluation"] = {
+            "hits": sum(1 for number in primary_card["card"] if number in observed),
+            "observed_contest": observed_record.contest_id,
+        }
 
 
 def _cohort_summary(evaluated: list[dict[str, object]], start: int, stop: int) -> dict[str, object]:
@@ -325,6 +352,7 @@ def _prepare_database_from_state(state_dir: Path, runtime_dir: Path):
     else:
         records, bootstrap_patches = _bootstrap_history(db_path, canonical_path, manifest_path)
     return db_path, canonical_path, manifest_path, records, bootstrap_patches
+
 
 def run_cycle(state_dir: Path, runtime_dir: Path) -> dict[str, object]:
     state_dir.mkdir(parents=True, exist_ok=True)

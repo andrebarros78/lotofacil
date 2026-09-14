@@ -35,7 +35,7 @@ class AnalysisRequest(BaseModel):
 
 
 class PortfolioRequest(BaseModel):
-    card_count: int = Field(ge=3, le=100)
+    card_count: int = Field(ge=1, le=100)
     seed: int
     snapshot_id: str | None = Field(default=None, max_length=128)
     target_contest: int | None = Field(default=None, ge=1)

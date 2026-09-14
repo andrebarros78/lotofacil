@@ -32,8 +32,8 @@ def normalize_portfolio_cards(
 
 
 def generate_uniform_portfolio(card_count: int, *, seed: int) -> Portfolio:
-    if not 3 <= card_count <= 100:
-        raise ValueError("card_count deve estar entre 3 e 100")
+    if not 1 <= card_count <= 100:
+        raise ValueError("card_count deve estar entre 1 e 100")
     rng = random.Random(seed)
     unique: set[tuple[int, ...]] = set()
     while len(unique) < card_count:

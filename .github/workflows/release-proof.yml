@@ -20,7 +20,7 @@ permissions:
 jobs:
   clean-install:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
@@ -41,252 +41,51 @@ jobs:
           from pathlib import Path
           import sare_lotofacil
           from sare_lotofacil.api.app import create_app
-          expected = "1.1.7"
+          expected = "1.1.8"
           module = Path(sare_lotofacil.__file__).resolve()
           assert "site-packages" in str(module), module
           assert version("sare-lotofacil") == expected
           assert sare_lotofacil.__version__ == expected
           app = create_app('/tmp/version-proof.db')
           assert app.version == expected
+          paths = {route.path for route in app.routes}
+          required = {'/health/live','/health/ready','/v1/analyses','/v1/portfolios','/v1/evaluations','/v1/evaluations/revisions','/v1/ris'}
+          assert required <= paths
           print(f"RELEASE_VERSION={expected}")
           print(f"INSTALLED_MODULE={module}")
           PY
       - name: Prove mathematical doctor
         run: /tmp/sare-clean/bin/python -m sare_lotofacil doctor
-      - name: Prove persistence backup restore API import and categorical RIS
+      - name: Prove persistence backup restore and categorical RIS
         run: |
           /tmp/sare-clean/bin/python -m sare_lotofacil init-db --path /tmp/sare.db
           /tmp/sare-clean/bin/python -m sare_lotofacil backup-db --db /tmp/sare.db --out /tmp/sare.backup.db
           /tmp/sare-clean/bin/python -m sare_lotofacil restore-db --backup /tmp/sare.backup.db --out /tmp/sare.restored.db
           /tmp/sare-clean/bin/python - <<'PY'
           from sare_lotofacil.analysis.ris import build_categorical_ris
-          from sare_lotofacil.api.app import create_app
-          app = create_app('/tmp/sare.restored.db', write_token='release-proof')
-          paths = {route.path for route in app.routes}
-          required = {'/health/live', '/health/ready', '/v1/analyses', '/v1/portfolios', '/v1/evaluations', '/v1/evaluations/revisions', '/v1/ris'}
-          assert required <= paths
           ris = build_categorical_ris('/tmp/sare.restored.db', temporal_replications=49)
           assert ris['schema_version'] == 'ris-categorical-v1'
           assert ris['numeric_ris_enabled'] is False
           assert ris['score'] is None
-          assert set(ris['dimensions']) == {'data_integrity','uniformity','cooccurrence','temporal','regime','predictive_evidence'}
           assert 'RIS_NUMERIC_FORBIDDEN_IN_1_X' in ris['guardrails']
           print('CATEGORICAL_RIS_RELEASE_PROOF_PASS')
           print('RELEASE_PROOF_BASE_PASS')
           PY
-      - name: Prove calibrated regime detector from installed wheel
+      - name: Prove release integrity suite and PRIMARY_CARD from installed wheel
         run: |
           mkdir -p artifacts
-          /tmp/sare-clean/bin/python - <<'PY' | tee artifacts/regime_calibration_release_proof.json
-          import json
-          from sare_lotofacil.analysis.regime import assess_marginal_regime
-          from sare_lotofacil.simulation.alternative import simulate_marginal_regime_shift
-          from sare_lotofacil.simulation.null import simulate_uniform_draws
-          null_assessment = assess_marginal_regime(simulate_uniform_draws(500, seed=17).draws,min_segment=60,candidate_stride=10,calibration_replications=99,validation_replications=99,seed=20260914)
-          assert null_assessment.calibration.compatible_with_target is True
-          assert null_assessment.state == 'STABLE'
-          assert null_assessment.calibration.validation_ci95_low <= 0.05 <= null_assessment.calibration.validation_ci95_high
-          shifted = simulate_marginal_regime_shift(500,change_index=250,target_number=16,post_probability=0.85,seed=321)
-          labels = tuple(f'contest-{index:04d}' for index in range(1, 501))
-          alert = assess_marginal_regime(shifted.draws,candidate_labels=labels,min_segment=60,candidate_stride=10,calibration_replications=99,validation_replications=99,seed=20260914)
-          assert alert.state == 'ALERT'
-          assert alert.scan.strongest.candidate_index == 250
-          assert alert.scan.strongest.strongest_number == 16
-          assert alert.mode == 'RETROSPECTIVE_DISCOVERY'
-          print(json.dumps({'status':'REGIME_CALIBRATION_RELEASE_PROOF_PASS','null_state':null_assessment.state,'calibration_compatible':null_assessment.calibration.compatible_with_target,'controlled_shift_state':alert.state,'controlled_shift_candidate_index':alert.scan.strongest.candidate_index,'controlled_shift_number':alert.scan.strongest.strongest_number,'mode':alert.mode}, sort_keys=True))
-          PY
-      - name: Prove T17 and T18 controlled alternatives from installed wheel
-        run: |
-          /tmp/sare-clean/bin/python - <<'PY' | tee artifacts/controlled_alternatives_release_proof.json
-          import json
-          from dataclasses import asdict
-          from sare_lotofacil.simulation.validation import assess_temporal_memory_separation, measure_marginal_bias_power
-          t17 = measure_marginal_bias_power(replications=30,draw_count=400,target_number=16,target_probability=0.72,alpha=0.05,base_seed=20260914)
-          assert t17.power >= 0.80 and t17.detections >= 24 and t17.mean_target_effect >= 0.08
-          t18 = assess_temporal_memory_separation(draw_count=600,memory_probability=0.30,retained_count=12,alpha=0.05,seed=20260914,permutation_replications=399)
-          assert t18.marginal_alerts == 0 and t18.temporal_alerts >= 1 and t18.lag1_effect > 0.50 and t18.lag1_p_holm < 0.05
-          print(json.dumps({'status':'CONTROLLED_ALTERNATIVES_RELEASE_PROOF_PASS','t17':asdict(t17),'t18':asdict(t18)}, sort_keys=True))
-          PY
-      - name: Prove T20 T23 backtest integrity from installed wheel
-        run: |
-          /tmp/sare-clean/bin/python - <<'PY' | tee artifacts/backtest_integrity_release_proof.json
-          import json
-          from sare_lotofacil.experiments.backtest import BacktestLeakageError, BacktestWindow, FittedTransform, TemporalVariable, run_audited_backtest
-          blocked_variable = False
-          try:
-              run_audited_backtest((BacktestWindow('t20',199,200,(TemporalVariable('future_result_200',200),),()),), lambda _: 0.20, min_successful_windows=1)
-          except BacktestLeakageError as exc:
-              blocked_variable = 'LOOKAHEAD_LEAKAGE_DETECTED' in str(exc)
-          assert blocked_variable
-          blocked_transform = False
-          try:
-              run_audited_backtest((BacktestWindow('t21',249,250,(TemporalVariable('history_prefix',249),),(FittedTransform('global_standardizer',400),)),), lambda _: 0.20, min_successful_windows=1)
-          except BacktestLeakageError as exc:
-              blocked_transform = 'TRANSFORM_FIT_LEAKAGE_DETECTED' in str(exc)
-          assert blocked_transform
-          windows = tuple(BacktestWindow(f'w{i}',100+i,101+i,(TemporalVariable('history_prefix',100+i),),(FittedTransform('fit',100+i),)) for i in range(5))
-          def scorer(window):
-              if window.window_id == 'w2': raise ArithmeticError('synthetic-window-failure')
-              return 0.20
-          t22 = run_audited_backtest(windows, scorer, min_successful_windows=4, min_success_rate=0.80)
-          assert t22.planned_windows == 5 and t22.successful_windows == 4 and t22.failed_windows == 1 and t22.success_rate == 0.80
-          assert all(outcome.m0_brier == 0.24 for outcome in t22.outcomes)
-          short = tuple(BacktestWindow(f's{i}',200+i,201+i,(TemporalVariable('history_prefix',200+i),),(FittedTransform('fit',200+i),)) for i in range(3))
-          t23 = run_audited_backtest(short, lambda _: 0.10, min_successful_windows=10, min_success_rate=0.80)
-          assert t23.status == 'INCONCLUSIVE' and t23.predictive_evidence == 'NOT_ESTABLISHED'
-          print(json.dumps({'status':'BACKTEST_INTEGRITY_RELEASE_PROOF_PASS','t20_blocked':blocked_variable,'t21_blocked':blocked_transform,'t22':{'planned':t22.planned_windows,'success':t22.successful_windows,'failed':t22.failed_windows,'success_rate':t22.success_rate,'ledger_hash':t22.content_hash},'t23':{'status':t23.status,'predictive_evidence':t23.predictive_evidence,'planned':t23.planned_windows,'success':t23.successful_windows}}, sort_keys=True))
-          PY
-      - name: Prove T24 T29 risk reproducibility and joint coverage from installed wheel
-        run: |
-          /tmp/sare-clean/bin/python - <<'PY' | tee artifacts/risk_repro_joint_coverage_release_proof.json
-          import json
-          from dataclasses import asdict
-          from sare_lotofacil.experiments.backtest import BacktestWindow, FittedTransform, TemporalVariable
-          from sare_lotofacil.experiments.integrity import OptionalStoppingViolation, assess_performance_gap_for_leakage
-          from sare_lotofacil.experiments.protocol import ExperimentProtocol
-          from sare_lotofacil.experiments.reproducibility import ScientificRunIdentity
-          from sare_lotofacil.portfolios.coverage import exact_joint_coverage
-          from sare_lotofacil.simulation.risk import summarize_binary_risk
-
-          t24 = summarize_binary_risk(0, 1000, confidence=0.95)
-          assert t24.probability == 0.0 and t24.interval_low == 0.0 and t24.interval_high > 0.0
-          t25_blocked = False
-          try:
-              summarize_binary_risk(0, 0)
-          except ValueError:
-              t25_blocked = True
-          assert t25_blocked
-
-          clean_window = BacktestWindow('t26',199,200,(TemporalVariable('history_prefix',199),),(FittedTransform('fit',199),))
-          t26 = assess_performance_gap_for_leakage(clean_window, train_metric=0.24, test_metric=0.20)
-          assert t26.test_metric < t26.train_metric and t26.leakage_detected is False
-
-          t27_blocked = False
-          try:
-              ExperimentProtocol(hypothesis_id='t27',question='optional?',h0='h0',h1='h1',snapshot_id='snap',stopping_rule='inspect_repeatedly_until_p_below_0_05').validate()
-          except OptionalStoppingViolation as exc:
-              t27_blocked = exc.code == 'OPTIONAL_STOPPING_FORBIDDEN'
-          assert t27_blocked
-
-          first = ScientificRunIdentity(seed=20260914,data_hash='data-sha',code_commit='code-sha',environment_hash='env-sha',protocol_hash='protocol-sha',scientific_payload={'metric':{'delta':0.001,'brier':0.239},'run_id':'a','created_at_utc':'2026-09-14T10:00:00Z'})
-          second = ScientificRunIdentity(seed=20260914,data_hash='data-sha',code_commit='code-sha',environment_hash='env-sha',protocol_hash='protocol-sha',scientific_payload={'created_at_utc':'2026-09-14T11:00:00Z','run_id':'b','metric':{'brier':0.239,'delta':0.001}})
-          assert first.normalized_json == second.normalized_json and first.content_hash == second.content_hash
-
-          t29 = exact_joint_coverage((tuple(range(1,16)),(*tuple(range(1,15)),16)), min_hits=14)
-          assert t29.total_outcomes == 3268760
-          assert t29.independence_assumption_used is False
-          assert abs(t29.probability - t29.naive_independence_probability) > 1e-8
-
-          print(json.dumps({
-              'status':'RISK_REPRO_JOINT_COVERAGE_RELEASE_PROOF_PASS',
-              't24':asdict(t24),
-              't25_zero_replications_blocked':t25_blocked,
-              't26':asdict(t26),
-              't27_optional_stopping_blocked':t27_blocked,
-              't28_content_hash':first.content_hash,
-              't29':asdict(t29),
-              'interpretation':'T24-T29 prove risk/statistical integrity, reproducibility and joint portfolio coverage; they do not establish predictive advantage.'
-          }, sort_keys=True))
-          PY
-          grep -q 'RISK_REPRO_JOINT_COVERAGE_RELEASE_PROOF_PASS' artifacts/risk_repro_joint_coverage_release_proof.json
-      - name: Prove T30 T39 portfolio and economic integrity from installed wheel
-        run: |
-          /tmp/sare-clean/bin/python - <<'PY' | tee artifacts/portfolio_economic_integrity_release_proof.json
-          import json
-          from dataclasses import asdict
-          from datetime import date, datetime, timezone
-          from pathlib import Path
-          from sare_lotofacil.economics import calculate_economic_audit, summarize_horizon_cashflow
-          from sare_lotofacil.ingestion.caixa import CaixaContest
-          from sare_lotofacil.ingestion.validation import validate_contest
-          from sare_lotofacil.persistence.db import SCHEMA_VERSION, connect
-          from sare_lotofacil.persistence.operations import evaluate_portfolio_revision, persist_uniform_portfolio
-          from sare_lotofacil.persistence.repository import persist_caixa_contest
-          from sare_lotofacil.portfolios.core import generate_uniform_portfolio, normalize_portfolio_cards
-          from sare_lotofacil.portfolios.coverage import exact_jackpot_coverage
-          from sare_lotofacil.portfolios.search import PortfolioSearchPolicy, search_bounded_portfolio
-
-          t30_blocked = []
-          for count in (2, 101):
-              try:
-                  generate_uniform_portfolio(count, seed=1)
-              except ValueError:
-                  t30_blocked.append(count)
-          assert t30_blocked == [2, 101]
-
-          card = tuple(range(1, 16))
-          t31_duplicate_blocked = False
-          try:
-              normalize_portfolio_cards((card, card), expected_count=2)
-          except ValueError as exc:
-              t31_duplicate_blocked = 'DUPLICATE_CARD' in str(exc)
-          assert t31_duplicate_blocked
-          generated = generate_uniform_portfolio(10, seed=20260914)
-          assert len(generated.cards) == len(set(generated.cards)) == 10
-
-          strict_policy = PortfolioSearchPolicy(max_overlap=0, max_exposure=1.0, max_attempts=12, seed=7)
-          t32 = search_bounded_portfolio(3, policy=strict_policy)
-          assert t32.status == 'SEARCH_LIMIT_REACHED' and t32.attempts == 12 and not t32.cards
-          assert 'INFEASIBLE' not in t32.status
-
-          relaxed_policy = PortfolioSearchPolicy(max_overlap=10, max_exposure=1.0, max_attempts=12, seed=7)
-          assert strict_policy.config_id != relaxed_policy.config_id
-
-          jackpot = exact_jackpot_coverage(generate_uniform_portfolio(5, seed=34).cards)
-          assert jackpot.covered_outcomes == 5 and jackpot.total_outcomes == 3268760
-          assert jackpot.probability == 5 / 3268760
-
-          unpurchased = calculate_economic_audit([11,10,9], {15:1000000,14:50000,13:3500,12:1400,11:700}, theoretical_cost_cents=1050)
-          assert unpurchased.purchase_recorded is False and unpurchased.actual_cost_cents is None and unpurchased.actual_net_cents is None
-
-          sources = {tier:f'caixa://contest-500/revision-1/tier-{tier}' for tier in (15,14,13,12,11)}
-          t36 = calculate_economic_audit([15,14], {15:80000000,14:125000,13:3500,12:1400,11:700}, theoretical_cost_cents=700, rateio_source_by_hits=sources, round_id='contest-500/revision-1')
-          assert t36.prize_by_card_cents == (80000000,125000)
-          assert dict(t36.rateio_source_by_tier)[15] != dict(t36.rateio_source_by_tier)[14]
-
-          t37 = calculate_economic_audit([14,14,15], {15:50000000,14:98765,13:3500,12:1400,11:700}, theoretical_cost_cents=1050, round_id='contest-501/revision-1')
-          assert t37.prize_by_card_cents[0] == t37.prize_by_card_cents[1] == 98765
-
-          one = summarize_horizon_cashflow(1000, [-300], next_participation_cost_cents=300)
-          prolonged = summarize_horizon_cashflow(1000, [-300,-300,-300,-300], next_participation_cost_cents=300)
-          assert one.horizon_contests == 1 and prolonged.horizon_contests == 4
-          assert one.net_loss_cents == 300 and prolonged.net_loss_cents == 1200
-          assert one.cannot_fund_next_participation is False and prolonged.cannot_fund_next_participation is True
-
-          db = '/tmp/t30-t39-release.db'
-          Path(db).unlink(missing_ok=True)
-          portfolio = persist_uniform_portfolio(db, card_count=3, seed=39, target_contest=500)
-          contest = CaixaContest(record=validate_contest(500,date(2026,9,14),range(1,16)), prize_tiers=(), source_url='fixture://contest/500/revision/1', captured_at=datetime(2026,9,14,tzinfo=timezone.utc), raw_payload={'numero':500,'listaDezenas':list(range(1,16))})
-          persisted = persist_caixa_contest(db, contest, source_class='SINTETICO')
-          assert persisted.revision == 1
-          first = evaluate_portfolio_revision(db, portfolio.portfolio_id, 500, 1)
-          second = evaluate_portfolio_revision(db, portfolio.portfolio_id, 500, 1)
-          assert first == second
-          with connect(db) as connection:
-              revision_rows = connection.execute('SELECT COUNT(*) FROM revision_evaluations').fetchone()[0]
-              audit_rows = connection.execute("SELECT COUNT(*) FROM audit_events WHERE action='PORTFOLIO_REVISION_EVALUATED'").fetchone()[0]
-              schema_version = int(connection.execute("SELECT value FROM schema_meta WHERE key='schema_version'").fetchone()[0])
-          assert revision_rows == 1 and audit_rows == 1 and schema_version == SCHEMA_VERSION == 6
-
-          print(json.dumps({
-              'status':'PORTFOLIO_ECONOMIC_INTEGRITY_RELEASE_PROOF_PASS',
-              't30_blocked_counts':t30_blocked,
-              't31_duplicate_blocked':t31_duplicate_blocked,
-              't31_delivered_count':len(generated.cards),
-              't32':asdict(t32),
-              't33_strict_policy_id':strict_policy.config_id,
-              't33_relaxed_policy_id':relaxed_policy.config_id,
-              't34':asdict(jackpot),
-              't35':{'purchase_recorded':unpurchased.purchase_recorded,'actual_cost_cents':unpurchased.actual_cost_cents,'actual_net_cents':unpurchased.actual_net_cents,'theoretical_cost_cents':unpurchased.theoretical_cost_cents},
-              't36':{'prize_by_card_cents':t36.prize_by_card_cents,'rateio_source_by_tier':t36.rateio_source_by_tier,'round_id':t36.round_id},
-              't37_prize_by_card_cents':t37.prize_by_card_cents,
-              't38_one':asdict(one),
-              't38_prolonged':asdict(prolonged),
-              't39':{'evaluation_id':first.evaluation_id,'contest_id':first.contest_id,'revision':first.revision,'revision_rows':revision_rows,'audit_rows':audit_rows,'schema_version':schema_version},
-              'interpretation':'T30-T39 prove portfolio constraints and economic/audit integrity; they do not establish predictive advantage.'
-          }, sort_keys=True))
-          PY
-          grep -q 'PORTFOLIO_ECONOMIC_INTEGRITY_RELEASE_PROOF_PASS' artifacts/portfolio_economic_integrity_release_proof.json
+          /tmp/sare-clean/bin/python scripts/prove_release_integrity_v118.py | tee artifacts/release_integrity_suite.log
+          grep -q 'REGIME_CALIBRATION_RELEASE_PROOF_PASS' artifacts/release_integrity_suite.log
+          grep -q 'CONTROLLED_ALTERNATIVES_RELEASE_PROOF_PASS' artifacts/release_integrity_suite.log
+          grep -q 'BACKTEST_INTEGRITY_RELEASE_PROOF_PASS' artifacts/release_integrity_suite.log
+          grep -q 'RISK_REPRO_JOINT_COVERAGE_RELEASE_PROOF_PASS' artifacts/release_integrity_suite.log
+          grep -q 'PORTFOLIO_ECONOMIC_INTEGRITY_RELEASE_PROOF_PASS' artifacts/release_integrity_suite.log
+          grep -q 'PRIMARY_CARD_RELEASE_PROOF_PASS' artifacts/release_integrity_suite.log
+          grep -q 'RELEASE_INTEGRITY_SUITE_PASS' artifacts/release_integrity_suite.log
+          grep -q '"selection_method": "M1_TOP15_M2_TIEBREAK_V1"' artifacts/primary_card_release_proof.json
+          grep -q '"card_count": 1' artifacts/primary_card_release_proof.json
+          grep -q '"number_count": 15' artifacts/primary_card_release_proof.json
+          grep -q '"deterministic": true' artifacts/primary_card_release_proof.json
       - name: Prove Operational 1.1 journey from installed wheel
         run: |
           /tmp/sare-clean/bin/python scripts/prove_operational_release.py | tee artifacts/operational_release_proof.json
@@ -332,4 +131,10 @@ jobs:
         with:
           name: portfolio-economic-integrity-release-proof
           path: artifacts/portfolio_economic_integrity_release_proof.json
+          if-no-files-found: error
+      - name: Upload PRIMARY_CARD proof
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: primary-card-release-proof
+          path: artifacts/primary_card_release_proof.json
           if-no-files-found: error

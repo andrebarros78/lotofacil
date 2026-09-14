@@ -4,7 +4,7 @@ import sqlite3
 import time
 from pathlib import Path
 
-SCHEMA_VERSION = 6
+SCHEMA_VERSION = 7
 
 SCHEMA_SQL = """
 PRAGMA foreign_keys = ON;
@@ -13,7 +13,6 @@ CREATE TABLE IF NOT EXISTS schema_meta (
     key TEXT PRIMARY KEY,
     value TEXT NOT NULL
 );
-
 
 CREATE TABLE IF NOT EXISTS source_artifacts (
     artifact_id TEXT PRIMARY KEY,
@@ -89,7 +88,6 @@ CREATE TABLE IF NOT EXISTS runs (
     finished_at TEXT
 );
 
-
 CREATE TABLE IF NOT EXISTS run_results (
     run_id TEXT PRIMARY KEY REFERENCES runs(run_id) ON DELETE CASCADE,
     result_json TEXT NOT NULL
@@ -100,7 +98,7 @@ CREATE TABLE IF NOT EXISTS portfolios (
     snapshot_id TEXT REFERENCES snapshots(snapshot_id),
     target_contest INTEGER,
     seed INTEGER NOT NULL,
-    card_count INTEGER NOT NULL CHECK (card_count BETWEEN 3 AND 100),
+    card_count INTEGER NOT NULL CHECK (card_count BETWEEN 1 AND 100),
     cost_cents INTEGER NOT NULL CHECK (cost_cents > 0),
     predictive_evidence TEXT NOT NULL DEFAULT 'NOT_ESTABLISHED',
     evidence_label TEXT NOT NULL,
@@ -251,6 +249,20 @@ CREATE INDEX IF NOT EXISTS idx_runs_state
 ON runs(execution_state);
 """
 
+_PORTFOLIOS_V7_SQL = """
+CREATE TABLE portfolios_v7 (
+    portfolio_id TEXT PRIMARY KEY,
+    snapshot_id TEXT REFERENCES snapshots(snapshot_id),
+    target_contest INTEGER,
+    seed INTEGER NOT NULL,
+    card_count INTEGER NOT NULL CHECK (card_count BETWEEN 1 AND 100),
+    cost_cents INTEGER NOT NULL CHECK (cost_cents > 0),
+    predictive_evidence TEXT NOT NULL DEFAULT 'NOT_ESTABLISHED',
+    evidence_label TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+"""
+
 
 def connect(path: str | Path) -> sqlite3.Connection:
     db_path = Path(path)
@@ -272,10 +284,49 @@ def connect(path: str | Path) -> sqlite3.Connection:
     return connection
 
 
+def _migrate_portfolios_to_v7(connection: sqlite3.Connection) -> None:
+    row = connection.execute(
+        "SELECT sql FROM sqlite_master WHERE type='table' AND name='portfolios'"
+    ).fetchone()
+    if not row or not row[0]:
+        return
+    normalized = " ".join(str(row[0]).upper().split())
+    if "CARD_COUNT BETWEEN 1 AND 100" in normalized:
+        return
+    if "CARD_COUNT BETWEEN 3 AND 100" not in normalized:
+        raise RuntimeError("unsupported portfolios schema while migrating to v7")
+
+    connection.commit()
+    connection.execute("PRAGMA foreign_keys = OFF")
+    try:
+        connection.executescript(
+            "BEGIN;\n"
+            + _PORTFOLIOS_V7_SQL
+            + "\nINSERT INTO portfolios_v7("
+            "portfolio_id, snapshot_id, target_contest, seed, card_count, cost_cents, predictive_evidence, evidence_label, created_at"
+            ") SELECT portfolio_id, snapshot_id, target_contest, seed, card_count, cost_cents, predictive_evidence, evidence_label, created_at FROM portfolios;\n"
+            "DROP TABLE portfolios;\n"
+            "ALTER TABLE portfolios_v7 RENAME TO portfolios;\n"
+            "CREATE INDEX IF NOT EXISTS idx_portfolios_snapshot ON portfolios(snapshot_id);\n"
+            "COMMIT;"
+        )
+    except Exception:
+        if connection.in_transaction:
+            connection.rollback()
+        raise
+    finally:
+        connection.execute("PRAGMA foreign_keys = ON")
+
+    violations = connection.execute("PRAGMA foreign_key_check").fetchall()
+    if violations:
+        raise RuntimeError(f"foreign key violations after v7 migration: {violations[:5]}")
+
+
 def initialize_database(path: str | Path) -> Path:
     db_path = Path(path)
     with connect(db_path) as connection:
         connection.executescript(SCHEMA_SQL)
+        _migrate_portfolios_to_v7(connection)
         connection.execute(
             "INSERT INTO schema_meta(key, value) VALUES('schema_version', ?) "
             "ON CONFLICT(key) DO UPDATE SET value = excluded.value",

@@ -4,8 +4,9 @@ import json
 from datetime import date, timedelta
 from pathlib import Path
 
-from scripts.github_operator_console import _portfolio, _ris, _state_summary
+from scripts.github_operator_console import _portfolio, _primary_card, _ris, _state_summary
 from sare_lotofacil.portfolios.core import UNPROVEN_LABEL
+from sare_lotofacil.portfolios.primary import PRIMARY_MODEL_NAME, SECONDARY_MODEL_NAME
 from sare_lotofacil.simulation.null import simulate_uniform_draws
 
 
@@ -54,13 +55,23 @@ def _state_fixture(tmp_path: Path) -> Path:
             "summary": {
                 "evaluated_predictions": 0,
                 "pending_predictions": 1,
-            }
+            },
+            "predictions": [
+                {
+                    "target_contest": 3780,
+                    "training_last_contest": 3779,
+                    "models": {
+                        PRIMARY_MODEL_NAME: [index / 100.0 for index in range(1, 26)],
+                        SECONDARY_MODEL_NAME: [0.5] * 25,
+                    },
+                }
+            ],
         },
     )
     return state
 
 
-def test_operator_status_and_portfolio_are_read_only_derivations(tmp_path: Path) -> None:
+def test_operator_status_primary_card_and_portfolio_are_read_only_derivations(tmp_path: Path) -> None:
     state = _state_fixture(tmp_path)
 
     summary = _state_summary(state)
@@ -69,12 +80,20 @@ def test_operator_status_and_portfolio_are_read_only_derivations(tmp_path: Path)
     assert summary["next_prediction_target"] == 3780
     assert summary["predictive_evidence"] == "NOT_ESTABLISHED"
 
-    portfolio = _portfolio(state, card_count=3, seed=0)
+    primary = _primary_card(state)
+    assert primary["status"] == "GITHUB_OPERATOR_PRIMARY_CARD_PASS"
+    assert primary["target_contest"] == 3780
+    assert primary["card_count"] == 1
+    assert primary["card"] == list(range(11, 26))
+    assert primary["decision_source"] == "DERIVED_FROM_FROZEN_LEGACY_MODEL_SCORES"
+    assert primary["predictive_evidence"] == "NOT_ESTABLISHED"
+
+    portfolio = _portfolio(state, card_count=1, seed=0)
     assert portfolio["status"] == "GITHUB_OPERATOR_PORTFOLIO_PASS"
     assert portfolio["target_contest"] == 3780
     assert portfolio["seed"] == 3780
-    assert portfolio["card_count"] == 3
-    assert len(portfolio["cards"]) == 3
+    assert portfolio["card_count"] == 1
+    assert len(portfolio["cards"]) == 1
     assert portfolio["evidence_label"] == UNPROVEN_LABEL
     assert portfolio["predictive_evidence"] == "NOT_ESTABLISHED"
 
