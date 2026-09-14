@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sare-lotofacil"
-version = "1.1.6"
+version = "1.1.7"
 description = "SARE Lotofácil Core 1.0 + Operational 1.1 — análise estatística auditável da Lotofácil"
 readme = "README.md"
 requires-python = ">=3.12"

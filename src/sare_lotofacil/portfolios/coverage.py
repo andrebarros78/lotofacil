@@ -6,6 +6,7 @@ from typing import Iterable, Sequence
 
 from sare_lotofacil.domain.masks import numbers_to_mask, normalize_numbers
 from sare_lotofacil.domain.rules import DEFAULT_RULES
+from sare_lotofacil.portfolios.core import normalize_portfolio_cards
 
 
 @dataclass(frozen=True, slots=True)
@@ -18,6 +19,15 @@ class JointCoverageResult:
     method: str
     independence_assumption_used: bool
     naive_independence_probability: float
+
+
+@dataclass(frozen=True, slots=True)
+class JackpotCoverageResult:
+    card_count: int
+    covered_outcomes: int
+    total_outcomes: int
+    probability: float
+    method: str = "EXACT_DISTINCT_CARD_JACKPOT_IDENTITY"
 
 
 def _iter_fixed_popcount_masks(width: int, popcount: int):
@@ -47,6 +57,19 @@ def single_card_tail_probability(min_hits: int) -> float:
     return favorable / total
 
 
+def exact_jackpot_coverage(cards: Sequence[Iterable[int]]) -> JackpotCoverageResult:
+    normalized = normalize_portfolio_cards(cards)
+    if not normalized:
+        raise ValueError("cards não pode ser vazio")
+    total = math.comb(DEFAULT_RULES.universe_size, DEFAULT_RULES.draw_size)
+    return JackpotCoverageResult(
+        card_count=len(normalized),
+        covered_outcomes=len(normalized),
+        total_outcomes=total,
+        probability=len(normalized) / total,
+    )
+
+
 def exact_joint_coverage(
     cards: Sequence[Iterable[int]],
     *,
@@ -58,11 +81,9 @@ def exact_joint_coverage(
     multiplica probabilidades de cartões como se seus eventos fossem independentes.
     A aproximação de independência é exposta apenas como diagnóstico comparativo.
     """
-    normalized = tuple(normalize_numbers(card) for card in cards)
+    normalized = normalize_portfolio_cards(cards)
     if not normalized:
         raise ValueError("cards não pode ser vazio")
-    if len(set(normalized)) != len(normalized):
-        raise ValueError("cards precisam ser distintos")
     if not 0 <= min_hits <= DEFAULT_RULES.draw_size:
         raise ValueError("min_hits deve estar entre 0 e 15")
 

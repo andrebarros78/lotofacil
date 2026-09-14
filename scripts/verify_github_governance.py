@@ -98,6 +98,7 @@ def main() -> int:
             "CONTROLLED_ALTERNATIVES_RELEASE_PROOF_PASS",
             "BACKTEST_INTEGRITY_RELEASE_PROOF_PASS",
             "RISK_REPRO_JOINT_COVERAGE_RELEASE_PROOF_PASS",
+            "PORTFOLIO_ECONOMIC_INTEGRITY_RELEASE_PROOF_PASS",
             "LOOKAHEAD_LEAKAGE_DETECTED",
             "TRANSFORM_FIT_LEAKAGE_DETECTED",
             "run_audited_backtest",
@@ -105,9 +106,16 @@ def main() -> int:
             "OPTIONAL_STOPPING_FORBIDDEN",
             "ScientificRunIdentity",
             "exact_joint_coverage",
+            "search_bounded_portfolio",
+            "SEARCH_LIMIT_REACHED",
+            "exact_jackpot_coverage",
+            "evaluate_portfolio_revision",
+            "SCHEMA_VERSION",
+            "/v1/evaluations/revisions",
             "controlled-alternatives-release-proof",
             "backtest-integrity-release-proof",
             "risk-repro-joint-coverage-release-proof",
+            "portfolio-economic-integrity-release-proof",
         ]
         for marker in release_markers:
             if marker not in text:

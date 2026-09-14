@@ -2,7 +2,7 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from sare_lotofacil.persistence.db import connect, initialize_database
+from sare_lotofacil.persistence.db import SCHEMA_VERSION, connect, initialize_database
 from sare_lotofacil.persistence.jobs import (
     StaleLeaseError,
     claim_next_job,
@@ -74,7 +74,7 @@ def test_schema_upgrade_preserves_existing_records(tmp_path):
     initialize_database(db)
     with connect(db) as connection:
         assert connection.execute("SELECT value FROM schema_meta WHERE key='fixture'").fetchone()[0] == "preserve-me"
-        assert connection.execute("SELECT value FROM schema_meta WHERE key='schema_version'").fetchone()[0] == "5"
+        assert connection.execute("SELECT value FROM schema_meta WHERE key='schema_version'").fetchone()[0] == str(SCHEMA_VERSION)
 
 
 def test_disk_full_like_failure_never_publishes_completion(monkeypatch, tmp_path):

@@ -4,7 +4,7 @@ Sistema de Análise de Randomicidade e Eventos para a Lotofácil.
 
 ## Release
 
-**SARE Core 1.0 + SARE Operational 1.1 — versão 1.1.6.**
+**SARE Core 1.0 + SARE Operational 1.1 — versão 1.1.7.**
 
 O sistema prioriza integridade dos dados, matemática exata, reprodutibilidade, auditoria e recuperação antes de qualquer alegação preditiva.
 
@@ -38,6 +38,12 @@ A autoridade operacional está documentada em `docs/GITHUB_OPERATIONS.md`.
 - regras confirmatórias de parada fixas, com optional stopping guiado por resultado bloqueado;
 - identidade científica normalizada por seed, dados, código, ambiente e protocolo;
 - cobertura conjunta exata de carteira por enumeração do espaço `C(25,15)`, sem hipótese automática de independência entre cartões;
+- busca limitada de carteiras com política identificada e estado `SEARCH_LIMIT_REACHED` separado de inviabilidade provada;
+- validação explícita de quantidade e unicidade de cartões, sem redução silenciosa da carteira entregue;
+- cobertura exata de jackpot `m / C(25,15)` para `m` cartões distintos;
+- economia auditável separando custo teórico de despesa real, com proveniência de rateio por faixa e rodada;
+- fluxo econômico com horizonte explícito, distinguindo uma rodada de uma sequência de concursos;
+- auditoria de carteira vinculada a `contest_id + revision`, idempotente e sem aceitar resultado injetado pelo cliente;
 - ingestão validada, revisões imutáveis e artefatos de fonte;
 - fonte oficial CAIXA e histórico corroborado por checkpoints oficiais;
 - protocolo científico congelado por hash, hipóteses e experimentos auditáveis;
@@ -52,9 +58,28 @@ A autoridade operacional está documentada em `docs/GITHUB_OPERATIONS.md`.
 - reconstrução determinística do SQLite operacional em GitHub Actions com `integrity_check`;
 - CI Python 3.12/3.13, Real History Check, GitHub Operational Cycle e Release Proof.
 
+## Integridade de carteira e auditoria econômica
+
+A versão 1.1.7 fecha T30–T39:
+
+- **T30 — quantidade operacional:** carteiras fora do intervalo 3–100 são rejeitadas.
+- **T31 — cartão duplicado:** duplicatas geram `DUPLICATE_CARD`; a quantidade entregue é validada e não pode cair silenciosamente abaixo da quantidade solicitada.
+- **T32 — busca limitada:** esgotar `max_attempts` retorna `SEARCH_LIMIT_REACHED`; isso não é convertido em prova de inviabilidade.
+- **T33 — relaxamento de restrição:** overlap, exposição, seed, orçamento de tentativas e nome da política participam da identidade da configuração; alterar restrição produz outro `config_id`/hash.
+- **T34 — jackpot:** para `m` cartões distintos, a cobertura exata de 15 acertos é `m / 3.268.760`.
+- **T35 — compra versus geração:** uma carteira apenas gerada mantém `purchase_recorded=false`, `actual_cost_cents=null` e `actual_net_cents=null`; custo teórico não é lançado como despesa real.
+- **T36 — rateio por faixa:** 11, 12, 13, 14 e 15 acertos preservam seus próprios valores e, quando fornecida, sua própria proveniência de rateio.
+- **T37 — múltiplos ganhadores internos:** cartões da mesma carteira que atingem a mesma faixa na mesma rodada recebem o mesmo rateio unitário daquela faixa.
+- **T38 — horizonte:** uma rodada e uma sequência de concursos carregam `horizon_contests` diferente e produzem interpretações econômicas distintas de perda/capacidade de financiar a próxima participação.
+- **T39 — auditoria repetida:** a auditoria canônica usa `portfolio_id + contest_id + revision`; repetir a mesma combinação produz a mesma identidade e não duplica o efeito persistido.
+
+O endpoint `POST /v1/evaluations/revisions` recebe apenas a identidade da carteira e da revisão. O resultado é carregado da revisão persistida, impedindo que o cliente substitua o resultado oficial/auditado por uma máscara arbitrária.
+
+Esses controles validam construção de carteira, contabilidade e auditoria. **Eles não estabelecem vantagem preditiva.**
+
 ## Integridade de risco, parada, reprodutibilidade e carteira
 
-A versão 1.1.6 fecha T24–T29:
+A versão 1.1.6 fechou T24–T29:
 
 - **T24 — zero eventos de ruína:** zero eventos observados mantém estimativa pontual `0`, mas o limite superior do intervalo binomial continua maior que zero; ausência observada não vira ausência de risco.
 - **T25 — zero replicações:** `replications=0` é erro de entrada e não produz métricas de risco iguais a zero.
