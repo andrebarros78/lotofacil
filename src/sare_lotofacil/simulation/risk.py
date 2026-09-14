@@ -49,6 +49,12 @@ def summarize_binary_risk(
     )
     low = max(0.0, center - radius)
     high = min(1.0, center + radius)
+    # Nas bordas do suporte, a aritmética de ponto flutuante pode produzir
+    # resíduos como 2e-19 onde o limite matemático é exatamente 0 ou 1.
+    if events == 0:
+        low = 0.0
+    if events == n:
+        high = 1.0
 
     return BinaryRiskEstimate(
         events=events,
