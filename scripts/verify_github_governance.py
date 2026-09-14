@@ -87,6 +87,28 @@ def main() -> int:
         if "ref: operations/state" not in text:
             violations.append("operator-console.yml must read the canonical operations/state branch")
 
+    proof_path = ROOT / ".github" / "workflows" / "operator-console-proof.yml"
+    if proof_path.exists():
+        text = proof_path.read_text(encoding="utf-8")
+        proof_markers = [
+            "workflow_dispatch:",
+            "push:",
+            "ref: main",
+            "ref: operations/state",
+            "--action status",
+            "--action audit",
+            "--action analyze",
+            "--action portfolio",
+            "--action export",
+            "SARE_OPERATOR_CONSOLE_PROOF_PASS",
+            "operations_state_sha",
+        ]
+        for marker in proof_markers:
+            if marker not in text:
+                violations.append(f"operator-console-proof.yml missing marker: {marker}")
+        if re.search(r"(?m)^\s*contents:\s*write\s*$", text):
+            violations.append("operator-console-proof.yml must remain read-only")
+
     native = policy.get("native_ruleset", {})
     if native.get("status") != "ENFORCED":
         notes.append("NATIVE_RULESET_PENDING_EXTERNAL_ADMIN_ACTION")
