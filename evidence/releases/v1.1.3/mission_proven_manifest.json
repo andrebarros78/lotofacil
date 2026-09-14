@@ -1,0 +1,246 @@
+{
+  "schema_version": 1,
+  "release": "1.1.3",
+  "mission_status": "MISSION_PROVEN",
+  "mission_scope": "ENGINEERING_RELEASE",
+  "authority": "GITHUB_ONLY",
+  "release_commit_sha": "7de1d0efea548fb8bf2f3c05294d0e105e4317c5",
+  "release_tree_sha": "d479de7304b051ea3db9eed095ffd7563aa1de40",
+  "canonical_refs": {
+    "main": "7de1d0efea548fb8bf2f3c05294d0e105e4317c5",
+    "release/v1.1.3": "7de1d0efea548fb8bf2f3c05294d0e105e4317c5",
+    "operations/state": "7b25bbf4572e668a127f771e2874ca2dc9042dd1"
+  },
+  "proof_completed_at_utc": "2026-09-14T19:23:58Z",
+  "runtime_hardening": {
+    "actions/checkout": {
+      "sha": "fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+      "runtime": "node24"
+    },
+    "actions/setup-python": {
+      "sha": "ece7cb06caefa5fff74198d8649806c4678c61a1",
+      "runtime": "node24"
+    },
+    "actions/upload-artifact": {
+      "sha": "b7c566a772e6b6bfb58ed0dc250532a479d7789f",
+      "runtime": "node24"
+    }
+  },
+  "workflows": {
+    "CI": {
+      "run_id": 34886531521,
+      "conclusion": "success",
+      "python_3_12": "success",
+      "python_3_13": "success",
+      "doctor": "success",
+      "governance_gate": "success",
+      "operator_console_smoke": "success"
+    },
+    "Real History Check": {
+      "run_id": 34886531543,
+      "conclusion": "success",
+      "database_integrity": "ok",
+      "snapshot_roundtrip_exact": true,
+      "official_latest_contest": 3779,
+      "predictive_evidence": "NOT_ESTABLISHED",
+      "scientific_conclusion": "EVIDENCIA_PREDITIVA_INSUFICIENTE",
+      "artifact": {
+        "id": 10365161183,
+        "name": "third-party-history-report",
+        "sha256": "f113035333fd95d856607c1a6650b06ee0b0169d6de1ef045c5e909a3afcbf8b",
+        "expires_at": "2026-12-13T19:22:53Z"
+      }
+    },
+    "Release Proof": {
+      "run_id": 34886531642,
+      "conclusion": "success",
+      "release_version": "1.1.3",
+      "installed_from_site_packages": true,
+      "mathematical_doctor": "success",
+      "database_backup_restore_integrity": "ok",
+      "categorical_ris_release_proof": "success",
+      "regime_calibration_release_proof": "success",
+      "operational_release_journey": "success",
+      "artifacts": [
+        {
+          "id": 10365420106,
+          "name": "sare-lotofacil-wheel",
+          "sha256": "5f1c2c77d9f7dd9a12e42ea9af8bc7b0bb5f9a8b6a48172ef75a786904465882",
+          "expires_at": "2026-12-13T19:22:53Z"
+        },
+        {
+          "id": 10365320261,
+          "name": "regime-calibration-release-proof",
+          "sha256": "92e9150bfb80b9675c718fbad5cc75e6a0968d70d6fd217647b274c66a1e17eb",
+          "expires_at": "2026-12-13T19:22:53Z"
+        },
+        {
+          "id": 10363904798,
+          "name": "operational-release-proof",
+          "sha256": "c0c50961f8b7d7b52b06c75f257aa8c5ce7d684fe859bf44246ba4a357c72836",
+          "expires_at": "2026-12-13T19:22:53Z"
+        }
+      ]
+    },
+    "GitHub Operational Cycle": {
+      "run_id": 34886531608,
+      "conclusion": "success",
+      "cycle_job": "success",
+      "committed_state_audit_job": "success",
+      "economic_state_proof_job": "success",
+      "canonical_prize_update": "success",
+      "artifacts": [
+        {
+          "id": 10365195892,
+          "name": "github-operational-cycle",
+          "sha256": "afbbf0753c3ff4f07cb25abd8e6b7759f80fb77c17f238596d0ff722fbc3fc3a",
+          "expires_at": "2026-12-13T19:22:53Z"
+        },
+        {
+          "id": 10365585024,
+          "name": "github-committed-state-audit",
+          "sha256": "ab5b926fcf2248cc19ed03ae64ce35860d0330511fa824a9a655c2e49e290c51",
+          "expires_at": "2026-12-13T19:22:53Z"
+        },
+        {
+          "id": 10365325848,
+          "name": "github-economic-state-proof",
+          "sha256": "da4f13cedd596245a8e0a9d9afcfbe915c7534aedd50ce1b87a4e6024098a6f3",
+          "expires_at": "2026-12-13T19:22:53Z"
+        }
+      ]
+    },
+    "SARE Operator Console Proof": {
+      "run_id": 34886531557,
+      "conclusion": "success",
+      "actions": [
+        "status",
+        "audit",
+        "analyze",
+        "ris",
+        "portfolio",
+        "export"
+      ],
+      "write_capability": false,
+      "regime_calibration_required": true,
+      "artifact": {
+        "id": 10364976702,
+        "name": "sare-operator-console-proof-34886531557",
+        "sha256": "c11de86057ace61b65902fd87155b359c2f1e01533f01d8c2af5b26078fcb65d",
+        "expires_at": "2026-12-13T19:22:53Z"
+      }
+    }
+  },
+  "release_regime_calibration_proof": {
+    "status": "REGIME_CALIBRATION_RELEASE_PROOF_PASS",
+    "null_state": "STABLE",
+    "false_alarm_target": 0.05,
+    "false_alarm_rate": 0.050505050505050504,
+    "false_alarm_ci95_low": 0.021763234491416865,
+    "false_alarm_ci95_high": 0.11282702686248855,
+    "calibration_compatible": true,
+    "controlled_shift_state": "ALERT",
+    "controlled_shift_candidate_index": 250,
+    "controlled_shift_number": 16,
+    "mode": "RETROSPECTIVE_DISCOVERY"
+  },
+  "canonical_regime_assessment": {
+    "state": "STABLE",
+    "method": "calibrated_global_marginal_change_scan",
+    "mode": "RETROSPECTIVE_DISCOVERY",
+    "candidate_count": 358,
+    "min_segment": 100,
+    "candidate_stride": 10,
+    "observed_statistic": 3.3543412516254842,
+    "monte_carlo_p_value": 0.455,
+    "strongest_candidate": {
+      "candidate_index": 170,
+      "candidate_label": "171:2006-11-23",
+      "strongest_number": 1,
+      "before_frequency": 0.7294117647058823,
+      "after_frequency": 0.600443336104184,
+      "effect": -0.12896842860169833,
+      "max_abs_z": 3.3543412516254842
+    },
+    "false_alarm_calibration": {
+      "target_alpha": 0.05,
+      "threshold": 3.9748486761622943,
+      "calibration_replications": 199,
+      "validation_replications": 199,
+      "validation_false_alarms": 14,
+      "validation_false_alarm_rate": 0.07035175879396985,
+      "validation_ci95_low": 0.04236634404532921,
+      "validation_ci95_high": 0.11461073059127666,
+      "compatible_with_target": true,
+      "seed": 20260914
+    },
+    "interpretation": "STABLE means no alert from this calibrated retrospective detector. It does not prove physical stability, causality, online detection, or predictive advantage."
+  },
+  "categorical_ris": {
+    "schema_version": "ris-categorical-v1",
+    "numeric_ris_enabled": false,
+    "score": null,
+    "dimensions": [
+      "data_integrity",
+      "uniformity",
+      "cooccurrence",
+      "temporal",
+      "regime",
+      "predictive_evidence"
+    ],
+    "observed_on_canonical_state": {
+      "snapshot_id": "snap-d9b43f9c33702a880495",
+      "contest_count": 3779,
+      "data_integrity": "VERIFIED",
+      "uniformity": "ALERT",
+      "cooccurrence": "ALERT",
+      "temporal": "COMPATIBLE",
+      "regime": "STABLE",
+      "predictive_evidence": "UNDER_TEST"
+    },
+    "guardrails": [
+      "RIS_NUMERIC_FORBIDDEN_IN_1_X",
+      "COMPATIBLE_IS_NOT_PROOF_OF_RANDOMNESS",
+      "ALERT_IS_NOT_PREDICTIVE_ADVANTAGE",
+      "REGIME_ALERT_IS_RETROSPECTIVE_NOT_REALTIME",
+      "NO_PREDICTIVE_ADVANTAGE_FROM_CATEGORICAL_STATUS"
+    ]
+  },
+  "operational_state": {
+    "status": "GITHUB_OPERATIONAL_CYCLE_PASS",
+    "run_at_utc": "2026-09-14T19:23:24.879499+00:00",
+    "database_integrity": "ok",
+    "official_latest_contest": 3779,
+    "next_prediction_target": 3780,
+    "snapshot_id": "snap-d9b43f9c33702a880495",
+    "snapshot_hash": "d9b43f9c33702a880495f99a929ebee0cac90e7c4724a950f678f1c6494d5106",
+    "canonical_history_sha256": "43890ce147564773f1b9a69c046406793b3c401d4a0c6067bbf10573b78a3fb5",
+    "prospective_state": "UNDER_TEST_COHORT_A",
+    "evaluated_predictions": 0,
+    "pending_predictions": 1,
+    "replication_criteria_met": false,
+    "predictive_evidence": "NOT_ESTABLISHED"
+  },
+  "economic_state": {
+    "canonical_prize_contests": 1,
+    "latest_canonical_prize_contest": 3779,
+    "canonical_prize_updated_at_utc": "2026-09-14T19:23:25.747674+00:00",
+    "economic_state_proof": "success"
+  },
+  "governance": {
+    "status": "GITHUB_GOVERNANCE_PASS",
+    "violations": [],
+    "native_rulesets_observed": 0,
+    "sovereign_hardening_status": "P0_LOGICAL_HARDENING_COMPLETE_NATIVE_RULESET_PENDING",
+    "note": "Native GitHub Rulesets remain an external administrative hardening layer and are not claimed as configured."
+  },
+  "scientific_scope": {
+    "mission_proven_is_engineering_release_status": true,
+    "predictive_evidence": "NOT_ESTABLISHED",
+    "scientific_conclusion": "EVIDENCIA_PREDITIVA_INSUFICIENTE",
+    "predictive_advantage_claimed": false,
+    "regime_state_is_predictive_evidence": false,
+    "portfolio_label": "CARTEIRA COMBINATÓRIA — SEM VANTAGEM PREDITIVA COMPROVADA"
+  },
+  "integrity_note": "This manifest preserves canonical refs, workflow runs, artifact identifiers and digests, release/RIS/regime invariants, governance status, operational state and scientific conclusions for future audit after transient GitHub Actions Artifacts expire."
+}
