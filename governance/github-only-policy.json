@@ -9,6 +9,7 @@
     ".github/workflows/ci.yml",
     ".github/workflows/github-operations.yml",
     ".github/workflows/operator-console.yml",
+    ".github/workflows/operator-console-proof.yml",
     ".github/workflows/real-history-check.yml",
     ".github/workflows/release-proof.yml"
   ],
