@@ -97,11 +97,17 @@ def main() -> int:
             "REGIME_CALIBRATION_RELEASE_PROOF_PASS",
             "CONTROLLED_ALTERNATIVES_RELEASE_PROOF_PASS",
             "BACKTEST_INTEGRITY_RELEASE_PROOF_PASS",
+            "RISK_REPRO_JOINT_COVERAGE_RELEASE_PROOF_PASS",
             "LOOKAHEAD_LEAKAGE_DETECTED",
             "TRANSFORM_FIT_LEAKAGE_DETECTED",
             "run_audited_backtest",
+            "summarize_binary_risk",
+            "OPTIONAL_STOPPING_FORBIDDEN",
+            "ScientificRunIdentity",
+            "exact_joint_coverage",
             "controlled-alternatives-release-proof",
             "backtest-integrity-release-proof",
+            "risk-repro-joint-coverage-release-proof",
         ]
         for marker in release_markers:
             if marker not in text:
