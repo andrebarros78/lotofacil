@@ -15,6 +15,7 @@ from sare_lotofacil.persistence.backup import database_integrity
 from sare_lotofacil.persistence.db import SCHEMA_VERSION, connect, initialize_database
 from sare_lotofacil.persistence.operations import (
     evaluate_portfolio,
+    evaluate_portfolio_revision,
     get_idempotency,
     get_portfolio,
     get_run,
@@ -43,6 +44,12 @@ class PortfolioRequest(BaseModel):
 class EvaluationRequest(BaseModel):
     portfolio_id: str = Field(min_length=1, max_length=128)
     result: list[int] = Field(min_length=15, max_length=15)
+
+
+class RevisionEvaluationRequest(BaseModel):
+    portfolio_id: str = Field(min_length=1, max_length=128)
+    contest_id: int = Field(ge=1)
+    revision: int = Field(ge=1)
 
 
 def _portfolio_payload(record) -> dict[str, Any]:
@@ -243,6 +250,34 @@ def create_app(
             }, 201
 
         return idempotent("CREATE_EVALUATION", idempotency_key, payload, execute)
+
+    @app.post("/v1/evaluations/revisions")
+    def create_revision_evaluation(
+        body: RevisionEvaluationRequest,
+        idempotency_key: Annotated[str | None, Header(alias="Idempotency-Key")] = None,
+        x_sare_token: Annotated[str | None, Header(alias="X-SARE-Token")] = None,
+    ) -> JSONResponse:
+        require_write_auth(x_sare_token)
+        payload = body.model_dump()
+
+        def execute() -> tuple[dict[str, Any], int]:
+            try:
+                record = evaluate_portfolio_revision(path, body.portfolio_id, body.contest_id, body.revision)
+            except KeyError as exc:
+                if isinstance(exc.args[0] if exc.args else None, tuple):
+                    raise HTTPException(status_code=404, detail="CONTEST_REVISION_NOT_FOUND")
+                raise HTTPException(status_code=404, detail="PORTFOLIO_NOT_FOUND")
+            return {
+                "evaluation_id": record.evaluation_id,
+                "portfolio_id": record.portfolio_id,
+                "contest_id": record.contest_id,
+                "revision": record.revision,
+                "result": list(record.result),
+                "hits": list(record.hits),
+                "max_hits": record.max_hits,
+            }, 201
+
+        return idempotent("CREATE_REVISION_EVALUATION", idempotency_key, payload, execute)
 
     @app.get("/v1/audit")
     def audit_events(limit: int = 100) -> dict[str, Any]:
