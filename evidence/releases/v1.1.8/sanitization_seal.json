@@ -1,0 +1,62 @@
+{
+  "seal_type": "SANITIZATION_SCOPE_SEAL",
+  "release": "1.1.8",
+  "release_name": "Primary Card Optimization",
+  "authority": "GITHUB_ONLY",
+  "mission_status": "MISSION_PROVEN",
+  "mission_scope": "ENGINEERING_RELEASE",
+  "release_commit": "168fdc675c95c6129b571a42a451b9f3dfa2c611",
+  "release_tree": "750da7819976adc185ebd60f8b72c95688c243fa",
+  "mission_manifest_commit": "32ccfdb83bcfda9d119e44cd3002af4db8d936d0",
+  "canonical_refs": {
+    "main": "168fdc675c95c6129b571a42a451b9f3dfa2c611",
+    "release_v1_1_8": "168fdc675c95c6129b571a42a451b9f3dfa2c611",
+    "operations_state_final": "02ed68a7a5dcd20501bd9c806cea31720b0a47eb"
+  },
+  "baseline": {
+    "main_equals_release": true,
+    "compare_status": "identical",
+    "ahead_by": 0,
+    "behind_by": 0,
+    "open_pull_requests": 0,
+    "canonical_code_modified_by_sealing": false,
+    "canonical_state_modified_by_sealing": false
+  },
+  "final_same_sha_workflows": {
+    "ci": 34909466275,
+    "release_proof": 34909466298,
+    "real_history_check": 34909466299,
+    "github_operational_cycle": 34909466329,
+    "operator_console_proof": 34909466271,
+    "all_completed_success": true
+  },
+  "primary_card": {
+    "target_contest": 3780,
+    "training_last_contest": 3779,
+    "card": [1, 2, 3, 4, 5, 9, 10, 11, 12, 13, 14, 15, 20, 24, 25],
+    "decision_sha256": "5c21bc2e0bdd40bb8ba051ba49485e7819558a6ec117b56b6c8f91054dfa5c51",
+    "decision_source": "DERIVED_FROM_FROZEN_LEGACY_MODEL_SCORES",
+    "selection_method": "M1_TOP15_M2_TIEBREAK_V1"
+  },
+  "scientific_state": {
+    "predictive_evidence": "NOT_ESTABLISHED",
+    "claim": "NO_PREDICTIVE_ADVANTAGE_CLAIMED"
+  },
+  "security_and_governance": {
+    "technical": "PASS",
+    "functional": "PASS",
+    "operational": "PASS",
+    "logical_github_only_security": "PASS",
+    "native_rulesets_observed_count": 0,
+    "native_rulesets_status": "PENDING_EXTERNAL_ADMIN_ACTION"
+  },
+  "versioning": {
+    "canonical_version_ref": "release/v1.1.8",
+    "git_tag_created": false
+  },
+  "historical_branches": {
+    "canonical_authority": false,
+    "retained_for_provenance_only": true
+  },
+  "statement": "SARE Lotofacil 1.1.8 Primary Card Optimization engineering scope is proven, baseline-clean and sealed. All five mandatory workflows passed on the same release SHA. No predictive advantage is claimed. Native GitHub rulesets remain the known external administrative hardening residual."
+}
