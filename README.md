@@ -4,7 +4,7 @@ Sistema de Análise de Randomicidade e Eventos para a Lotofácil.
 
 ## Release
 
-**SARE Core 1.0 + SARE Operational 1.1 — versão 1.1.2.**
+**SARE Core 1.0 + SARE Operational 1.1 — versão 1.1.3.**
 
 O sistema prioriza integridade dos dados, matemática exata, reprodutibilidade, auditoria e recuperação antes de qualquer alegação preditiva.
 
@@ -39,7 +39,8 @@ A autoridade operacional está documentada em `docs/GITHUB_OPERATIONS.md`.
 - promoção de modelo bloqueada enquanto a evidência não for `REPLICATED`;
 - RIS categórico auditável com seis dimensões, sem score numérico na linha 1.x;
 - temporal RIS por permutação de concursos completos nos lags predefinidos 1, 2, 3, 5 e 10, com correção de Holm;
-- estado de regime mantido `INCONCLUSIVE` enquanto não existir calibração formal de falso alarme;
+- regime RIS por scan global retrospectivo, limiar calibrado em nulo e falso alarme validado em amostra nula independente;
+- simulador de alternativa controlada para provar sensibilidade a mudança conhecida sem atribuir causalidade;
 - carteiras uniformes com etiqueta obrigatória de ausência de vantagem comprovada;
 - verificação SHA-256 de evidências persistidas;
 - reconstrução determinística do SQLite operacional em GitHub Actions com `integrity_check`;
@@ -53,6 +54,7 @@ A linha 1.x **não produz RIS numérico**. São invariantes:
 - `score = null`;
 - `COMPATIBLE` não significa prova de aleatoriedade;
 - `ALERT` não significa vantagem preditiva;
+- alerta de regime retrospectivo não é alerta emitido em tempo real;
 - estado categórico não promove modelo automaticamente.
 
 As seis dimensões canônicas são: integridade dos dados, uniformidade, coocorrência, temporal, regime e evidência preditiva. O contrato completo está em `docs/RIS_CATEGORICAL.md`.

@@ -60,7 +60,9 @@ def _analyze(state_dir: Path) -> dict:
 def _ris(state_dir: Path) -> dict:
     history = _load(state_dir / "canonical_history.json")
     latest = _load(state_dir / "latest.json")
-    draws = tuple(tuple(record["numbers"]) for record in history["records"])
+    records = history["records"]
+    draws = tuple(tuple(record["numbers"]) for record in records)
+    candidate_labels = tuple(f"{record['contest_id']}:{record['draw_date']}" for record in records)
     prospective = latest["prospective"]
     prospective_state = str(prospective["prospective_state"])
     predictive_evidence = str(prospective["predictive_evidence"])
@@ -90,6 +92,7 @@ def _ris(state_dir: Path) -> dict:
             "pending_predictions": prospective["pending_predictions"],
             "source": "operations/state/latest.json",
         },
+        candidate_labels=candidate_labels,
     )
     return {
         "status": "GITHUB_OPERATOR_RIS_PASS",

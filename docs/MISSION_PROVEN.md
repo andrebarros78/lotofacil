@@ -1,109 +1,108 @@
-# SARE Lotofácil 1.1.2 — Evidências de MISSION_PROVEN
+# SARE Lotofácil 1.1.3 — Evidências de MISSION_PROVEN
 
 ## Autoridade canônica
 
-O SARE Lotofácil é **GitHub-only**. A release não depende de PC local, VPS, servidor externo, processo residente ou banco local permanente para operação, continuidade, recuperação ou aceitação.
+O SARE Lotofácil é **GitHub-only**. A identidade imutável da release é o SHA Git completo de `main`; `release/v1.1.3` só pode ser criado após todos os gates pós-merge do mesmo SHA terminarem com sucesso.
 
-A identidade canônica e imutável da release é o **SHA Git completo de `main`**. O alias humano `release/v1.1.2` deve apontar exatamente para esse mesmo SHA no encerramento da prova da release.
+O estado persistente vive em `operations/state`; GitHub Actions é o executor canônico; GitHub Artifacts guarda evidências transitórias; Git history fornece proveniência.
 
-O estado operacional persistente e auditável vive em `operations/state`. GitHub Actions é o executor canônico; GitHub Artifacts contém bancos reconstruídos, relatórios e evidências transitórias; o histórico Git fornece proveniência temporal.
-
-## Regra de MISSION_PROVEN
-
-A release só pode ser declarada `MISSION_PROVEN` quando as provas abaixo estiverem materialmente ligadas ao mesmo SHA canônico de `main`, com artefatos e estado operacional verificáveis. Nenhuma simples existência de arquivo, workflow ou teste encerra a missão isoladamente.
-
-Cadeia mínima exigida:
+Cadeia mínima:
 
 `commit -> workflow run -> artifact -> provenance -> operations/state -> auditoria independente`
 
 ## Matriz de provas
 
-| Prova | Implementação e testes | Condição |
+| Prova | Implementação | Condição |
 |---|---|---|
-| P-DADOS | `scripts/verify_third_party_history.py`, `tests/test_ingestion.py`, `tests/test_repository.py`, `tests/test_evidence.py`, workflow `Real History Check` | histórico validado, checkpoints oficiais, snapshot reproduzível, integridade SQLite reconstruída e hashes de artefatos válidos |
-| P-MATEMATICA | `doctor`, `tests/test_combinatorics.py`, `tests/test_baseline.py` | `C(25,15)=3.268.760`, E=9, Var=1,5, M0 p=0,6 e Brier=0,24 |
-| P-CIENCIA | `tests/test_protocol.py`, `tests/test_scientific_journey.py`, `tests/test_experiments.py` | protocolo congelado por hash, walk-forward, conclusão inconclusiva aceita e promoção bloqueada sem evidência prospectiva replicada |
-| P-RIS | `sare_lotofacil.analysis.ris`, `tests/test_ris.py`, `tests/test_api.py`, `SARE Operator Console Proof` | seis dimensões canônicas, mesma autoridade de cálculo em API/Console, temporal por permutação de concursos completos, multiplicidade corrigida e proibição material de score numérico |
-| P-FUNCAO | `tests/test_api.py`, `tests/test_hardening.py`, `scripts/prove_operational_release.py` | jornada dados → hipótese → experimento → conclusão → carteira → avaliação executável |
-| P-CARTEIRA | `tests/test_portfolios.py`, `tests/test_end_to_end.py`, `tests/test_hardening.py`, `SARE Operator Console Proof` | cartões válidos, auditáveis e com etiqueta obrigatória de ausência de vantagem comprovada |
-| P-PERSISTENCIA | `GitHub Operational Cycle`, `operations/state`, `tests/test_repository.py`, `tests/test_persistence.py` | estado textual versionado, reconstrução determinística e continuidade entre execuções independentes do GitHub |
-| P-RECUPERACAO | `tests/test_backup.py`, `tests/test_end_to_end.py`, `Release Proof`, reconstrução do SQLite a partir de `operations/state` | recuperação com `integrity_check=ok` e continuidade da jornada sem depender de máquina externa |
-| P-SEGURANCA | `scripts/verify_github_governance.py`, `tests/test_api.py`, `tests/test_hardening.py` | Actions pinados por SHA, permissões mínimas, writer operacional único, autenticação/limites de entrada e ausência de runner `self-hosted` canônico |
-| P-FILA | `tests/test_jobs.py`, `tests/test_hardening.py` | lease, fencing token, checkpoint, retomada, cancelamento e falha sem falso sucesso |
-| P-EVIDENCIA | `tests/test_evidence.py`, `verify-evidence`, GitHub Artifacts | SHA-256 reprodutível, adulteração detectada e evidência vinculada ao workflow/commit |
-| P-RELEASE | `tests/test_version.py`, workflow `Release Proof` | wheel 1.1.2 instalado em ambiente limpo, módulo em `site-packages`, `MATHEMATICAL_CHECKS_PASS`, invariantes do RIS categórico e `OPERATIONAL_RELEASE_PROOF_PASS` |
-| P-REGRESSAO | workflow `CI` | suíte completa aprovada em Python 3.12 e 3.13, incluindo governance gate e smoke da console |
-| P-OPERACAO | `GitHub Operational Cycle`, `committed-state-audit`, `economic-state-proof`, `docs/GITHUB_OPERATIONS.md`, `SARE Operator Console` | execução, persistência, consulta e auditoria inteiramente GitHub-native |
-| P-CONSOLE | `SARE Operator Console Proof` | `status`, `audit`, `analyze`, `ris`, `portfolio` e `export` executados sobre `operations/state` e publicados como Artifact read-only |
+| P-DADOS | `Real History Check`, ingestão, repositório e evidência | histórico validado, checkpoints oficiais, snapshot reproduzível, `integrity_check=ok` |
+| P-MATEMATICA | `doctor`, combinatória e baseline | `C(25,15)=3.268.760`, E=9, Var=1,5, M0 p=0,6, Brier=0,24 |
+| P-CIENCIA | protocolo, experimentos, walk-forward | ausência de evidência é aceita; promoção bloqueada sem replicação prospectiva |
+| P-RIS | `analysis.ris`, API, console e `tests/test_ris.py` | seis dimensões, sem score numérico, autoridade matemática única |
+| P-REGIME | `statistics.regime`, `analysis.regime`, `simulation.alternative`, `tests/test_regime.py` | T16 falso alarme calibrado/validado e T19 mudança conhecida detectada com ponto registrado |
+| P-FUNCAO | API e jornada operacional | dados → hipótese → experimento → conclusão → carteira → avaliação executável |
+| P-PERSISTENCIA | `GitHub Operational Cycle` | estado textual versionado e reconstrução determinística |
+| P-RECUPERACAO | backup/restore + reconstrução GitHub | continuidade com integridade comprovada |
+| P-SEGURANCA | governance gate | Actions pinados, permissões mínimas e writer operacional único |
+| P-EVIDENCIA | hashes + Artifacts | adulteração detectável e vínculo com commit/workflow |
+| P-RELEASE | `Release Proof` | wheel 1.1.3 em ambiente limpo + provas matemática, RIS e regime calibrado |
+| P-REGRESSAO | `CI` | Python 3.12 e 3.13 integralmente aprovados |
+| P-OPERACAO | ciclo + auditoria + prova econômica | operação GitHub-native ponta a ponta |
+| P-CONSOLE | `SARE Operator Console Proof` | ações read-only, RIS real e calibração de regime materialmente comprovados |
+
+## Contrato do detector de regime 1.1.3
+
+O detector é um **scan global retrospectivo de mudança marginal**. O protocolo canônico inicial usa:
+
+- `alpha = 0,05`;
+- segmento mínimo = 100 concursos;
+- candidatos a cada 10 concursos;
+- estatística máxima conjunta sobre 25 dezenas e todos os candidatos;
+- 199 séries nulas para calibração do limiar;
+- 199 séries nulas independentes para validação da taxa de falso alarme;
+- IC95% de Wilson para o falso alarme observado;
+- seed canônica `20260914`;
+- modo obrigatório `RETROSPECTIVE_DISCOVERY`.
+
+Estados permitidos:
+
+- `STABLE`: calibração compatível com o alvo e nenhum candidato ultrapassa o limiar global;
+- `ALERT`: calibração compatível, limiar excedido e p Monte Carlo no nível predefinido;
+- `INCONCLUSIVE`: amostra insuficiente ou falso alarme não validado.
+
+Todos os pontos candidatos avaliados devem ser registrados, incluindo concurso/data quando disponíveis.
+
+**Guardrails:** `STABLE` não prova estabilidade física; `ALERT` não prova causa, não é alerta em tempo real e não constitui vantagem preditiva.
 
 ## Gates finais do mesmo SHA
 
-O SHA canônico da release precisa apresentar simultaneamente:
+Antes de declarar `MISSION_PROVEN`, o SHA canônico precisa apresentar simultaneamente:
 
-- `CI`: `completed/success` em Python 3.12 e 3.13;
-- `Real History Check`: `completed/success`;
-- `Release Proof`: `completed/success`, incluindo `RELEASE_VERSION=1.1.2` e `CATEGORICAL_RIS_RELEASE_PROOF_PASS`;
-- `GitHub Operational Cycle`: job `cycle` em `completed/success`;
-- `GitHub Operational Cycle`: job `committed-state-audit` em `completed/success`;
-- `GitHub Operational Cycle`: job `economic-state-proof` em `completed/success`;
-- `SARE Operator Console Proof`: `completed/success` para `status`, `audit`, `analyze`, `ris`, `portfolio` e `export`;
-- RIS comprovando `numeric_ris_enabled=false`, `score=null` e `RIS_NUMERIC_FORBIDDEN_IN_1_X`;
-- wheel e runtime declarando versão `1.1.2`;
-- relatório histórico com `database_integrity=ok` e `snapshot_roundtrip_exact=true`;
-- `operations/state` validado depois da persistência pelo auditor independente;
-- `scripts/verify_github_governance.py` retornando PASS;
-- branch `main` e alias `release/v1.1.2` resolvendo para exatamente o mesmo SHA comprovado.
+- `CI` `completed/success` em Python 3.12 e 3.13;
+- `Real History Check` `completed/success` com `database_integrity=ok` e `snapshot_roundtrip_exact=true`;
+- `Release Proof` `completed/success`, incluindo `RELEASE_VERSION=1.1.3`, `CATEGORICAL_RIS_RELEASE_PROOF_PASS`, `REGIME_CALIBRATION_RELEASE_PROOF_PASS`, `MATHEMATICAL_CHECKS_PASS` e `OPERATIONAL_RELEASE_PROOF_PASS`;
+- `GitHub Operational Cycle`: `cycle`, `committed-state-audit` e `economic-state-proof` em `success`;
+- `SARE Operator Console Proof` `completed/success` para `status`, `audit`, `analyze`, `ris`, `portfolio` e `export`;
+- console RIS comprovando `calibrated_global_marginal_change_scan`, `RETROSPECTIVE_DISCOVERY`, `compatible_with_target=true`, candidatos datados, `numeric_ris_enabled=false` e `score=null`;
+- governance gate em PASS;
+- `main` e `release/v1.1.3` resolvendo para o mesmo SHA.
 
-A movimentação de `release/v1.1.2` só ocorre **depois** de todos os workflows obrigatórios do SHA de `main` terminarem com sucesso.
+O alias `release/v1.1.3` só é criado **depois** desses gates.
 
 ## Contrato RIS da linha 1.x
 
-O RIS é exclusivamente categórico nesta linha de release. São invariantes de aceitação:
+Permanece proibida qualquer nota RIS numérica:
 
 - `numeric_ris_enabled = false`;
 - `score = null`;
-- exatamente seis dimensões canônicas: integridade dos dados, uniformidade, coocorrência, temporal, regime e evidência preditiva;
-- uniformidade e coocorrência usam famílias completas com correção de Holm;
-- temporal usa lags predefinidos e permutação de concursos completos;
-- regime permanece `INCONCLUSIVE` enquanto a taxa de falso alarme não estiver formalmente calibrada;
-- `COMPATIBLE` não constitui prova de aleatoriedade;
+- `COMPATIBLE` não prova aleatoriedade;
 - `ALERT` não constitui vantagem preditiva;
+- alerta retrospectivo de regime não é alerta em tempo real;
 - nenhum estado categórico promove modelo automaticamente.
-
-O contrato detalhado está em `docs/RIS_CATEGORICAL.md`.
 
 ## Resultado científico
 
-`EVIDENCIA_PREDITIVA_INSUFICIENTE` é um resultado científico válido. A release não pode transformar ausência de evidência em alegação de capacidade preditiva.
+`EVIDENCIA_PREDITIVA_INSUFICIENTE` e `predictive_evidence=NOT_ESTABLISHED` continuam resultados válidos. O detector de regime é uma ferramenta de diagnóstico estatístico e não altera o protocolo prospectivo.
 
-Enquanto `predictive_evidence` não for formalmente promovida após as duas coortes prospectivas e revisão independente, as carteiras permanecem combinatórias e explicitamente rotuladas:
+Carteiras permanecem rotuladas:
 
 `CARTEIRA COMBINATÓRIA — SEM VANTAGEM PREDITIVA COMPROVADA`
 
-A conclusão prospectiva não é requisito para `MISSION_PROVEN` de engenharia da release; é uma investigação científica contínua cujo resultado pode legitimamente permanecer `NOT_ESTABLISHED`.
+`MISSION_PROVEN` nesta documentação é exclusivamente um **status de engenharia da release**, não uma declaração de vantagem preditiva.
 
-## Estado de hardening soberano
+## Hardening soberano
 
-A governança lógica GitHub-only é comprovada pelo CI e por `verify_github_governance.py`.
-
-Os Actions oficiais permanecem fixados por SHA em variantes com runtime Node 24.
-
-Os **Rulesets nativos do GitHub** para `main` e `operations/state` são uma camada administrativa adicional de defesa. Enquanto não estiverem configurados, o estado deve ser registrado como:
+A governança lógica GitHub-only é gate obrigatório. Os Rulesets nativos do GitHub continuam uma camada administrativa adicional e, enquanto não forem observados como ativos, o estado permanece:
 
 `P0_LOGICAL_HARDENING_COMPLETE_NATIVE_RULESET_PENDING`
 
-A ausência temporária dessa camada não autoriza escrita externa, não altera a autoridade de `operations/state` e não pode ser ocultada em relatórios de governança.
+## Limitações 1.1.3
 
-Quando os Rulesets nativos também forem ativados e verificados, o estado pode avançar separadamente para:
+- o detector de regime cobre inicialmente mudanças **marginais**; não afirma cobrir toda forma possível de changepoint;
+- o detector é retrospectivo; não existe ainda um protocolo separado de alerta online/tempo real;
+- nenhum alerta recebe interpretação causal sem metadados de equipamento, bolas, processo ou coleta;
+- o SQLite continua transitório/reconstruível, não memória permanente;
+- o histórico principal é corroborado por checkpoints e patches oficiais, não uma reconciliação linha a linha de uma exportação oficial única;
+- Rulesets nativos continuam pendentes de ação administrativa externa;
+- não existe vantagem preditiva comprovada.
 
-`SOVEREIGN_HARDENING_COMPLETE`
-
-## Limitações 1.1.2
-
-- o SQLite existe apenas como artefato reconstruível/transitório nos runners e provas; não é a memória permanente do produto;
-- o histórico principal é corroborado por checkpoints oficiais e recebe patches provenientes da CAIXA; não é apresentado como reconciliação integral linha a linha de uma exportação oficial única;
-- o detector formal de mudança de regime com taxa de falso alarme calibrada ainda não está estabelecido, portanto a dimensão de regime do RIS permanece `INCONCLUSIVE`;
-- RIS numérico permanece explicitamente proibido na linha 1.x;
-- não existe vantagem preditiva comprovada no estado científico atual.
-
-Somente após observação material de todos os gates finais no mesmo SHA canônico e alinhamento de `release/v1.1.2` o estado técnico da release pode ser registrado como `MISSION_PROVEN`.
+Somente após observação material de todos os gates finais no mesmo SHA e alinhamento de `release/v1.1.3` o estado técnico desta release pode ser registrado como `MISSION_PROVEN`.

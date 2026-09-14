@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from datetime import date, timedelta
 from pathlib import Path
 
 from scripts.github_operator_console import _portfolio, _ris, _state_summary
@@ -16,11 +17,16 @@ def _state_fixture(tmp_path: Path) -> Path:
     state = tmp_path / "operations"
     state.mkdir()
     draws = simulate_uniform_draws(105, seed=20260911).draws
+    start = date(2026, 1, 1)
     _write(
         state / "canonical_history.json",
         {
             "records": [
-                {"contest_id": index, "numbers": list(numbers)}
+                {
+                    "contest_id": index,
+                    "draw_date": (start + timedelta(days=index - 1)).isoformat(),
+                    "numbers": list(numbers),
+                }
                 for index, numbers in enumerate(draws, start=1)
             ]
         },
