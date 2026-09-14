@@ -41,7 +41,7 @@ jobs:
           from pathlib import Path
           import sare_lotofacil
           from sare_lotofacil.api.app import create_app
-          expected = "1.1.4"
+          expected = "1.1.5"
           module = Path(sare_lotofacil.__file__).resolve()
           assert "site-packages" in str(module), module
           assert version("sare-lotofacil") == expected
@@ -69,9 +69,7 @@ jobs:
           assert ris['schema_version'] == 'ris-categorical-v1'
           assert ris['numeric_ris_enabled'] is False
           assert ris['score'] is None
-          assert set(ris['dimensions']) == {
-              'data_integrity', 'uniformity', 'cooccurrence', 'temporal', 'regime', 'predictive_evidence'
-          }
+          assert set(ris['dimensions']) == {'data_integrity','uniformity','cooccurrence','temporal','regime','predictive_evidence'}
           assert 'RIS_NUMERIC_FORBIDDEN_IN_1_X' in ris['guardrails']
           print('CATEGORICAL_RIS_RELEASE_PROOF_PASS')
           print('RELEASE_PROOF_BASE_PASS')
@@ -84,106 +82,62 @@ jobs:
           from sare_lotofacil.analysis.regime import assess_marginal_regime
           from sare_lotofacil.simulation.alternative import simulate_marginal_regime_shift
           from sare_lotofacil.simulation.null import simulate_uniform_draws
-
-          null_draws = simulate_uniform_draws(500, seed=17).draws
-          null_assessment = assess_marginal_regime(
-              null_draws,
-              min_segment=60,
-              candidate_stride=10,
-              calibration_replications=99,
-              validation_replications=99,
-              seed=20260914,
-          )
+          null_assessment = assess_marginal_regime(simulate_uniform_draws(500, seed=17).draws,min_segment=60,candidate_stride=10,calibration_replications=99,validation_replications=99,seed=20260914)
           assert null_assessment.calibration.compatible_with_target is True
           assert null_assessment.state == 'STABLE'
           assert null_assessment.calibration.validation_ci95_low <= 0.05 <= null_assessment.calibration.validation_ci95_high
-
-          shifted = simulate_marginal_regime_shift(
-              500,
-              change_index=250,
-              target_number=16,
-              post_probability=0.85,
-              seed=321,
-          )
+          shifted = simulate_marginal_regime_shift(500,change_index=250,target_number=16,post_probability=0.85,seed=321)
           labels = tuple(f'contest-{index:04d}' for index in range(1, 501))
-          alert_assessment = assess_marginal_regime(
-              shifted.draws,
-              candidate_labels=labels,
-              min_segment=60,
-              candidate_stride=10,
-              calibration_replications=99,
-              validation_replications=99,
-              seed=20260914,
-          )
-          assert alert_assessment.state == 'ALERT'
-          assert alert_assessment.scan.strongest.candidate_index == 250
-          assert alert_assessment.scan.strongest.strongest_number == 16
-          assert alert_assessment.mode == 'RETROSPECTIVE_DISCOVERY'
-
-          payload = {
-              'status': 'REGIME_CALIBRATION_RELEASE_PROOF_PASS',
-              'null_state': null_assessment.state,
-              'false_alarm_target': null_assessment.calibration.target_alpha,
-              'false_alarm_rate': null_assessment.calibration.validation_false_alarm_rate,
-              'false_alarm_ci95_low': null_assessment.calibration.validation_ci95_low,
-              'false_alarm_ci95_high': null_assessment.calibration.validation_ci95_high,
-              'calibration_compatible': null_assessment.calibration.compatible_with_target,
-              'controlled_shift_state': alert_assessment.state,
-              'controlled_shift_candidate_index': alert_assessment.scan.strongest.candidate_index,
-              'controlled_shift_number': alert_assessment.scan.strongest.strongest_number,
-              'mode': alert_assessment.mode,
-          }
-          print(json.dumps(payload, sort_keys=True))
+          alert = assess_marginal_regime(shifted.draws,candidate_labels=labels,min_segment=60,candidate_stride=10,calibration_replications=99,validation_replications=99,seed=20260914)
+          assert alert.state == 'ALERT'
+          assert alert.scan.strongest.candidate_index == 250
+          assert alert.scan.strongest.strongest_number == 16
+          assert alert.mode == 'RETROSPECTIVE_DISCOVERY'
+          print(json.dumps({'status':'REGIME_CALIBRATION_RELEASE_PROOF_PASS','null_state':null_assessment.state,'calibration_compatible':null_assessment.calibration.compatible_with_target,'controlled_shift_state':alert.state,'controlled_shift_candidate_index':alert.scan.strongest.candidate_index,'controlled_shift_number':alert.scan.strongest.strongest_number,'mode':alert.mode}, sort_keys=True))
           PY
-          grep -q 'REGIME_CALIBRATION_RELEASE_PROOF_PASS' artifacts/regime_calibration_release_proof.json
       - name: Prove T17 and T18 controlled alternatives from installed wheel
         run: |
-          mkdir -p artifacts
           /tmp/sare-clean/bin/python - <<'PY' | tee artifacts/controlled_alternatives_release_proof.json
           import json
           from dataclasses import asdict
-          from sare_lotofacil.simulation.validation import (
-              assess_temporal_memory_separation,
-              measure_marginal_bias_power,
-          )
-
-          t17 = measure_marginal_bias_power(
-              replications=30,
-              draw_count=400,
-              target_number=16,
-              target_probability=0.72,
-              alpha=0.05,
-              base_seed=20260914,
-          )
-          assert t17.power >= 0.80
-          assert t17.detections >= 24
-          assert t17.mean_target_effect >= 0.08
-
-          t18 = assess_temporal_memory_separation(
-              draw_count=600,
-              memory_probability=0.30,
-              retained_count=12,
-              alpha=0.05,
-              seed=20260914,
-              permutation_replications=399,
-          )
-          assert t18.marginal_alerts == 0
-          assert t18.temporal_alerts >= 1
-          assert t18.lag1_effect > 0.50
-          assert t18.lag1_p_holm < 0.05
-
-          payload = {
-              'status': 'CONTROLLED_ALTERNATIVES_RELEASE_PROOF_PASS',
-              't17': asdict(t17),
-              't18': asdict(t18),
-              'interpretation': 'Synthetic sensitivity/separation proof only; no predictive advantage is inferred for real Lotofacil history.',
-          }
-          print(json.dumps(payload, sort_keys=True))
+          from sare_lotofacil.simulation.validation import assess_temporal_memory_separation, measure_marginal_bias_power
+          t17 = measure_marginal_bias_power(replications=30,draw_count=400,target_number=16,target_probability=0.72,alpha=0.05,base_seed=20260914)
+          assert t17.power >= 0.80 and t17.detections >= 24 and t17.mean_target_effect >= 0.08
+          t18 = assess_temporal_memory_separation(draw_count=600,memory_probability=0.30,retained_count=12,alpha=0.05,seed=20260914,permutation_replications=399)
+          assert t18.marginal_alerts == 0 and t18.temporal_alerts >= 1 and t18.lag1_effect > 0.50 and t18.lag1_p_holm < 0.05
+          print(json.dumps({'status':'CONTROLLED_ALTERNATIVES_RELEASE_PROOF_PASS','t17':asdict(t17),'t18':asdict(t18)}, sort_keys=True))
           PY
-          grep -q 'CONTROLLED_ALTERNATIVES_RELEASE_PROOF_PASS' artifacts/controlled_alternatives_release_proof.json
+      - name: Prove T20 T23 backtest integrity from installed wheel
+        run: |
+          /tmp/sare-clean/bin/python - <<'PY' | tee artifacts/backtest_integrity_release_proof.json
+          import json
+          from sare_lotofacil.experiments.backtest import BacktestLeakageError, BacktestWindow, FittedTransform, TemporalVariable, run_audited_backtest
+          blocked_variable = False
+          try:
+              run_audited_backtest((BacktestWindow('t20',199,200,(TemporalVariable('future_result_200',200),),()),), lambda _: 0.20, min_successful_windows=1)
+          except BacktestLeakageError as exc:
+              blocked_variable = 'LOOKAHEAD_LEAKAGE_DETECTED' in str(exc)
+          assert blocked_variable
+          blocked_transform = False
+          try:
+              run_audited_backtest((BacktestWindow('t21',249,250,(TemporalVariable('history_prefix',249),),(FittedTransform('global_standardizer',400),)),), lambda _: 0.20, min_successful_windows=1)
+          except BacktestLeakageError as exc:
+              blocked_transform = 'TRANSFORM_FIT_LEAKAGE_DETECTED' in str(exc)
+          assert blocked_transform
+          windows = tuple(BacktestWindow(f'w{i}',100+i,101+i,(TemporalVariable('history_prefix',100+i),),(FittedTransform('fit',100+i),)) for i in range(5))
+          def scorer(window):
+              if window.window_id == 'w2': raise ArithmeticError('synthetic-window-failure')
+              return 0.20
+          t22 = run_audited_backtest(windows, scorer, min_successful_windows=4, min_success_rate=0.80)
+          assert t22.planned_windows == 5 and t22.successful_windows == 4 and t22.failed_windows == 1 and t22.success_rate == 0.80
+          assert all(outcome.m0_brier == 0.24 for outcome in t22.outcomes)
+          short = tuple(BacktestWindow(f's{i}',200+i,201+i,(TemporalVariable('history_prefix',200+i),),(FittedTransform('fit',200+i),)) for i in range(3))
+          t23 = run_audited_backtest(short, lambda _: 0.10, min_successful_windows=10, min_success_rate=0.80)
+          assert t23.status == 'INCONCLUSIVE' and t23.predictive_evidence == 'NOT_ESTABLISHED'
+          print(json.dumps({'status':'BACKTEST_INTEGRITY_RELEASE_PROOF_PASS','t20_blocked':blocked_variable,'t21_blocked':blocked_transform,'t22':{'planned':t22.planned_windows,'success':t22.successful_windows,'failed':t22.failed_windows,'success_rate':t22.success_rate,'ledger_hash':t22.content_hash},'t23':{'status':t23.status,'predictive_evidence':t23.predictive_evidence,'planned':t23.planned_windows,'success':t23.successful_windows}}, sort_keys=True))
+          PY
       - name: Prove Operational 1.1 journey from installed wheel
         run: |
-          mkdir -p artifacts
           /tmp/sare-clean/bin/python scripts/prove_operational_release.py | tee artifacts/operational_release_proof.json
           grep -q '"status": "OPERATIONAL_RELEASE_PROOF_PASS"' artifacts/operational_release_proof.json
       - name: Upload wheel
@@ -209,4 +163,10 @@ jobs:
         with:
           name: controlled-alternatives-release-proof
           path: artifacts/controlled_alternatives_release_proof.json
+          if-no-files-found: error
+      - name: Upload backtest integrity proof
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: backtest-integrity-release-proof
+          path: artifacts/backtest_integrity_release_proof.json
           if-no-files-found: error
