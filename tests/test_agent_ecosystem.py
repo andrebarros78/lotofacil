@@ -71,3 +71,24 @@ def test_critical_agent_roles_exist() -> None:
         "agent-evaluator-redteam",
         "acquisition-scout",
     } <= agent_ids
+
+
+def test_handoff_schema_matches_registry_contract() -> None:
+    agents = load_json("governance/agents/agents.json")
+    schema = load_json("governance/agents/handoff.schema.json")
+    assert schema["type"] == "object"
+    assert schema["additionalProperties"] is False
+    assert set(schema["required"]) == set(agents["handoff_required_fields"])
+    assert set(schema["required"]) <= set(schema["properties"])
+
+
+def test_handoff_claim_levels_are_bounded() -> None:
+    schema = load_json("governance/agents/handoff.schema.json")
+    assert schema["properties"]["scientific_claim_level"]["enum"] == [
+        "NONE",
+        "DESCRIPTIVE",
+        "RETROSPECTIVE",
+        "SYNTHETIC_VALIDATION",
+        "CONFIRMATORY_NOT_ESTABLISHED",
+        "REPLICATED",
+    ]
