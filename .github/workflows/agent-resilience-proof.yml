@@ -1,0 +1,114 @@
+name: Agent Resilience Proof
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/agent-resilience-proof.yml"
+      - "governance/agents/**"
+      - "scripts/run_agent_capability_proof.py"
+      - "scripts/run_agent_resilience_proof.py"
+      - "scripts/verify_agent_resilience_interrupt.py"
+      - "scripts/validate_agent_ecosystem.py"
+      - "tests/test_agent_capability_proof.py"
+      - "tests/test_agent_resilience_proof.py"
+      - "tests/test_agent_ecosystem.py"
+      - "tests/test_hardening.py"
+      - "tests/test_nested_walk_forward.py"
+      - "tests/test_backtest_integrity.py"
+      - "tests/test_calibration_rounds.py"
+      - "tests/test_inference.py"
+      - "tests/test_baseline.py"
+      - "tests/test_caixa.py"
+      - "tests/test_csv_history.py"
+      - "tests/test_ingestion.py"
+      - "tests/test_evidence.py"
+      - "tests/test_protocol.py"
+      - "tests/test_experiments.py"
+      - "tests/test_github_operations.py"
+      - "tests/test_github_operator_console.py"
+      - "tests/test_canonical_prizes_state.py"
+      - "tests/test_version.py"
+      - "tests/test_release_integrity_script.py"
+      - "src/**"
+      - "pyproject.toml"
+      - "requirements.lock.txt"
+  pull_request:
+    paths:
+      - ".github/workflows/agent-resilience-proof.yml"
+      - "governance/agents/**"
+      - "scripts/run_agent_capability_proof.py"
+      - "scripts/run_agent_resilience_proof.py"
+      - "scripts/verify_agent_resilience_interrupt.py"
+      - "scripts/validate_agent_ecosystem.py"
+      - "tests/test_agent_capability_proof.py"
+      - "tests/test_agent_resilience_proof.py"
+      - "tests/test_agent_ecosystem.py"
+      - "tests/test_hardening.py"
+      - "tests/test_nested_walk_forward.py"
+      - "tests/test_backtest_integrity.py"
+      - "tests/test_calibration_rounds.py"
+      - "tests/test_inference.py"
+      - "tests/test_baseline.py"
+      - "tests/test_caixa.py"
+      - "tests/test_csv_history.py"
+      - "tests/test_ingestion.py"
+      - "tests/test_evidence.py"
+      - "tests/test_protocol.py"
+      - "tests/test_experiments.py"
+      - "tests/test_github_operations.py"
+      - "tests/test_github_operator_console.py"
+      - "tests/test_canonical_prizes_state.py"
+      - "tests/test_version.py"
+      - "tests/test_release_integrity_script.py"
+      - "src/**"
+      - "pyproject.toml"
+      - "requirements.lock.txt"
+
+permissions:
+  contents: read
+
+jobs:
+  resilience-proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: "3.13"
+      - name: Install locked environment
+        run: python -m pip install -c requirements.lock.txt -e '.[dev]'
+      - name: Validate GitHub-only governance
+        run: python scripts/verify_github_governance.py
+      - name: Validate agent ecosystem
+        run: python scripts/validate_agent_ecosystem.py
+      - name: Inject controlled process interruption after three missions
+        id: controlled-interruption
+        continue-on-error: true
+        run: |
+          mkdir -p artifacts
+          python scripts/run_agent_resilience_proof.py \
+            --interrupt-after 3 \
+            --checkpoint artifacts/agent_resilience_checkpoint.json \
+            --report artifacts/agent_resilience_interrupted.json
+      - name: Verify interruption and durable checkpoint
+        run: python scripts/verify_agent_resilience_interrupt.py --expected-completed 3
+      - name: Resume and recover one controlled transient failure
+        run: |
+          python scripts/run_agent_resilience_proof.py \
+            --resume \
+            --inject-transient-failure CAP-004-data-provenance-integrity \
+            --checkpoint artifacts/agent_resilience_checkpoint.json \
+            --report artifacts/agent_resilience_proof.json
+      - name: Upload agent resilience evidence
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: agent-resilience-proof
+          path: |
+            artifacts/agent_resilience_checkpoint.json
+            artifacts/agent_resilience_interrupted.json
+            artifacts/agent_resilience_proof.json
+          if-no-files-found: error
