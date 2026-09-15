@@ -2,18 +2,36 @@ name: Max Capacity Audit
 
 on:
   workflow_dispatch:
-  pull_request:
+  push:
+    branches: [main]
     paths:
       - ".github/workflows/max-capacity-audit.yml"
       - "scripts/run_max_capacity_audit.py"
       - "scripts/verify_third_party_history.py"
       - "src/sare_lotofacil/analysis/**"
+      - "src/sare_lotofacil/domain/**"
       - "src/sare_lotofacil/experiments/**"
       - "src/sare_lotofacil/simulation/**"
       - "src/sare_lotofacil/statistics/**"
       - "src/sare_lotofacil/portfolios/**"
       - "tests/test_capacity_audit.py"
       - "tests/test_portfolio_audit.py"
+      - "tests/test_special_rules.py"
+      - "pyproject.toml"
+  pull_request:
+    paths:
+      - ".github/workflows/max-capacity-audit.yml"
+      - "scripts/run_max_capacity_audit.py"
+      - "scripts/verify_third_party_history.py"
+      - "src/sare_lotofacil/analysis/**"
+      - "src/sare_lotofacil/domain/**"
+      - "src/sare_lotofacil/experiments/**"
+      - "src/sare_lotofacil/simulation/**"
+      - "src/sare_lotofacil/statistics/**"
+      - "src/sare_lotofacil/portfolios/**"
+      - "tests/test_capacity_audit.py"
+      - "tests/test_portfolio_audit.py"
+      - "tests/test_special_rules.py"
       - "pyproject.toml"
 
 permissions:
