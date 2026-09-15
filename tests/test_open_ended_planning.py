@@ -91,6 +91,25 @@ def test_a02_frozen_benchmark_passes_without_false_accepts(tmp_path: Path) -> No
     assert report["claim_boundary"]["dynamic_multi_agent_replanning_proven"] is False
 
 
-def test_a02_registry_is_not_promoted_before_confirmatory_evidence() -> None:
+def test_a02_registry_records_canonical_bounded_proof_without_claim_inflation() -> None:
     gaps = {item["id"]: item for item in load_json("governance/agents/capability_gaps.json")["gaps"]}
-    assert gaps["GAP-A02"]["status"] == "NOT_PROVEN"
+    assert gaps["GAP-A02"]["status"] == "PROVEN_FOR_BOUNDED_STRUCTURED_UNSEEN_MISSION_PLANNING"
+    assert gaps["GAP-A03"]["status"] == "NOT_PROVEN"
+    assert gaps["GAP-A04"]["status"] == "NOT_PROVEN"
+
+    record = load_json("governance/agents/open_ended_planning_proof_history.json")["proofs"][-1]
+    assert record["decision"] == "PROVEN_FOR_BOUNDED_STRUCTURED_UNSEEN_MISSION_PLANNING"
+    assert record["benchmark_frozen_commit_sha"] == "1a9e3ce47b8ac82efea82951b6386b5fea1a14e2"
+    assert record["canonical_main_sha"] == "59f7ab0801f9fa645f071e3400ff2e63c04e7b6d"
+    assert record["workflow_run_id"] == 35021530896
+    assert record["artifact_id"] == 10417334401
+    assert record["artifact_digest"] == "sha256:6929c8cf7f5f53ee0099c603f88f3f8bbde034a9c4a4610313e8c889a59aa20d"
+    assert record["metrics"]["cases_passed"] == 12
+    assert record["metrics"]["false_accepts"] == 0
+    assert record["metrics"]["false_rejects"] == 0
+    assert record["metrics"]["authority_violations"] == 0
+    assert record["metrics"]["execution_attempts"] == 0
+    assert record["governance_effect"]["free_form_natural_language_planning_proven"] is False
+    assert record["governance_effect"]["adaptive_tool_selection_proven"] is False
+    assert record["governance_effect"]["dynamic_multi_agent_replanning_proven"] is False
+    assert record["governance_effect"]["production_execution_authority_granted"] is False
