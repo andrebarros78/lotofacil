@@ -60,3 +60,22 @@ def test_every_capability_mission_has_a_known_agent_and_tool() -> None:
         assert mission["agent_id"] in agents
         assert mission["tool_id"] in tools
         assert mission["acceptance"] == "exit_code_zero"
+
+
+def test_unproven_capabilities_remain_explicitly_unproven() -> None:
+    doc = load_json("governance/agents/capability_gaps.json")
+    gaps = {gap["capability"]: gap for gap in doc["gaps"]}
+    assert doc["baseline_type"] == "BOUNDED_DETERMINISTIC_AUTONOMY"
+    assert gaps["bounded_predeclared_mission_execution"]["status"] == "IMPLEMENTED_PENDING_CANONICAL_PROOF"
+    for capability in (
+        "open_ended_mission_planning",
+        "adaptive_tool_selection",
+        "dynamic_multi_agent_replanning",
+        "durable_agent_checkpoint_resume",
+        "automatic_failure_recovery",
+        "semantic_handoff_quality_evaluation",
+    ):
+        assert gaps[capability]["status"] == "NOT_PROVEN"
+    assert gaps["external_mcp_tool_execution"]["status"] == "NOT_IMPLEMENTED"
+    assert gaps["agent_proposed_code_change_to_pr_pipeline"]["status"] == "NOT_IMPLEMENTED"
+    assert gaps["agent_runtime_framework_value"]["status"] == "NOT_ESTABLISHED"
