@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "authority": "GITHUB_ONLY",
+  "canonical_code_branch": "main",
+  "canonical_state_branch": "operations/state",
+  "handoff_required_fields": [
+    "agent_id",
+    "task_id",
+    "evidence_refs",
+    "findings",
+    "proposed_actions",
+    "risk_level",
+    "requires_approval",
+    "scientific_claim_level"
+  ],
+  "agents": [
+    {
+      "id": "chief-orchestrator",
+      "role": "Coordinates specialist agents, decomposes missions, reconciles evidence and enforces stop conditions.",
+      "skills": ["deterministic_handoffs", "github_governance", "agent_evaluation", "acquisition_review"],
+      "allowed_actions": ["read_repository", "read_artifacts", "dispatch_specialists", "propose_pull_request_changes", "consolidate_evidence"],
+      "prohibited_actions": ["direct_main_write", "direct_operations_state_write", "bypass_ruleset", "scientific_promotion_without_gate"]
+    },
+    {
+      "id": "scientific-methodologist",
+      "role": "Designs leakage-safe experiments, predeclares hypotheses and separates development evidence from confirmatory evidence.",
+      "skills": ["nested_walk_forward", "lockbox_governance", "multiple_testing_control", "controlled_alternatives"],
+      "allowed_actions": ["read_repository", "read_scientific_artifacts", "propose_protocol", "audit_experiment_design"],
+      "prohibited_actions": ["direct_main_write", "direct_operations_state_write", "lockbox_retuning", "optional_stopping", "predictive_claim_without_replication"]
+    },
+    {
+      "id": "statistical-validator",
+      "role": "Audits metrics, uncertainty, calibration, temporal dependence and statistical stability of candidate models.",
+      "skills": ["brier_logloss_ece", "moving_block_bootstrap", "nested_walk_forward", "multiple_testing_control"],
+      "allowed_actions": ["read_scientific_artifacts", "recompute_metrics", "challenge_conclusions", "propose_tests"],
+      "prohibited_actions": ["direct_main_write", "direct_operations_state_write", "lockbox_retuning", "hide_negative_results"]
+    },
+    {
+      "id": "data-provenance-auditor",
+      "role": "Verifies contest history, source provenance, revisions, hashes, chronological availability and anti-lookahead controls.",
+      "skills": ["data_provenance", "caixa_history_reconciliation", "lookahead_detection", "evidence_hashing"],
+      "allowed_actions": ["read_repository", "read_artifacts", "verify_history", "verify_hashes", "report_provenance_gap"],
+      "prohibited_actions": ["direct_main_write", "direct_operations_state_write", "silent_data_repair", "source_substitution_without_record"]
+    },
+    {
+      "id": "reproducibility-auditor",
+      "role": "Proves that scientific identities and outputs are reproducible from pinned code, data, environment, seed and protocol.",
+      "skills": ["scientific_fingerprinting", "evidence_hashing", "dependency_reproducibility", "github_actions"],
+      "allowed_actions": ["read_repository", "read_artifacts", "recompute_fingerprint", "compare_runs", "propose_reproducibility_gate"],
+      "prohibited_actions": ["direct_main_write", "direct_operations_state_write", "ignore_environment_drift", "accept_unpinned_dependency_as_canonical"]
+    },
+    {
+      "id": "security-tool-gate",
+      "role": "Reviews agent tools, MCP contracts, prompt-injection exposure, write scopes, authorization boundaries and supply-chain risk.",
+      "skills": ["mcp_tool_contracts", "prompt_injection_defense", "least_privilege", "supply_chain_review"],
+      "allowed_actions": ["read_repository", "inspect_tool_contracts", "classify_tool_risk", "require_human_approval", "block_unsafe_acquisition"],
+      "prohibited_actions": ["direct_main_write", "direct_operations_state_write", "credential_exfiltration", "authorization_bypass", "unreviewed_tool_enablement"]
+    },
+    {
+      "id": "github-release-engineer",
+      "role": "Owns branch/PR/check/release evidence discipline without bypassing repository protections.",
+      "skills": ["github_governance", "github_actions", "release_proof", "dependency_reproducibility"],
+      "allowed_actions": ["read_repository", "propose_pull_request_changes", "inspect_checks", "inspect_rulesets", "assemble_release_evidence"],
+      "prohibited_actions": ["direct_main_write", "direct_operations_state_write", "bypass_ruleset", "merge_with_failing_required_checks"]
+    },
+    {
+      "id": "operational-state-auditor",
+      "role": "Audits the canonical operations/state branch, recomputation proofs, economic state and state-transition integrity.",
+      "skills": ["operational_state_audit", "economic_integrity", "github_actions", "evidence_hashing"],
+      "allowed_actions": ["read_repository", "read_operations_state", "recompute_state", "audit_economic_state", "report_state_drift"],
+      "prohibited_actions": ["direct_main_write", "direct_operations_state_write", "manual_state_override", "accept_unverified_state"]
+    },
+    {
+      "id": "agent-evaluator-redteam",
+      "role": "Tests agent handoffs for hallucination, authority escalation, prompt injection, omitted evidence and regression.",
+      "skills": ["agent_evaluation", "prompt_injection_defense", "deterministic_handoffs", "scientific_claim_guardrails"],
+      "allowed_actions": ["read_agent_outputs", "inject_test_prompts", "score_handoffs", "challenge_authority", "propose_regression_tests"],
+      "prohibited_actions": ["direct_main_write", "direct_operations_state_write", "weaken_guardrails", "accept_unstructured_claim_as_evidence"]
+    },
+    {
+      "id": "acquisition-scout",
+      "role": "Finds external frameworks, skills and tools, then subjects them to fit, license, security, maintenance and dependency-impact review.",
+      "skills": ["acquisition_review", "supply_chain_review", "web_research", "mcp_tool_contracts"],
+      "allowed_actions": ["research_authorized_ecosystems", "compare_frameworks", "propose_reference_acquisition", "propose_dependency_experiment"],
+      "prohibited_actions": ["direct_main_write", "direct_operations_state_write", "unreviewed_dependency_install", "community_code_auto_vendoring", "new_paid_service_without_approval"]
+    }
+  ]
+}
