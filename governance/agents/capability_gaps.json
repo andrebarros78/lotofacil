@@ -6,8 +6,8 @@
     {
       "id": "GAP-A01",
       "capability": "bounded_predeclared_mission_execution",
-      "status": "IMPLEMENTED_PENDING_CANONICAL_PROOF",
-      "closure_evidence": "Agent Capability Proof workflow passes all canonical missions and publishes evidence artifact"
+      "status": "IMPLEMENTED_CONTINUOUS_PROOF_REQUIRED",
+      "closure_evidence": "Each applicable commit must pass Agent Capability Proof and publish the canonical evidence artifact"
     },
     {
       "id": "GAP-A02",
