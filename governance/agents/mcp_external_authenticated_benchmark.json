@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "proof_id": "EXTERNAL-MCP-AUTHENTICATED-GITHUB-BOUNDED-V1",
+  "frozen_before_implementation": true,
+  "cases": [
+    {"id":"A06-01","check":"client_auth_missing_rejected"},
+    {"id":"A06-02","check":"client_auth_invalid_rejected"},
+    {"id":"A06-03","check":"authenticated_server_discover"},
+    {"id":"A06-04","check":"authenticated_tools_list"},
+    {"id":"A06-05","check":"authenticated_repo_metadata_read"},
+    {"id":"A06-06","check":"authenticated_oidc_identity"},
+    {"id":"A06-07","check":"repository_override_rejected"},
+    {"id":"A06-08","check":"arbitrary_url_argument_rejected"},
+    {"id":"A06-09","check":"canonical_write_tool_rejected"},
+    {"id":"A06-10","check":"unknown_tool_rejected"},
+    {"id":"A06-11","check":"invalid_argument_type_rejected"},
+    {"id":"A06-12","check":"unsupported_protocol_rejected"},
+    {"id":"A06-13","check":"legacy_initialize_rejected"},
+    {"id":"A06-14","check":"credentials_not_exposed"}
+  ]
+}
