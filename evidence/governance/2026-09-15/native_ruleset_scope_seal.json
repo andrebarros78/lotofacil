@@ -1,0 +1,42 @@
+{
+    "schema_version":  1,
+    "mission":  "NATIVE_RULESET_HARDENING",
+    "status":  "SCOPE_SEALED",
+    "seal_type":  "SCOPE_SEAL",
+    "repository":  "andrebarros78/lotofacil",
+    "architecture":  "GITHUB_ONLY",
+    "recorded_at_utc":  "2026-09-15T15:01:23.7776437Z",
+    "mission_proven_commit":  "85cedc762243ba6e5fddc96f8f049481d80c7e0c",
+    "mission_proven_path":  "evidence/governance/2026-09-15/native_ruleset_mission_proven.json",
+    "canonical_main_sha":  "7e961d5ce8bcece897991497561084ec58c613d9",
+    "canonical_operations_state_sha":  "49b94a0380609c56830bcc4a024d4b8cd6ea7170",
+    "rulesets":  [
+                     {
+                         "id":  23459135,
+                         "name":  "SARE Main Protection",
+                         "enforcement":  "active"
+                     },
+                     {
+                         "id":  23459186,
+                         "name":  "SARE Operations State Protection",
+                         "enforcement":  "active"
+                     }
+                 ],
+    "proof":  {
+                  "workflow_run_id":  34984904860,
+                  "workflow_conclusion":  "success",
+                  "persistence":  "PASS",
+                  "recovery":  "PASS",
+                  "security":  "PASS",
+                  "integration":  "PASS",
+                  "open_pull_requests":  0
+              },
+    "seal_assertions":  [
+                            "No canonical code was modified by sealing.",
+                            "No canonical state was modified by sealing.",
+                            "Evidence branch is noncanonical provenance only.",
+                            "Native ruleset pending gap is closed.",
+                            "Scientific predictive evidence remains NOT_ESTABLISHED."
+                        ],
+    "final_status":  "SCOPE_SEALED"
+}
