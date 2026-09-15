@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "policy": {
+    "python_executable_only": true,
+    "shell_false_required": true,
+    "write_effects_forbidden": true,
+    "network_required": false,
+    "timeout_seconds": 180
+  },
+  "tools": [
+    {
+      "id": "agent_governance_validator",
+      "kind": "script",
+      "target": "scripts/validate_agent_ecosystem.py"
+    },
+    {
+      "id": "scientific_temporal_tests",
+      "kind": "pytest",
+      "targets": [
+        "tests/test_nested_walk_forward.py",
+        "tests/test_backtest_integrity.py"
+      ]
+    },
+    {
+      "id": "statistical_integrity_tests",
+      "kind": "pytest",
+      "targets": [
+        "tests/test_calibration_rounds.py",
+        "tests/test_inference.py",
+        "tests/test_baseline.py"
+      ]
+    },
+    {
+      "id": "data_provenance_tests",
+      "kind": "pytest",
+      "targets": [
+        "tests/test_caixa.py",
+        "tests/test_csv_history.py",
+        "tests/test_ingestion.py"
+      ]
+    },
+    {
+      "id": "reproducibility_tests",
+      "kind": "pytest",
+      "targets": [
+        "tests/test_evidence.py",
+        "tests/test_protocol.py",
+        "tests/test_experiments.py"
+      ]
+    },
+    {
+      "id": "operational_contract_tests",
+      "kind": "pytest",
+      "targets": [
+        "tests/test_github_operations.py",
+        "tests/test_github_operator_console.py",
+        "tests/test_canonical_prizes_state.py"
+      ]
+    },
+    {
+      "id": "release_governance_tests",
+      "kind": "pytest",
+      "targets": [
+        "tests/test_version.py",
+        "tests/test_release_integrity_script.py"
+      ]
+    },
+    {
+      "id": "agent_redteam_tests",
+      "kind": "pytest",
+      "targets": [
+        "tests/test_agent_ecosystem.py",
+        "tests/test_hardening.py"
+      ]
+    }
+  ]
+}
