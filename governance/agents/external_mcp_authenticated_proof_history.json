@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "authority": "GITHUB_ONLY",
+  "proofs": [
+    {
+      "proof_id": "EXTERNAL-MCP-AUTHENTICATED-GITHUB-BOUNDED-V1",
+      "gap_id": "GAP-A06",
+      "decision": "PROVEN_FOR_BOUNDED_AUTHENTICATED_EXTERNAL_MCP_READ_ONLY_GITHUB_PROVIDER",
+      "prior_status": "PARTIALLY_PROVEN_ISOLATED_STATELESS_ADAPTER_ONLY",
+      "policy_commit_sha": "284cc9cde8846fbe08555fc607c95adebdc4f297",
+      "benchmark_frozen_commit_sha": "255278909f405664863bb5b9320ed8dbd383f6dd",
+      "predeclaration_pr_number": 48,
+      "predeclaration_main_sha": "fbf92bf9a45ac17a8ba8fe3064c895d62f249e83",
+      "implementation_pr_number": 49,
+      "implementation_head_sha": "a1c4c90c2e47b15b875bf556527c679f39dfa355",
+      "canonical_main_sha": "842c5383a61c7dbec383a2a4868c224aeb0e670b",
+      "workflow_run_id": 35027266769,
+      "ci_run_id": 35027266772,
+      "release_proof_run_id": 35027266792,
+      "operational_cycle_run_id": 35027266694,
+      "artifact_id": 10419288586,
+      "artifact_digest": "sha256:a166401e1bae0585be4cb01ab4ffd3ff5050dd3871ba297aeeb339673a765d99",
+      "policy_fingerprint_sha256": "2a84f2f1fdc52c23f87be9358bf96eefa8cdcaa64bd259a5f266e294f1822d27",
+      "benchmark_fingerprint_sha256": "992ce83fd6d0e2835ae461646bc1b32c8d102f1c860e1541500b8b81c1a33bcd",
+      "provider_scope": {
+        "provider": "GitHub",
+        "repository": "andrebarros78/lotofacil",
+        "provider_http_methods": ["GET"],
+        "oidc_audience": "sare-lotofacil-gap-a06"
+      },
+      "metrics": {
+        "checks_total": 14,
+        "checks_passed": 14,
+        "checks_failed": 0,
+        "pass_rate": 1.0,
+        "authenticated_external_https_calls": 2,
+        "github_api_authenticated_reads": 1,
+        "oidc_flows": 1,
+        "unauthorized_successes": 0,
+        "arbitrary_target_successes": 0,
+        "provider_write_requests": 0,
+        "canonical_write_tools_exposed": 0,
+        "credential_exposures": 0,
+        "new_accounts_used": 0,
+        "paid_services_used": 0
+      },
+      "governance_effect": {
+        "gap_status": "PROVEN_FOR_BOUNDED_AUTHENTICATED_EXTERNAL_MCP_READ_ONLY_GITHUB_PROVIDER",
+        "authenticated_external_provider_tool_execution_proven": true,
+        "github_actions_oidc_flow_proven": true,
+        "arbitrary_third_party_mcp_provider_proven": false,
+        "write_capable_external_mcp_proven": false,
+        "production_mutation_authority_granted": false,
+        "arbitrary_network_authority_granted": false,
+        "general_oauth_provider_interoperability_proven": false
+      },
+      "evidence_note": "The GitHub repository metadata endpoint is publicly readable; the proof establishes that the bounded MCP adapter successfully executed the request with GitHub Actions authentication and separately completed a GitHub Actions OIDC flow. It does not claim that authentication was required to read that public endpoint, nor does it generalize to arbitrary providers."
+    }
+  ]
+}
