@@ -7,6 +7,8 @@ ROOT = Path(__file__).resolve().parents[1]
 AGENTS_PATH = ROOT / "governance" / "agents" / "agents.json"
 SKILLS_PATH = ROOT / "governance" / "agents" / "skills.json"
 ACQUISITIONS_PATH = ROOT / "governance" / "agents" / "acquisitions.json"
+HANDOFF_SCHEMA_PATH = ROOT / "governance" / "agents" / "handoff.schema.json"
+REDTEAM_PATH = ROOT / "governance" / "agents" / "redteam_cases.json"
 AGENTS_MD_PATH = ROOT / "AGENTS.md"
 
 REQUIRED_HANDOFF_FIELDS = {
@@ -34,6 +36,8 @@ VALID_ACQUISITION_DECISIONS = {
     "DISCOVERY_ONLY_UNTRUSTED",
 }
 
+VALID_REDTEAM_DECISIONS = {"REJECT", "REQUIRE_APPROVAL"}
+
 
 def load_json(path: Path) -> dict:
     with path.open("r", encoding="utf-8") as handle:
@@ -47,22 +51,35 @@ def require(condition: bool, message: str) -> None:
 
 def validate() -> dict:
     require(AGENTS_MD_PATH.is_file(), "AGENTS.md missing")
-    for path in (AGENTS_PATH, SKILLS_PATH, ACQUISITIONS_PATH):
+    for path in (
+        AGENTS_PATH,
+        SKILLS_PATH,
+        ACQUISITIONS_PATH,
+        HANDOFF_SCHEMA_PATH,
+        REDTEAM_PATH,
+    ):
         require(path.is_file(), f"missing registry: {path.relative_to(ROOT)}")
 
     agents_doc = load_json(AGENTS_PATH)
     skills_doc = load_json(SKILLS_PATH)
     acquisitions_doc = load_json(ACQUISITIONS_PATH)
+    handoff_schema = load_json(HANDOFF_SCHEMA_PATH)
+    redteam_doc = load_json(REDTEAM_PATH)
 
     require(agents_doc.get("schema_version") == 1, "unsupported agents schema")
     require(skills_doc.get("schema_version") == 1, "unsupported skills schema")
     require(acquisitions_doc.get("schema_version") == 1, "unsupported acquisitions schema")
+    require(redteam_doc.get("schema_version") == 1, "unsupported red-team schema")
     require(agents_doc.get("authority") == "GITHUB_ONLY", "agent authority must be GITHUB_ONLY")
     require(agents_doc.get("canonical_code_branch") == "main", "canonical code branch drift")
     require(agents_doc.get("canonical_state_branch") == "operations/state", "canonical state branch drift")
 
     handoff_fields = set(agents_doc.get("handoff_required_fields", []))
     require(REQUIRED_HANDOFF_FIELDS <= handoff_fields, "agent handoff contract incomplete")
+    require(handoff_schema.get("type") == "object", "handoff schema must describe an object")
+    require(handoff_schema.get("additionalProperties") is False, "handoff schema must reject undeclared fields")
+    require(set(handoff_schema.get("required", [])) == handoff_fields, "handoff schema/registry drift")
+    require(handoff_fields <= set(handoff_schema.get("properties", {})), "handoff schema properties incomplete")
 
     skills = skills_doc.get("skills", [])
     skill_ids = [skill.get("id") for skill in skills]
@@ -82,10 +99,12 @@ def validate() -> dict:
     require(None not in agent_ids, "agent without id")
     require(len(agent_ids) == len(set(agent_ids)), "duplicate agent id")
 
+    all_prohibited_actions: set[str] = set()
     for agent in agents:
         agent_id = agent["id"]
         agent_skills = set(agent.get("skills", []))
         prohibited = set(agent.get("prohibited_actions", []))
+        all_prohibited_actions.update(prohibited)
         require(agent_skills, f"agent {agent_id} has no skills")
         require(agent_skills <= known_skills, f"agent {agent_id} references unknown skills")
         require(MANDATORY_AGENT_PROHIBITIONS <= prohibited, f"agent {agent_id} can mutate canonical branches directly")
@@ -129,12 +148,23 @@ def validate() -> dict:
 
     require(acquired_count >= 3, "expected at least three controlled reference acquisitions")
 
+    redteam_cases = redteam_doc.get("cases", [])
+    redteam_ids = [case.get("id") for case in redteam_cases]
+    require(len(redteam_ids) >= 8, "red-team corpus unexpectedly small")
+    require(len(redteam_ids) == len(set(redteam_ids)), "duplicate red-team case id")
+    for case in redteam_cases:
+        case_id = case.get("id")
+        require(bool(case.get("scenario")), f"red-team case {case_id} missing scenario")
+        require(case.get("expected_decision") in VALID_REDTEAM_DECISIONS, f"invalid red-team decision for {case_id}")
+        require(case.get("expected_guardrail") in all_prohibited_actions, f"red-team guardrail not enforced by any agent: {case_id}")
+
     return {
         "status": "AGENT_ECOSYSTEM_PASS",
         "agents": len(agents),
         "skills": len(skills),
         "acquisitions": len(acquisitions),
         "controlled_reference_acquisitions": acquired_count,
+        "redteam_cases": len(redteam_cases),
         "runtime_framework_dependencies": 0,
         "authority": agents_doc["authority"],
     }
