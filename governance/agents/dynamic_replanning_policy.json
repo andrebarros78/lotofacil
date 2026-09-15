@@ -40,7 +40,7 @@
   "inserted_review_tasks": {
     "EVIDENCE_GAP": {"action": "read_artifacts", "preferred_agent": "data-provenance-auditor"},
     "VALIDATION_FAILURE": {"action": "read_scientific_artifacts", "preferred_agent": "statistical-validator"},
-    "HANDOFF_REJECTED": {"action": "read_repository", "preferred_agent": "agent-evaluator-redteam"}
+    "HANDOFF_REJECTED": {"action": "score_handoffs", "preferred_agent": "agent-evaluator-redteam"}
   },
   "baseline": {
     "mode": "STATIC_FIXED_PLAN_NO_REASSIGNMENT_NO_TASK_INSERTION",
