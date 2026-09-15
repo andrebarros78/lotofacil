@@ -4,7 +4,7 @@ Sistema de Análise de Randomicidade e Eventos para a Lotofácil.
 
 ## Release
 
-**SARE Core 1.0 + SARE Operational 1.1 — versão 1.1.9.**
+**SARE Core 1.0 + SARE Operational 1.1 — versão 1.1.10.**
 
 O sistema prioriza integridade dos dados, matemática exata, reprodutibilidade, auditoria e recuperação antes de qualquer alegação preditiva.
 
@@ -57,6 +57,23 @@ A autoridade operacional está documentada em `docs/GITHUB_OPERATIONS.md`.
 - verificação SHA-256 de evidências persistidas;
 - reconstrução determinística do SQLite operacional em GitHub Actions com `integrity_check`;
 - CI Python 3.12/3.13, Real History Check, GitHub Operational Cycle, Release Proof e Max Capacity Audit.
+
+## Nested Walk-Forward temporal 1.1.10
+
+A release 1.1.10 consolida o protocolo científico mais rigoroso atualmente incorporado ao SARE Lotofácil:
+
+- 8 folds externos temporais não sobrepostos;
+- seleção interna walk-forward de hiperparâmetros em cada fold externo;
+- lockbox final de 15% do histórico, excluído de toda seleção de modelo e parâmetro;
+- Brier, `ΔBrier`, MAE, RMSE, Log Loss, `ΔLogLoss` e ECE-10;
+- intervalo de confiança por moving-block bootstrap temporal;
+- fingerprint determinístico da seleção congelada antes da abertura do lockbox;
+- teste explícito de isolamento provando que alterar somente o lockbox não altera a seleção prévia;
+- promoção automática bloqueada enquanto a evidência preditiva permanecer não estabelecida.
+
+No histórico real reconciliado, M1 com `lambda=400` foi selecionado em 8/8 folds externos e novamente na seleção final pré-lockbox. O sinal permaneceu pequeno e os intervalos de confiança atravessaram zero tanto na avaliação externa quanto no lockbox. Portanto, `predictive_evidence=NOT_ESTABLISHED` e `EVIDENCIA_PREDITIVA_INSUFICIENTE` continuam sendo a conclusão científica canônica.
+
+A versão 1.1.10 também fecha o gatilho do `Max Capacity Audit` para mudanças isoladas em `tests/test_calibration_rounds.py` e `tests/test_nested_walk_forward.py`, impedindo que alterações nesses testes escapem do gate pesado.
 
 ## Capacidade máxima 1.1.9
 
@@ -196,6 +213,7 @@ A configuração-alvo dos Rulesets nativos está em `docs/GITHUB_NATIVE_RULESET.
 - rulesets nativos: `docs/GITHUB_NATIVE_RULESET.md`;
 - operação e política GitHub-only: `docs/OPERACAO.md`;
 - matriz de comprovação: `docs/MISSION_PROVEN.md`;
+- fechamento 1.1.10: `docs/MISSION_PROVEN_1_1_10.md`;
 - identidade da especificação-fonte: `docs/SOURCE_SPEC.md`;
 - ambiente validado: `requirements.lock.txt`;
 - testes automatizados: `tests/`;
