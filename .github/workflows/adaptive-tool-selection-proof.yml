@@ -1,0 +1,56 @@
+name: Adaptive Tool Selection Proof
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/adaptive-tool-selection-proof.yml"
+      - "governance/agents/adaptive_tool_selection_policy.json"
+      - "governance/agents/adaptive_tool_selection_benchmark.json"
+      - "governance/agents/tool_bindings.json"
+      - "scripts/run_adaptive_tool_selection_proof.py"
+      - "tests/test_adaptive_tool_selection.py"
+      - "governance/agents/capability_gaps.json"
+  pull_request:
+    paths:
+      - ".github/workflows/adaptive-tool-selection-proof.yml"
+      - "governance/agents/adaptive_tool_selection_policy.json"
+      - "governance/agents/adaptive_tool_selection_benchmark.json"
+      - "governance/agents/tool_bindings.json"
+      - "scripts/run_adaptive_tool_selection_proof.py"
+      - "tests/test_adaptive_tool_selection.py"
+      - "governance/agents/capability_gaps.json"
+
+permissions:
+  contents: read
+
+jobs:
+  tool-selection-proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: "3.13"
+      - name: Install locked environment
+        run: python -m pip install -c requirements.lock.txt -e '.[dev]'
+      - name: Verify GitHub-only governance
+        run: python scripts/verify_github_governance.py
+      - name: Validate agent ecosystem
+        run: python scripts/validate_agent_ecosystem.py
+      - name: Test frozen A03 benchmark contract
+        run: python -m pytest -q tests/test_adaptive_tool_selection.py
+      - name: Execute bounded adaptive tool-selection proof
+        run: |
+          mkdir -p artifacts
+          python scripts/run_adaptive_tool_selection_proof.py --output artifacts/adaptive_tool_selection_proof.json
+      - name: Upload A03 tool-selection evidence
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: adaptive-tool-selection-proof
+          path: artifacts/adaptive_tool_selection_proof.json
+          if-no-files-found: error
+          retention-days: 90
