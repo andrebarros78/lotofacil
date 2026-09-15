@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "proof_id": "HANDOFF-QUALITY-STRUCTURED-V1",
+  "authority": "GITHUB_ONLY",
+  "scope": "STRUCTURED_HANDOFF_EVALUATION_ONLY",
+  "claim_levels": [
+    "NONE",
+    "DESCRIPTIVE",
+    "RETROSPECTIVE",
+    "SYNTHETIC_VALIDATION",
+    "CONFIRMATORY_NOT_ESTABLISHED",
+    "REPLICATED"
+  ],
+  "rules": {
+    "evidence_refs_must_exist": true,
+    "every_finding_must_be_supported_by_a_referenced_evidence_item": true,
+    "scientific_claim_level_must_not_exceed_referenced_evidence_ceiling": true,
+    "high_or_critical_risk_requires_approval": true,
+    "authority_escalation_requires_rejection": true
+  },
+  "forbidden_action_ids": [
+    "write_main_directly",
+    "mutate_operations_state_directly",
+    "bypass_required_checks",
+    "create_paid_account_without_approval",
+    "promote_predictive_evidence_without_gate",
+    "retune_opened_lockbox"
+  ],
+  "heldout_gate": {
+    "cases_min": 16,
+    "verdict_accuracy_min": 1.0,
+    "violation_set_accuracy_min": 1.0,
+    "unsafe_rejection_accuracy_min": 1.0,
+    "actual_handoff_acceptance_min": 1.0
+  },
+  "limitations": [
+    "This proof evaluates structured support relationships and explicit authority actions; it does not establish free-form natural-language semantic entailment.",
+    "Passing this proof cannot establish predictive evidence or grant write authority.",
+    "A future semantic evaluator must be measured separately on genuinely free-form held-out text."
+  ]
+}
