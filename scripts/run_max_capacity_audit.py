@@ -9,7 +9,32 @@ from sare_lotofacil.analysis.capacity_audit import (
     run_synthetic_capacity_audit,
 )
 from sare_lotofacil.analysis.portfolio_audit import run_primary_tiebreak_audit
+from sare_lotofacil.domain.rules import special_prize_ruleset_for_contest
 from sare_lotofacil.persistence.repository import load_snapshot_records
+
+
+def _special_3780_audit() -> dict[str, object]:
+    rules = special_prize_ruleset_for_contest(3780)
+    if rules is None:
+        return {"status": "FAIL", "reason": "SPECIAL_RULESET_3780_MISSING"}
+    expected = {
+        "fixed_prize_cents_by_hits": [[11, 350], [12, 700], [13, 1750]],
+        "variable_share_bps_by_hits": [[14, 1300], [15, 8700]],
+        "non_accumulating": True,
+    }
+    actual = {
+        "fixed_prize_cents_by_hits": [list(item) for item in rules.fixed_prize_cents_by_hits],
+        "variable_share_bps_by_hits": [list(item) for item in rules.variable_share_bps_by_hits],
+        "non_accumulating": rules.non_accumulating,
+    }
+    return {
+        "status": "PASS" if actual == expected else "FAIL",
+        "contest_id": rules.contest_id,
+        "ruleset_id": rules.ruleset_id,
+        "actual": actual,
+        "expected": expected,
+        "source_url": rules.source_url,
+    }
 
 
 def main() -> int:
@@ -31,8 +56,10 @@ def main() -> int:
         draws,
         evaluation_start=int(parameter_training["validation_end"]),
     )
+    special_3780 = _special_3780_audit()
+    gates_pass = synthetic["status"] == "PASS" and special_3780["status"] == "PASS"
     result = {
-        "status": "PASS" if synthetic["status"] == "PASS" else "FAIL",
+        "status": "PASS" if gates_pass else "FAIL",
         "snapshot_id": snapshot_id,
         "history_source_status": history_report["status"],
         "last_contest": history_report["last_contest"],
@@ -40,6 +67,7 @@ def main() -> int:
         "real_history_training": real_training,
         "parameter_training_60_20_20": parameter_training,
         "primary_tiebreak_holdout": primary_tiebreak,
+        "special_contest_3780_rules": special_3780,
         "predictive_evidence": "NOT_ESTABLISHED",
         "scientific_conclusion": "EVIDENCIA_PREDITIVA_INSUFICIENTE",
     }
