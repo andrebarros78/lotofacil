@@ -36,7 +36,7 @@ jobs:
         run: |
           python -m pip install --disable-pip-version-check --no-input --upgrade pip
           python -m pip install --disable-pip-version-check --no-input --index-url https://download.pytorch.org/whl/cpu 'torch==2.14.0+cpu'
-          python -m pip install --disable-pip-version-check --no-input 'transformers==5.17.0'
+          python -m pip install --disable-pip-version-check --no-input 'transformers==5.17.0' 'pytest==9.1.1'
 
       - name: Prove frozen experiment contract before inference
         run: python -m pytest -q tests/test_local_semantic_router_contract.py
