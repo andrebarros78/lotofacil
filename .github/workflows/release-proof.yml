@@ -9,6 +9,7 @@ on:
       - "tests/**"
       - "scripts/**"
       - "governance/**"
+      - "requirements.lock.txt"
       - "pyproject.toml"
       - ".github/workflows/**"
       - "docs/**"
@@ -30,10 +31,10 @@ jobs:
         run: python scripts/verify_github_governance.py
       - name: Build wheel
         run: python -m pip wheel . --no-deps -w dist
-      - name: Create clean environment and install wheel
+      - name: Create clean environment and install locked wheel
         run: |
           python -m venv /tmp/sare-clean
-          /tmp/sare-clean/bin/python -m pip install dist/sare_lotofacil-*.whl
+          /tmp/sare-clean/bin/python -m pip install -c requirements.lock.txt dist/sare_lotofacil-*.whl
       - name: Prove release version and installed module origin
         run: |
           /tmp/sare-clean/bin/python - <<'PY'
@@ -41,7 +42,7 @@ jobs:
           from pathlib import Path
           import sare_lotofacil
           from sare_lotofacil.api.app import create_app
-          expected = "1.1.8"
+          expected = "1.1.9"
           module = Path(sare_lotofacil.__file__).resolve()
           assert "site-packages" in str(module), module
           assert version("sare-lotofacil") == expected

@@ -4,7 +4,7 @@ Sistema de Análise de Randomicidade e Eventos para a Lotofácil.
 
 ## Release
 
-**SARE Core 1.0 + SARE Operational 1.1 — versão 1.1.7.**
+**SARE Core 1.0 + SARE Operational 1.1 — versão 1.1.9.**
 
 O sistema prioriza integridade dos dados, matemática exata, reprodutibilidade, auditoria e recuperação antes de qualquer alegação preditiva.
 
@@ -56,11 +56,28 @@ A autoridade operacional está documentada em `docs/GITHUB_OPERATIONS.md`.
 - carteiras uniformes com etiqueta obrigatória de ausência de vantagem comprovada;
 - verificação SHA-256 de evidências persistidas;
 - reconstrução determinística do SQLite operacional em GitHub Actions com `integrity_check`;
-- CI Python 3.12/3.13, Real History Check, GitHub Operational Cycle e Release Proof.
+- CI Python 3.12/3.13, Real History Check, GitHub Operational Cycle, Release Proof e Max Capacity Audit.
+
+## Capacidade máxima 1.1.9
+
+A release 1.1.9 adiciona uma auditoria permanente de capacidade científica e operacional, sem converter desempenho retrospectivo em alegação de previsão:
+
+- treinamento walk-forward M1/M2 sobre o histórico real reconciliado;
+- seleção de hiperparâmetros em protocolo cronológico 60/20/20, com holdout separado da validação;
+- qualificação sintética contra nulo, viés marginal, memória temporal e mudança de regime;
+- falha induzida em janelas de backtest, mantendo falhas no denominador e retornando `INCONCLUSIVE` quando a cobertura é insuficiente;
+- injeção de lookahead para comprovar bloqueio de vazamento temporal;
+- prova de reprodutibilidade por semente;
+- auditoria específica do valor incremental do desempate M2 na política de cartão primário, usando expectativa neutra no grupo empatado e bootstrap em blocos;
+- ruleset explícito e versionado para o concurso 3780, Lotofácil da Independência 2026, sem aplicar essa regra a concursos regulares;
+- `requirements.lock.txt` como ambiente validado da linha 1.1.9 e instalação dos gates sob constraints fixadas;
+- workflow `Max Capacity Audit` executado em PR e em mudanças aplicáveis de `main`.
+
+A auditoria real demonstrou que M1 não se distingue do M0 no holdout e que M2 `alpha=0,05` é inferior ao M0 como previsão marginal. Na função restrita de desempate do cartão primário, M2 não demonstrou valor incremental. Esses resultados mantêm `predictive_evidence=NOT_ESTABLISHED` e impedem promoção científica automática.
 
 ## Integridade de carteira e auditoria econômica
 
-A versão 1.1.7 fecha T30–T39:
+A versão 1.1.7 fechou T30–T39:
 
 - **T30 — quantidade operacional:** carteiras fora do intervalo 3–100 são rejeitadas.
 - **T31 — cartão duplicado:** duplicatas geram `DUPLICATE_CARD`; a quantidade entregue é validada e não pode cair silenciosamente abaixo da quantidade solicitada.
@@ -180,6 +197,7 @@ A configuração-alvo dos Rulesets nativos está em `docs/GITHUB_NATIVE_RULESET.
 - operação e política GitHub-only: `docs/OPERACAO.md`;
 - matriz de comprovação: `docs/MISSION_PROVEN.md`;
 - identidade da especificação-fonte: `docs/SOURCE_SPEC.md`;
+- ambiente validado: `requirements.lock.txt`;
 - testes automatizados: `tests/`;
 - workflows: `.github/workflows/`.
 
