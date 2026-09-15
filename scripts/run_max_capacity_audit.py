@@ -8,6 +8,7 @@ from sare_lotofacil.analysis.capacity_audit import (
     run_real_training_audit,
     run_synthetic_capacity_audit,
 )
+from sare_lotofacil.analysis.portfolio_audit import run_primary_tiebreak_audit
 from sare_lotofacil.persistence.repository import load_snapshot_records
 
 
@@ -26,6 +27,10 @@ def main() -> int:
     synthetic = run_synthetic_capacity_audit()
     real_training = run_real_training_audit(draws)
     parameter_training = run_parameter_training_audit(draws)
+    primary_tiebreak = run_primary_tiebreak_audit(
+        draws,
+        evaluation_start=int(parameter_training["validation_end"]),
+    )
     result = {
         "status": "PASS" if synthetic["status"] == "PASS" else "FAIL",
         "snapshot_id": snapshot_id,
@@ -34,6 +39,7 @@ def main() -> int:
         "synthetic_qualification": synthetic,
         "real_history_training": real_training,
         "parameter_training_60_20_20": parameter_training,
+        "primary_tiebreak_holdout": primary_tiebreak,
         "predictive_evidence": "NOT_ESTABLISHED",
         "scientific_conclusion": "EVIDENCIA_PREDITIVA_INSUFICIENTE",
     }
