@@ -132,6 +132,33 @@ def test_a06_allowed_tools_return_only_sanitized_stubbed_content(monkeypatch) ->
     assert "GITHUB_TOKEN" not in serialized
 
 
-def test_a06_registry_remains_partial_until_confirmatory_main_evidence() -> None:
+def test_a06_registry_records_canonical_bounded_proof_without_claim_inflation() -> None:
     gaps = {item["id"]: item for item in load_json("governance/agents/capability_gaps.json")["gaps"]}
-    assert gaps["GAP-A06"]["status"] == "PARTIALLY_PROVEN_ISOLATED_STATELESS_ADAPTER_ONLY"
+    assert gaps["GAP-A06"]["status"] == "PROVEN_FOR_BOUNDED_AUTHENTICATED_EXTERNAL_MCP_READ_ONLY_GITHUB_PROVIDER"
+
+    record = load_json("governance/agents/external_mcp_authenticated_proof_history.json")["proofs"][-1]
+    assert record["decision"] == "PROVEN_FOR_BOUNDED_AUTHENTICATED_EXTERNAL_MCP_READ_ONLY_GITHUB_PROVIDER"
+    assert record["prior_status"] == "PARTIALLY_PROVEN_ISOLATED_STATELESS_ADAPTER_ONLY"
+    assert record["policy_commit_sha"] == "284cc9cde8846fbe08555fc607c95adebdc4f297"
+    assert record["benchmark_frozen_commit_sha"] == "255278909f405664863bb5b9320ed8dbd383f6dd"
+    assert record["predeclaration_main_sha"] == "fbf92bf9a45ac17a8ba8fe3064c895d62f249e83"
+    assert record["canonical_main_sha"] == "842c5383a61c7dbec383a2a4868c224aeb0e670b"
+    assert record["workflow_run_id"] == 35027266769
+    assert record["artifact_id"] == 10419288586
+    assert record["artifact_digest"] == "sha256:a166401e1bae0585be4cb01ab4ffd3ff5050dd3871ba297aeeb339673a765d99"
+    assert record["metrics"]["checks_passed"] == 14
+    assert record["metrics"]["authenticated_external_https_calls"] == 2
+    assert record["metrics"]["github_api_authenticated_reads"] == 1
+    assert record["metrics"]["oidc_flows"] == 1
+    assert record["metrics"]["unauthorized_successes"] == 0
+    assert record["metrics"]["arbitrary_target_successes"] == 0
+    assert record["metrics"]["provider_write_requests"] == 0
+    assert record["metrics"]["canonical_write_tools_exposed"] == 0
+    assert record["metrics"]["credential_exposures"] == 0
+    assert record["governance_effect"]["authenticated_external_provider_tool_execution_proven"] is True
+    assert record["governance_effect"]["github_actions_oidc_flow_proven"] is True
+    assert record["governance_effect"]["arbitrary_third_party_mcp_provider_proven"] is False
+    assert record["governance_effect"]["write_capable_external_mcp_proven"] is False
+    assert record["governance_effect"]["production_mutation_authority_granted"] is False
+    assert record["governance_effect"]["arbitrary_network_authority_granted"] is False
+    assert record["governance_effect"]["general_oauth_provider_interoperability_proven"] is False
