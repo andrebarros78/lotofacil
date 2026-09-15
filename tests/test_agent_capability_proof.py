@@ -68,6 +68,7 @@ def test_capability_gaps_preserve_bounded_scope_and_unproven_frontiers() -> None
     assert doc["baseline_type"] == "BOUNDED_DETERMINISTIC_AUTONOMY"
     assert gaps["bounded_predeclared_mission_execution"]["status"] == "IMPLEMENTED_CONTINUOUS_PROOF_REQUIRED"
     assert gaps["durable_agent_checkpoint_resume"]["status"] == "PROVEN_FOR_BOUNDED_PREDECLARED_MISSIONS_CONTINUOUS_PROOF_REQUIRED"
+    assert gaps["external_mcp_tool_execution"]["status"] == "PARTIALLY_PROVEN_ISOLATED_STATELESS_ADAPTER_ONLY"
     assert gaps["automatic_failure_recovery"]["status"] == "PARTIALLY_PROVEN_BOUNDED_TRANSIENT_RETRY_ONLY"
     for capability in (
         "open_ended_mission_planning",
@@ -76,6 +77,5 @@ def test_capability_gaps_preserve_bounded_scope_and_unproven_frontiers() -> None
         "semantic_handoff_quality_evaluation",
     ):
         assert gaps[capability]["status"] == "NOT_PROVEN"
-    assert gaps["external_mcp_tool_execution"]["status"] == "NOT_IMPLEMENTED"
     assert gaps["agent_proposed_code_change_to_pr_pipeline"]["status"] == "NOT_IMPLEMENTED"
     assert gaps["agent_runtime_framework_value"]["status"] == "NOT_ESTABLISHED"
