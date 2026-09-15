@@ -1,0 +1,49 @@
+name: MCP Adapter Proof
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/mcp-adapter-proof.yml"
+      - "governance/agents/mcp_adapter_policy.json"
+      - "scripts/mcp_isolated_server.py"
+      - "scripts/run_mcp_adapter_proof.py"
+      - "tests/test_mcp_adapter_proof.py"
+  pull_request:
+    paths:
+      - ".github/workflows/mcp-adapter-proof.yml"
+      - "governance/agents/mcp_adapter_policy.json"
+      - "scripts/mcp_isolated_server.py"
+      - "scripts/run_mcp_adapter_proof.py"
+      - "tests/test_mcp_adapter_proof.py"
+
+permissions:
+  contents: read
+
+jobs:
+  mcp-adapter-proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: "3.13"
+      - name: Install locked environment
+        run: python -m pip install -c requirements.lock.txt -e '.[dev]'
+      - name: Validate GitHub-only governance
+        run: python scripts/verify_github_governance.py
+      - name: Test MCP adapter contracts
+        run: python -m pytest -q tests/test_mcp_adapter_proof.py
+      - name: Execute isolated MCP adapter proof
+        run: |
+          mkdir -p artifacts
+          python scripts/run_mcp_adapter_proof.py --output artifacts/mcp_adapter_proof.json
+      - name: Upload MCP adapter evidence
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: mcp-adapter-proof
+          path: artifacts/mcp_adapter_proof.json
+          if-no-files-found: error
