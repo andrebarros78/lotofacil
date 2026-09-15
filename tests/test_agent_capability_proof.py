@@ -66,7 +66,7 @@ def test_unproven_capabilities_remain_explicitly_unproven() -> None:
     doc = load_json("governance/agents/capability_gaps.json")
     gaps = {gap["capability"]: gap for gap in doc["gaps"]}
     assert doc["baseline_type"] == "BOUNDED_DETERMINISTIC_AUTONOMY"
-    assert gaps["bounded_predeclared_mission_execution"]["status"] == "IMPLEMENTED_PENDING_CANONICAL_PROOF"
+    assert gaps["bounded_predeclared_mission_execution"]["status"] == "IMPLEMENTED_CONTINUOUS_PROOF_REQUIRED"
     for capability in (
         "open_ended_mission_planning",
         "adaptive_tool_selection",
