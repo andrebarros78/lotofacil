@@ -6,6 +6,7 @@ on:
     branches: [main]
     paths:
       - ".github/workflows/max-capacity-audit.yml"
+      - "requirements.lock.txt"
       - "scripts/run_max_capacity_audit.py"
       - "scripts/verify_third_party_history.py"
       - "src/sare_lotofacil/analysis/**"
@@ -21,6 +22,7 @@ on:
   pull_request:
     paths:
       - ".github/workflows/max-capacity-audit.yml"
+      - "requirements.lock.txt"
       - "scripts/run_max_capacity_audit.py"
       - "scripts/verify_third_party_history.py"
       - "src/sare_lotofacil/analysis/**"
@@ -48,8 +50,8 @@ jobs:
           python-version: "3.13"
       - name: Verify GitHub-only governance
         run: python scripts/verify_github_governance.py
-      - name: Install SARE Core
-        run: python -m pip install -e .
+      - name: Install locked SARE Core
+        run: python -m pip install -c requirements.lock.txt -e .
       - name: Capture runtime dependencies
         run: |
           mkdir -p artifacts
