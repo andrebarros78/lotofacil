@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "authority": "GITHUB_ONLY",
+  "proofs": [
+    {
+      "proof_id": "OPEN-ENDED-PLANNING-BOUNDED-V1",
+      "gap_id": "GAP-A02",
+      "decision": "PROVEN_FOR_BOUNDED_STRUCTURED_UNSEEN_MISSION_PLANNING",
+      "benchmark_frozen_commit_sha": "1a9e3ce47b8ac82efea82951b6386b5fea1a14e2",
+      "implementation_commit_sha": "bdbe12ade5f422222d5ab8ab0ef2747b2649c61b",
+      "implementation_pr_number": 40,
+      "canonical_main_sha": "59f7ab0801f9fa645f071e3400ff2e63c04e7b6d",
+      "workflow_run_id": 35021530896,
+      "artifact_id": 10417334401,
+      "artifact_digest": "sha256:6929c8cf7f5f53ee0099c603f88f3f8bbde034a9c4a4610313e8c889a59aa20d",
+      "policy_fingerprint_sha256": "ffed71a32f9d4d45db6907d9059c7f2139a88eb99e30429d50b6624e2767d7dd",
+      "benchmark_fingerprint_sha256": "6a73656a1d834a1b026fa5bf86cb47bad71ecdddfa342569869bb3311173cf06",
+      "metrics": {
+        "cases_total": 12,
+        "cases_passed": 12,
+        "cases_failed": 0,
+        "pass_rate": 1.0,
+        "false_accepts": 0,
+        "false_rejects": 0,
+        "authority_violations": 0,
+        "execution_attempts": 0,
+        "human_interventions": 0
+      },
+      "governance_effect": {
+        "gap_status": "PROVEN_FOR_BOUNDED_STRUCTURED_UNSEEN_MISSION_PLANNING",
+        "free_form_natural_language_planning_proven": false,
+        "adaptive_tool_selection_proven": false,
+        "dynamic_multi_agent_replanning_proven": false,
+        "production_execution_authority_granted": false
+      }
+    }
+  ]
+}
