@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "protocol_version": "2026-07-28",
+  "baseline_type": "ISOLATED_STATELESS_MCP_ADAPTER",
+  "runtime_dependency": false,
+  "transport": "loopback_http_separate_process",
+  "authority": "GITHUB_ONLY",
+  "policy": {
+    "stateless_required": true,
+    "initialize_handshake_forbidden": true,
+    "session_id_forbidden": true,
+    "tool_allowlist_required": true,
+    "argument_schema_validation_required": true,
+    "canonical_write_tools_forbidden": true,
+    "internet_access_required": false,
+    "credentials_required": false,
+    "paid_service_required": false
+  },
+  "allowed_tools": [
+    {
+      "name": "safe_sum",
+      "description": "Return the integer sum of two bounded integers.",
+      "input_schema": {
+        "type": "object",
+        "required": ["a", "b"],
+        "additionalProperties": false,
+        "properties": {
+          "a": {"type": "integer", "minimum": -1000000, "maximum": 1000000},
+          "b": {"type": "integer", "minimum": -1000000, "maximum": 1000000}
+        }
+      }
+    }
+  ],
+  "negative_tests": [
+    "unsupported_protocol_version",
+    "initialize_method_rejected",
+    "unknown_tool_rejected",
+    "invalid_arguments_rejected",
+    "extra_arguments_rejected",
+    "canonical_write_tool_rejected",
+    "session_header_not_required"
+  ]
+}
