@@ -168,6 +168,32 @@ def test_a03_frozen_benchmark_passes_with_zero_selection_regressions(tmp_path: P
     assert report["claim_boundary"]["tool_execution_authority_granted"] is False
 
 
-def test_a03_registry_is_not_promoted_before_confirmatory_evidence() -> None:
+def test_a03_registry_records_canonical_bounded_proof_without_claim_inflation() -> None:
     gaps = {item["id"]: item for item in load_json("governance/agents/capability_gaps.json")["gaps"]}
-    assert gaps["GAP-A03"]["status"] == "NOT_PROVEN"
+    assert gaps["GAP-A03"]["status"] == "PROVEN_FOR_BOUNDED_STRUCTURED_ADAPTIVE_TOOL_SELECTION"
+    assert gaps["GAP-A04"]["status"] == "NOT_PROVEN"
+
+    record = load_json("governance/agents/adaptive_tool_selection_proof_history.json")["proofs"][-1]
+    assert record["decision"] == "PROVEN_FOR_BOUNDED_STRUCTURED_ADAPTIVE_TOOL_SELECTION"
+    assert record["policy_commit_sha"] == "e125232c7701d4d98341f092a5215f33bc6f4c29"
+    assert record["benchmark_frozen_commit_sha"] == "ba740e9ba624d78feb93e948d783fdcc4401b991"
+    assert record["canonical_main_sha"] == "5f5d2e648032647217a6d85b6eab315d7b33d549"
+    assert record["workflow_run_id"] == 35023085970
+    assert record["artifact_id"] == 10418412308
+    assert record["artifact_digest"] == "sha256:f76426b08cb473817879abd845ec4a26c674490ee8566ac86d619a8362852614"
+    assert record["metrics"]["cases_passed"] == 30
+    assert record["metrics"]["false_accepts"] == 0
+    assert record["metrics"]["false_rejects"] == 0
+    assert record["metrics"]["unknown_tool_selections"] == 0
+    assert record["metrics"]["non_minimal_selections"] == 0
+    assert record["metrics"]["authority_violations"] == 0
+    assert record["metrics"]["execution_attempts"] == 0
+    assert record["governance_effect"]["free_form_natural_language_tool_selection_proven"] is False
+    assert record["governance_effect"]["dynamic_tool_discovery_proven"] is False
+    assert record["governance_effect"]["network_tool_selection_proven"] is False
+    assert record["governance_effect"]["write_capable_tool_selection_proven"] is False
+    assert record["governance_effect"]["llm_or_model_based_routing_proven"] is False
+    assert record["governance_effect"]["tool_execution_authority_granted"] is False
+    assert record["governance_effect"]["dynamic_multi_agent_replanning_proven"] is False
+    assert record["historical_model_note"]["qwen2_5_0_5b_v1_result"] == "REJECTED_3_OF_30"
+    assert record["historical_model_note"]["grants_model_routing_claim"] is False
