@@ -1,0 +1,60 @@
+name: Handoff Quality Proof
+
+on:
+  pull_request:
+    paths:
+      - 'governance/agents/handoff_quality_policy.json'
+      - 'governance/agents/handoff_quality_benchmark.json'
+      - 'scripts/run_handoff_quality_proof.py'
+      - 'scripts/run_agent_capability_proof.py'
+      - 'tests/test_handoff_quality_proof.py'
+      - '.github/workflows/handoff-quality-proof.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'governance/agents/handoff_quality_policy.json'
+      - 'governance/agents/handoff_quality_benchmark.json'
+      - 'scripts/run_handoff_quality_proof.py'
+      - 'scripts/run_agent_capability_proof.py'
+      - 'tests/test_handoff_quality_proof.py'
+      - '.github/workflows/handoff-quality-proof.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  handoff-quality-proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+
+      - name: Setup Python 3.13
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.13'
+
+      - name: Install locked environment
+        run: python -m pip install --disable-pip-version-check --no-input -e '.[dev]'
+
+      - name: Test handoff evaluator contracts
+        run: python -m pytest -q tests/test_handoff_quality_proof.py
+
+      - name: Generate current bounded-agent handoffs
+        run: python scripts/run_agent_capability_proof.py --output artifacts/capability_for_handoff_quality.json
+
+      - name: Evaluate held-out and actual handoffs
+        run: python scripts/run_handoff_quality_proof.py --capability-report artifacts/capability_for_handoff_quality.json --output artifacts/handoff_quality_proof.json
+
+      - name: Upload handoff-quality evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: handoff-quality-proof
+          path: |
+            artifacts/capability_for_handoff_quality.json
+            artifacts/handoff_quality_proof.json
+          if-no-files-found: error
+          retention-days: 90
