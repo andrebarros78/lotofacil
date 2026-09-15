@@ -1,0 +1,54 @@
+name: Local Semantic Router Experiment
+
+on:
+  pull_request:
+    paths:
+      - 'governance/agents/local_semantic_router_experiment.json'
+      - 'governance/agents/semantic_routing_benchmark.json'
+      - 'scripts/run_local_semantic_router_experiment.py'
+      - 'tests/test_local_semantic_router_contract.py'
+      - '.github/workflows/local-semantic-router-experiment.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  HF_HUB_DISABLE_TELEMETRY: '1'
+  TRANSFORMERS_NO_ADVISORY_WARNINGS: '1'
+  TOKENIZERS_PARALLELISM: 'false'
+
+jobs:
+  frozen-semantic-routing-benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout frozen experiment
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+
+      - name: Setup Python 3.13
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.13'
+
+      - name: Install isolated CPU inference environment
+        shell: bash
+        run: |
+          python -m pip install --disable-pip-version-check --no-input --upgrade pip
+          python -m pip install --disable-pip-version-check --no-input --index-url https://download.pytorch.org/whl/cpu 'torch==2.14.0+cpu'
+          python -m pip install --disable-pip-version-check --no-input 'transformers==5.17.0'
+
+      - name: Prove frozen experiment contract before inference
+        run: python -m pytest -q tests/test_local_semantic_router_contract.py
+
+      - name: Execute frozen held-out semantic routing benchmark
+        run: python scripts/run_local_semantic_router_experiment.py --output artifacts/local_semantic_router.json --cache-dir .cache/huggingface
+
+      - name: Upload semantic routing evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: local-semantic-router-experiment
+          path: artifacts/local_semantic_router.json
+          if-no-files-found: error
+          retention-days: 90
