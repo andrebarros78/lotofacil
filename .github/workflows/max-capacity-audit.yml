@@ -11,7 +11,9 @@ on:
       - "src/sare_lotofacil/experiments/**"
       - "src/sare_lotofacil/simulation/**"
       - "src/sare_lotofacil/statistics/**"
+      - "src/sare_lotofacil/portfolios/**"
       - "tests/test_capacity_audit.py"
+      - "tests/test_portfolio_audit.py"
       - "pyproject.toml"
 
 permissions:
