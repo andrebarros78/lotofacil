@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "baseline_date": "2026-09-15",
+  "baseline_type": "BOUNDED_DETERMINISTIC_AUTONOMY",
+  "gaps": [
+    {
+      "id": "GAP-A01",
+      "capability": "bounded_predeclared_mission_execution",
+      "status": "IMPLEMENTED_CONTINUOUS_PROOF_REQUIRED",
+      "closure_evidence": "Each applicable commit must pass Agent Capability Proof and publish the canonical evidence artifact"
+    },
+    {
+      "id": "GAP-A02",
+      "capability": "open_ended_mission_planning",
+      "status": "NOT_PROVEN",
+      "closure_evidence": "controlled benchmark demonstrates safe planning of unseen missions against predeclared acceptance criteria"
+    },
+    {
+      "id": "GAP-A03",
+      "capability": "adaptive_tool_selection",
+      "status": "NOT_PROVEN",
+      "closure_evidence": "tool-routing benchmark passes allowlist, least-privilege and negative authority tests"
+    },
+    {
+      "id": "GAP-A04",
+      "capability": "dynamic_multi_agent_replanning",
+      "status": "NOT_PROVEN",
+      "closure_evidence": "stateful branching and replanning experiment outperforms deterministic baseline without security regression"
+    },
+    {
+      "id": "GAP-A05",
+      "capability": "durable_agent_checkpoint_resume",
+      "status": "NOT_PROVEN",
+      "closure_evidence": "interrupted mission resumes from verified checkpoint and reproduces terminal result"
+    },
+    {
+      "id": "GAP-A06",
+      "capability": "external_mcp_tool_execution",
+      "status": "NOT_IMPLEMENTED",
+      "closure_evidence": "isolated MCP adapter passes authorization, prompt-injection, least-privilege and replay tests"
+    },
+    {
+      "id": "GAP-A07",
+      "capability": "automatic_failure_recovery",
+      "status": "NOT_PROVEN",
+      "closure_evidence": "fault-injection benchmark demonstrates bounded retries or replanning with no hidden failures"
+    },
+    {
+      "id": "GAP-A08",
+      "capability": "semantic_handoff_quality_evaluation",
+      "status": "NOT_PROVEN",
+      "closure_evidence": "versioned evaluator detects missing evidence, unsupported claims and authority escalation on held-out cases"
+    },
+    {
+      "id": "GAP-A09",
+      "capability": "agent_proposed_code_change_to_pr_pipeline",
+      "status": "NOT_IMPLEMENTED",
+      "closure_evidence": "sandboxed proposal path produces reviewable branch and PR while preserving rulesets and requiring canonical checks"
+    },
+    {
+      "id": "GAP-A10",
+      "capability": "agent_runtime_framework_value",
+      "status": "NOT_ESTABLISHED",
+      "closure_evidence": "isolated framework experiment improves completion, recovery or human-intervention metrics enough to justify dependency cost"
+    }
+  ]
+}

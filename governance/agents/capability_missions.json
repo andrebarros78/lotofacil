@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "baseline_date": "2026-09-15",
+  "authority": "GITHUB_ONLY",
+  "runtime_framework": "NONE",
+  "mission_policy": {
+    "read_only_only": true,
+    "shell_execution_forbidden": true,
+    "network_required": false,
+    "direct_main_write_forbidden": true,
+    "direct_operations_state_write_forbidden": true,
+    "human_approval_required_for_spend_or_new_account": true
+  },
+  "missions": [
+    {
+      "id": "CAP-001-agent-governance-self-audit",
+      "agent_id": "security-tool-gate",
+      "purpose": "Prove that the agent registry, skills, acquisitions and red-team contracts remain internally valid.",
+      "tool_id": "agent_governance_validator",
+      "risk_level": "LOW",
+      "scientific_claim_level": "NONE",
+      "acceptance": "exit_code_zero"
+    },
+    {
+      "id": "CAP-002-scientific-temporal-integrity",
+      "agent_id": "scientific-methodologist",
+      "purpose": "Prove nested temporal selection, lockbox isolation and backtest anti-lookahead controls.",
+      "tool_id": "scientific_temporal_tests",
+      "risk_level": "LOW",
+      "scientific_claim_level": "CONFIRMATORY_NOT_ESTABLISHED",
+      "acceptance": "exit_code_zero"
+    },
+    {
+      "id": "CAP-003-statistical-calibration-integrity",
+      "agent_id": "statistical-validator",
+      "purpose": "Prove calibration rounds, statistical inference and baseline metrics remain executable and passing.",
+      "tool_id": "statistical_integrity_tests",
+      "risk_level": "LOW",
+      "scientific_claim_level": "RETROSPECTIVE",
+      "acceptance": "exit_code_zero"
+    },
+    {
+      "id": "CAP-004-data-provenance-integrity",
+      "agent_id": "data-provenance-auditor",
+      "purpose": "Prove CAIXA parsing contracts, CSV history validation and ingestion invariants locally without external writes.",
+      "tool_id": "data_provenance_tests",
+      "risk_level": "LOW",
+      "scientific_claim_level": "DESCRIPTIVE",
+      "acceptance": "exit_code_zero"
+    },
+    {
+      "id": "CAP-005-reproducibility-integrity",
+      "agent_id": "reproducibility-auditor",
+      "purpose": "Prove evidence hashing, protocol identity and experiment reproducibility contracts.",
+      "tool_id": "reproducibility_tests",
+      "risk_level": "LOW",
+      "scientific_claim_level": "NONE",
+      "acceptance": "exit_code_zero"
+    },
+    {
+      "id": "CAP-006-operational-contract-integrity",
+      "agent_id": "operational-state-auditor",
+      "purpose": "Prove GitHub operational-cycle, operator-console and canonical prize-state contracts without mutating canonical state.",
+      "tool_id": "operational_contract_tests",
+      "risk_level": "LOW",
+      "scientific_claim_level": "NONE",
+      "acceptance": "exit_code_zero"
+    },
+    {
+      "id": "CAP-007-release-governance-integrity",
+      "agent_id": "github-release-engineer",
+      "purpose": "Prove repository governance and release/version integrity from a read-only execution path.",
+      "tool_id": "release_governance_tests",
+      "risk_level": "LOW",
+      "scientific_claim_level": "NONE",
+      "acceptance": "exit_code_zero"
+    },
+    {
+      "id": "CAP-008-agent-redteam-regression",
+      "agent_id": "agent-evaluator-redteam",
+      "purpose": "Prove authority, acquisition and hardening regressions remain blocked by canonical tests.",
+      "tool_id": "agent_redteam_tests",
+      "risk_level": "LOW",
+      "scientific_claim_level": "NONE",
+      "acceptance": "exit_code_zero"
+    }
+  ]
+}

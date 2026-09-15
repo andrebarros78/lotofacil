@@ -9,6 +9,8 @@ SKILLS_PATH = ROOT / "governance" / "agents" / "skills.json"
 ACQUISITIONS_PATH = ROOT / "governance" / "agents" / "acquisitions.json"
 HANDOFF_SCHEMA_PATH = ROOT / "governance" / "agents" / "handoff.schema.json"
 REDTEAM_PATH = ROOT / "governance" / "agents" / "redteam_cases.json"
+CAPABILITY_MISSIONS_PATH = ROOT / "governance" / "agents" / "capability_missions.json"
+TOOL_BINDINGS_PATH = ROOT / "governance" / "agents" / "tool_bindings.json"
 AGENTS_MD_PATH = ROOT / "AGENTS.md"
 
 REQUIRED_HANDOFF_FIELDS = {
@@ -37,6 +39,7 @@ VALID_ACQUISITION_DECISIONS = {
 }
 
 VALID_REDTEAM_DECISIONS = {"REJECT", "REQUIRE_APPROVAL"}
+VALID_TOOL_KINDS = {"script", "pytest"}
 
 
 def load_json(path: Path) -> dict:
@@ -57,6 +60,8 @@ def validate() -> dict:
         ACQUISITIONS_PATH,
         HANDOFF_SCHEMA_PATH,
         REDTEAM_PATH,
+        CAPABILITY_MISSIONS_PATH,
+        TOOL_BINDINGS_PATH,
     ):
         require(path.is_file(), f"missing registry: {path.relative_to(ROOT)}")
 
@@ -65,11 +70,15 @@ def validate() -> dict:
     acquisitions_doc = load_json(ACQUISITIONS_PATH)
     handoff_schema = load_json(HANDOFF_SCHEMA_PATH)
     redteam_doc = load_json(REDTEAM_PATH)
+    capability_doc = load_json(CAPABILITY_MISSIONS_PATH)
+    tools_doc = load_json(TOOL_BINDINGS_PATH)
 
     require(agents_doc.get("schema_version") == 1, "unsupported agents schema")
     require(skills_doc.get("schema_version") == 1, "unsupported skills schema")
     require(acquisitions_doc.get("schema_version") == 1, "unsupported acquisitions schema")
     require(redteam_doc.get("schema_version") == 1, "unsupported red-team schema")
+    require(capability_doc.get("schema_version") == 1, "unsupported capability schema")
+    require(tools_doc.get("schema_version") == 1, "unsupported tool binding schema")
     require(agents_doc.get("authority") == "GITHUB_ONLY", "agent authority must be GITHUB_ONLY")
     require(agents_doc.get("canonical_code_branch") == "main", "canonical code branch drift")
     require(agents_doc.get("canonical_state_branch") == "operations/state", "canonical state branch drift")
@@ -98,6 +107,7 @@ def validate() -> dict:
     require(len(agent_ids) >= 8, "agent registry unexpectedly small")
     require(None not in agent_ids, "agent without id")
     require(len(agent_ids) == len(set(agent_ids)), "duplicate agent id")
+    known_agents = set(agent_ids)
 
     all_prohibited_actions: set[str] = set()
     for agent in agents:
@@ -158,6 +168,41 @@ def validate() -> dict:
         require(case.get("expected_decision") in VALID_REDTEAM_DECISIONS, f"invalid red-team decision for {case_id}")
         require(case.get("expected_guardrail") in all_prohibited_actions, f"red-team guardrail not enforced by any agent: {case_id}")
 
+    require(capability_doc.get("authority") == "GITHUB_ONLY", "capability authority drift")
+    require(capability_doc.get("runtime_framework") == "NONE", "capability baseline unexpectedly uses agent runtime")
+    mission_policy = capability_doc.get("mission_policy", {})
+    require(mission_policy.get("read_only_only") is True, "capability read-only policy disabled")
+    require(mission_policy.get("shell_execution_forbidden") is True, "capability shell prohibition disabled")
+    require(mission_policy.get("direct_main_write_forbidden") is True, "capability main-write prohibition disabled")
+    require(mission_policy.get("direct_operations_state_write_forbidden") is True, "capability state-write prohibition disabled")
+
+    tool_policy = tools_doc.get("policy", {})
+    require(tool_policy.get("python_executable_only") is True, "tool python-only policy disabled")
+    require(tool_policy.get("shell_false_required") is True, "tool shell=False policy disabled")
+    require(tool_policy.get("write_effects_forbidden") is True, "tool write-effect prohibition disabled")
+    require(tool_policy.get("network_required") is False, "baseline tools unexpectedly require network")
+
+    tools = tools_doc.get("tools", [])
+    tool_ids = [tool.get("id") for tool in tools]
+    require(len(tool_ids) >= 8, "capability tool registry unexpectedly small")
+    require(None not in tool_ids, "tool without id")
+    require(len(tool_ids) == len(set(tool_ids)), "duplicate capability tool id")
+    known_tools = set(tool_ids)
+    for tool in tools:
+        require(tool.get("kind") in VALID_TOOL_KINDS, f"unsupported capability tool kind: {tool.get('id')}")
+
+    missions = capability_doc.get("missions", [])
+    mission_ids = [mission.get("id") for mission in missions]
+    require(len(mission_ids) >= 8, "capability mission registry unexpectedly small")
+    require(None not in mission_ids, "capability mission without id")
+    require(len(mission_ids) == len(set(mission_ids)), "duplicate capability mission id")
+    for mission in missions:
+        mission_id = mission.get("id")
+        require(mission.get("agent_id") in known_agents, f"unknown mission agent: {mission_id}")
+        require(mission.get("tool_id") in known_tools, f"unknown mission tool: {mission_id}")
+        require(mission.get("risk_level") == "LOW", f"non-low-risk mission in autonomous baseline: {mission_id}")
+        require(mission.get("acceptance") == "exit_code_zero", f"unsupported mission acceptance: {mission_id}")
+
     return {
         "status": "AGENT_ECOSYSTEM_PASS",
         "agents": len(agents),
@@ -165,6 +210,8 @@ def validate() -> dict:
         "acquisitions": len(acquisitions),
         "controlled_reference_acquisitions": acquired_count,
         "redteam_cases": len(redteam_cases),
+        "capability_missions": len(missions),
+        "capability_tools": len(tools),
         "runtime_framework_dependencies": 0,
         "authority": agents_doc["authority"],
     }
