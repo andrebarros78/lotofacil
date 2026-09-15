@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/andrebarros78/lotofacil/governance/agents/handoff.schema.json",
+  "title": "SARE Agent Handoff",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "agent_id",
+    "task_id",
+    "evidence_refs",
+    "findings",
+    "proposed_actions",
+    "risk_level",
+    "requires_approval",
+    "scientific_claim_level"
+  ],
+  "properties": {
+    "agent_id": {"type": "string", "minLength": 1},
+    "task_id": {"type": "string", "minLength": 1},
+    "evidence_refs": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1}
+    },
+    "findings": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1}
+    },
+    "proposed_actions": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1}
+    },
+    "risk_level": {
+      "type": "string",
+      "enum": ["LOW", "MEDIUM", "HIGH", "CRITICAL"]
+    },
+    "requires_approval": {"type": "boolean"},
+    "scientific_claim_level": {
+      "type": "string",
+      "enum": [
+        "NONE",
+        "DESCRIPTIVE",
+        "RETROSPECTIVE",
+        "SYNTHETIC_VALIDATION",
+        "CONFIRMATORY_NOT_ESTABLISHED",
+        "REPLICATED"
+      ]
+    }
+  }
+}
