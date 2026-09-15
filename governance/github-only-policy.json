@@ -8,6 +8,7 @@
   "required_workflows": [
     ".github/workflows/ci.yml",
     ".github/workflows/github-operations.yml",
+    ".github/workflows/max-capacity-audit.yml",
     ".github/workflows/operator-console.yml",
     ".github/workflows/operator-console-proof.yml",
     ".github/workflows/real-history-check.yml",
