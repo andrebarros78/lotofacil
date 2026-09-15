@@ -1,0 +1,103 @@
+{
+  "schema_version": 1,
+  "review_date": "2026-09-15",
+  "policy": {
+    "runtime_dependency_requires_separate_experiment": true,
+    "paid_service_requires_explicit_approval": true,
+    "community_code_is_untrusted_until_reviewed": true,
+    "vendoring_without_license_review_forbidden": true,
+    "production_core_must_remain_framework_independent_by_default": true
+  },
+  "acquisitions": [
+    {
+      "id": "langgraph",
+      "source": "LangGraph by LangChain",
+      "source_url": "https://github.com/langchain-ai/langgraph",
+      "decision": "ACQUIRED_AS_REFERENCE_AND_ADAPTER_TARGET",
+      "reason": "Best fit for durable, stateful, checkpointed orchestration with human-in-the-loop while keeping orchestration separate from scientific code.",
+      "runtime_dependency": false,
+      "next_gate": "Build a non-canonical adapter experiment only if an actual long-running agent workflow cannot be expressed with existing GitHub Actions and structured handoffs."
+    },
+    {
+      "id": "mcp-2026-07-28",
+      "source": "Model Context Protocol",
+      "source_url": "https://modelcontextprotocol.io",
+      "decision": "ACQUIRED_AS_INTEROPERABILITY_STANDARD",
+      "reason": "Current specification provides a stateless protocol core, capability/tool contracts and hardened authorization suitable for bounded agent-tool integration.",
+      "runtime_dependency": false,
+      "next_gate": "Any MCP server/client added to the project must pass least-privilege, authorization, prompt-injection and write-scope review."
+    },
+    {
+      "id": "openai-cookbook-agent-patterns",
+      "source": "OpenAI Cookbook",
+      "source_url": "https://github.com/openai/openai-cookbook",
+      "decision": "ACQUIRED_AS_GOVERNANCE_REFERENCE",
+      "reason": "Useful patterns for AGENTS.md, typed/function tools, approvals, guardrails, tracing and agent regression evaluation.",
+      "runtime_dependency": false,
+      "next_gate": "No OpenAI API runtime dependency or paid model call is authorized by this reference acquisition alone."
+    },
+    {
+      "id": "crewai",
+      "source": "CrewAI",
+      "source_url": "https://github.com/crewAIInc/crewAI",
+      "decision": "EVALUATED_NOT_ACQUIRED",
+      "reason": "Role-based crews and flows are relevant, but overlap with the proposed specialist registry and introduce a second orchestration runtime before a concrete need is proven.",
+      "runtime_dependency": false,
+      "next_gate": "Re-evaluate only if autonomous collaborative exploration becomes a measured bottleneck."
+    },
+    {
+      "id": "microsoft-agent-framework",
+      "source": "Microsoft Agent Framework",
+      "source_url": "https://github.com/microsoft/agent-framework",
+      "decision": "EVALUATED_NOT_ACQUIRED",
+      "reason": "Strong agents, workflows, skills, persistence and orchestration capabilities, but functionally overlaps with LangGraph for the current use case.",
+      "runtime_dependency": false,
+      "next_gate": "Re-evaluate if Microsoft hosting or ecosystem integration becomes a project requirement."
+    },
+    {
+      "id": "dify",
+      "source": "Dify",
+      "source_url": "https://github.com/langgenius/dify",
+      "decision": "EVALUATED_NOT_ACQUIRED",
+      "reason": "Low-code workflow and plugin capabilities are useful for application construction, but would create an external orchestration surface inconsistent with the current GitHub-only canonical operation.",
+      "runtime_dependency": false,
+      "next_gate": "Use only as a non-canonical prototyping surface if later justified."
+    },
+    {
+      "id": "llamaindex-workflows",
+      "source": "LlamaIndex Workflows",
+      "source_url": "https://github.com/run-llama/llama_index",
+      "decision": "EVALUATED_NOT_ACQUIRED",
+      "reason": "Strong event-driven and data/document-centric multi-agent patterns, but the current bottleneck is agent governance rather than RAG or document retrieval.",
+      "runtime_dependency": false,
+      "next_gate": "Re-evaluate if scientific literature, large document corpora or retrieval-heavy workflows become central."
+    },
+    {
+      "id": "hugging-face-hub",
+      "source": "Hugging Face Hub",
+      "source_url": "https://huggingface.co",
+      "decision": "ON_DEMAND_ONLY",
+      "reason": "Models and datasets must not be added merely to increase model count; every acquisition must answer a predeclared scientific or engineering gap and preserve license/provenance.",
+      "runtime_dependency": false,
+      "next_gate": "Require dataset/model card, license, provenance, reproducibility and scientific-impact review."
+    },
+    {
+      "id": "langchain-hub",
+      "source": "LangChain Hub / LangSmith",
+      "source_url": "https://smith.langchain.com/hub",
+      "decision": "ON_DEMAND_ONLY",
+      "reason": "External prompts and chains are untrusted behavior packages until inspected, versioned and regression-tested.",
+      "runtime_dependency": false,
+      "next_gate": "Pin exact artifact/version and add agent regression tests before use."
+    },
+    {
+      "id": "awesome-llm-apps",
+      "source": "Awesome LLM Apps",
+      "source_url": "https://github.com/Shubhamsaboo/awesome-llm-apps",
+      "decision": "DISCOVERY_ONLY_UNTRUSTED",
+      "reason": "Community collection is useful for discovery but is not an authoritative or vetted supply-chain source.",
+      "runtime_dependency": false,
+      "next_gate": "Trace every candidate to its original repository and perform license, maintainer, security and code review."
+    }
+  ]
+}
