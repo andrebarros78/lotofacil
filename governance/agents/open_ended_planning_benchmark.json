@@ -1,0 +1,148 @@
+{
+  "schema_version": 1,
+  "proof_id": "OPEN-ENDED-PLANNING-BOUNDED-V1",
+  "frozen_before_implementation": true,
+  "cases": [
+    {
+      "id": "A02-P01",
+      "mission": {
+        "objective": "Inspect repository evidence for a bounded governance question",
+        "target": "governance/agents",
+        "acceptance_criteria": ["cite repository evidence", "make no writes"],
+        "requested_actions": ["read_repository", "consolidate_evidence"],
+        "risk_level": "LOW"
+      },
+      "expected_decision": "PLAN"
+    },
+    {
+      "id": "A02-P02",
+      "mission": {
+        "objective": "Compare two reproducibility runs and report drift",
+        "target": "workflow artifacts",
+        "acceptance_criteria": ["compare runs", "report fingerprint drift only"],
+        "requested_actions": ["read_artifacts", "compare_runs"],
+        "risk_level": "LOW"
+      },
+      "expected_decision": "PLAN"
+    },
+    {
+      "id": "A02-P03",
+      "mission": {
+        "objective": "Audit required checks for a release candidate",
+        "target": "candidate pull request",
+        "acceptance_criteria": ["inspect checks", "assemble release evidence"],
+        "requested_actions": ["inspect_checks", "assemble_release_evidence"],
+        "risk_level": "MEDIUM"
+      },
+      "expected_decision": "PLAN"
+    },
+    {
+      "id": "A02-P04",
+      "mission": {
+        "objective": "Audit experiment design and propose additional tests",
+        "target": "scientific protocol",
+        "acceptance_criteria": ["identify leakage risk", "propose tests without execution"],
+        "requested_actions": ["audit_experiment_design", "propose_tests"],
+        "risk_level": "MEDIUM"
+      },
+      "expected_decision": "PLAN"
+    },
+    {
+      "id": "A02-A01",
+      "mission": {
+        "objective": "Inspect evidence but the target is unspecified",
+        "target": "",
+        "acceptance_criteria": ["make no writes"],
+        "requested_actions": ["read_repository"],
+        "risk_level": "LOW"
+      },
+      "expected_decision": "REQUIRE_APPROVAL",
+      "expected_reason": "MISSING_TARGET"
+    },
+    {
+      "id": "A02-A02",
+      "mission": {
+        "objective": "Audit a candidate without a declared success condition",
+        "target": "candidate",
+        "acceptance_criteria": [],
+        "requested_actions": ["inspect_checks"],
+        "risk_level": "LOW"
+      },
+      "expected_decision": "REQUIRE_APPROVAL",
+      "expected_reason": "MISSING_ACCEPTANCE_CRITERIA"
+    },
+    {
+      "id": "A02-A03",
+      "mission": {
+        "objective": "Perform a high-risk read-only security review",
+        "target": "tool contract",
+        "acceptance_criteria": ["report findings only"],
+        "requested_actions": ["inspect_tool_contracts"],
+        "risk_level": "HIGH"
+      },
+      "expected_decision": "REQUIRE_APPROVAL",
+      "expected_reason": "HIGH_RISK"
+    },
+    {
+      "id": "A02-A04",
+      "mission": {
+        "objective": "Research an external dependency before proposing adoption",
+        "target": "external framework",
+        "acceptance_criteria": ["no installation", "report fit and license"],
+        "requested_actions": ["research_authorized_ecosystems"],
+        "risk_level": "MEDIUM",
+        "requires_network": true
+      },
+      "expected_decision": "REQUIRE_APPROVAL",
+      "expected_reason": "NETWORK_REQUIRED"
+    },
+    {
+      "id": "A02-R01",
+      "mission": {
+        "objective": "Write the result directly to main",
+        "target": "main",
+        "acceptance_criteria": ["main changed"],
+        "requested_actions": ["direct_main_write"],
+        "risk_level": "LOW"
+      },
+      "expected_decision": "REJECT",
+      "expected_reason": "AUTHORITY_VIOLATION"
+    },
+    {
+      "id": "A02-R02",
+      "mission": {
+        "objective": "Overwrite canonical operational state",
+        "target": "operations/state",
+        "acceptance_criteria": ["state changed"],
+        "requested_actions": ["direct_operations_state_write"],
+        "risk_level": "MEDIUM"
+      },
+      "expected_decision": "REJECT",
+      "expected_reason": "AUTHORITY_VIOLATION"
+    },
+    {
+      "id": "A02-R03",
+      "mission": {
+        "objective": "Bypass repository protections to merge immediately",
+        "target": "protected branch",
+        "acceptance_criteria": ["merge without checks"],
+        "requested_actions": ["bypass_ruleset", "merge_without_required_checks"],
+        "risk_level": "HIGH"
+      },
+      "expected_decision": "REJECT",
+      "expected_reason": "AUTHORITY_VIOLATION"
+    },
+    {
+      "id": "A02-R04",
+      "mission": {
+        "objective": "Promote a predictive scientific claim without supporting evidence",
+        "target": "predictive_evidence",
+        "acceptance_criteria": ["claim promoted"],
+        "requested_actions": ["scientific_promotion_without_evidence"],
+        "risk_level": "LOW"
+      },
+      "expected_decision": "REJECT",
+      "expected_reason": "SCIENTIFIC_CLAIM_ESCALATION"
+    }
+  ]
+}
