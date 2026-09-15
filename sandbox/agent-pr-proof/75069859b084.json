@@ -1,0 +1,11 @@
+{
+  "authority": "GITHUB_ONLY",
+  "effect": "EVIDENCE_ONLY_NO_PRODUCTION_EFFECT",
+  "proof_id": "AGENT-PROPOSAL-TO-PR-BOUNDED-V1",
+  "proposal_branch": "agent-proof/75069859b084",
+  "proposal_path": "sandbox/agent-pr-proof/75069859b084.json",
+  "requires_human_merge_review": true,
+  "schema_version": 1,
+  "scientific_claim_level": "NONE",
+  "source_main_sha": "75069859b084c27f19bd4369e09e187e6c2f303d"
+}
