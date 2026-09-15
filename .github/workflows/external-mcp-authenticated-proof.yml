@@ -1,0 +1,56 @@
+name: External MCP Authenticated Proof
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/external-mcp-authenticated-proof.yml"
+      - "governance/agents/mcp_external_authenticated_policy.json"
+      - "governance/agents/mcp_external_authenticated_benchmark.json"
+      - "scripts/mcp_authenticated_external_server.py"
+      - "scripts/run_external_mcp_authenticated_proof.py"
+      - "tests/test_external_mcp_authenticated_proof.py"
+  pull_request:
+    paths:
+      - ".github/workflows/external-mcp-authenticated-proof.yml"
+      - "governance/agents/mcp_external_authenticated_policy.json"
+      - "governance/agents/mcp_external_authenticated_benchmark.json"
+      - "scripts/mcp_authenticated_external_server.py"
+      - "scripts/run_external_mcp_authenticated_proof.py"
+      - "tests/test_external_mcp_authenticated_proof.py"
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  external-mcp-authenticated-proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: "3.13"
+      - name: Install locked environment
+        run: python -m pip install -c requirements.lock.txt -e '.[dev]'
+      - name: Validate GitHub-only governance
+        run: python scripts/verify_github_governance.py
+      - name: Validate agent ecosystem
+        run: python scripts/validate_agent_ecosystem.py
+      - name: Test frozen A06 authenticated MCP contract
+        run: python -m pytest -q tests/test_external_mcp_authenticated_proof.py
+      - name: Execute bounded authenticated external MCP proof
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p artifacts
+          python scripts/run_external_mcp_authenticated_proof.py --output artifacts/external_mcp_authenticated_proof.json
+      - name: Upload A06 authenticated external MCP evidence
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: external-mcp-authenticated-proof
+          path: artifacts/external_mcp_authenticated_proof.json
+          if-no-files-found: error
