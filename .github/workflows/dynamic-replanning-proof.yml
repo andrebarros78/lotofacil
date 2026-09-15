@@ -1,0 +1,56 @@
+name: Dynamic Multi-Agent Replanning Proof
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/dynamic-replanning-proof.yml"
+      - "governance/agents/dynamic_replanning_policy.json"
+      - "governance/agents/dynamic_replanning_benchmark.json"
+      - "governance/agents/agents.json"
+      - "scripts/run_dynamic_replanning_proof.py"
+      - "tests/test_dynamic_replanning.py"
+      - "governance/agents/capability_gaps.json"
+  pull_request:
+    paths:
+      - ".github/workflows/dynamic-replanning-proof.yml"
+      - "governance/agents/dynamic_replanning_policy.json"
+      - "governance/agents/dynamic_replanning_benchmark.json"
+      - "governance/agents/agents.json"
+      - "scripts/run_dynamic_replanning_proof.py"
+      - "tests/test_dynamic_replanning.py"
+      - "governance/agents/capability_gaps.json"
+
+permissions:
+  contents: read
+
+jobs:
+  dynamic-replanning-proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: "3.13"
+      - name: Install locked environment
+        run: python -m pip install -c requirements.lock.txt -e '.[dev]'
+      - name: Verify GitHub-only governance
+        run: python scripts/verify_github_governance.py
+      - name: Validate agent ecosystem
+        run: python scripts/validate_agent_ecosystem.py
+      - name: Test frozen A04 replanning contract
+        run: python -m pytest -q tests/test_dynamic_replanning.py
+      - name: Execute bounded dynamic multi-agent replanning proof
+        run: |
+          mkdir -p artifacts
+          python scripts/run_dynamic_replanning_proof.py --output artifacts/dynamic_replanning_proof.json
+      - name: Upload A04 dynamic replanning evidence
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: dynamic-replanning-proof
+          path: artifacts/dynamic_replanning_proof.json
+          if-no-files-found: error
+          retention-days: 90
