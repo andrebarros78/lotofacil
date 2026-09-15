@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 
 from sare_lotofacil.analysis.capacity_audit import (
+    run_parameter_training_audit,
     run_real_training_audit,
     run_synthetic_capacity_audit,
 )
@@ -24,6 +25,7 @@ def main() -> int:
 
     synthetic = run_synthetic_capacity_audit()
     real_training = run_real_training_audit(draws)
+    parameter_training = run_parameter_training_audit(draws)
     result = {
         "status": "PASS" if synthetic["status"] == "PASS" else "FAIL",
         "snapshot_id": snapshot_id,
@@ -31,6 +33,7 @@ def main() -> int:
         "last_contest": history_report["last_contest"],
         "synthetic_qualification": synthetic,
         "real_history_training": real_training,
+        "parameter_training_60_20_20": parameter_training,
         "predictive_evidence": "NOT_ESTABLISHED",
         "scientific_conclusion": "EVIDENCIA_PREDITIVA_INSUFICIENTE",
     }
