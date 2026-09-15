@@ -11,7 +11,7 @@ def load_json(relative: str) -> dict:
         return json.load(handle)
 
 
-def test_rejected_semantic_router_v1_is_recorded_without_promoting_gap() -> None:
+def test_rejected_semantic_router_v1_remains_rejected_without_model_routing_promotion() -> None:
     history = load_json("governance/agents/semantic_router_experiment_history.json")
     record = history["experiments"][0]
     assert record["experiment_id"] == "LOCAL-SEMANTIC-ROUTER-QWEN25-05B-V1"
@@ -27,4 +27,9 @@ def test_rejected_semantic_router_v1_is_recorded_without_promoting_gap() -> None
     assert record["governance_effect"]["benchmark_retuned_after_result"] is False
 
     gaps = {item["id"]: item for item in load_json("governance/agents/capability_gaps.json")["gaps"]}
-    assert gaps["GAP-A03"]["status"] == "NOT_PROVEN"
+    assert gaps["GAP-A03"]["status"] == "PROVEN_FOR_BOUNDED_STRUCTURED_ADAPTIVE_TOOL_SELECTION"
+
+    a03 = load_json("governance/agents/adaptive_tool_selection_proof_history.json")["proofs"][-1]
+    assert a03["historical_model_note"]["qwen2_5_0_5b_v1_result"] == "REJECTED_3_OF_30"
+    assert a03["historical_model_note"]["grants_model_routing_claim"] is False
+    assert a03["governance_effect"]["llm_or_model_based_routing_proven"] is False
