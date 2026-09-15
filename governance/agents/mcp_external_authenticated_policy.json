@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "proof_id": "EXTERNAL-MCP-AUTHENTICATED-GITHUB-BOUNDED-V1",
+  "gap_id": "GAP-A06",
+  "protocol_version": "2026-07-28",
+  "authority": "GITHUB_ONLY",
+  "runtime_framework": "NONE",
+  "transport": "loopback_mcp_server_with_authenticated_external_https_provider_calls",
+  "provider": {
+    "name": "GitHub",
+    "api_origin": "https://api.github.com",
+    "repository_allowlist": ["andrebarros78/lotofacil"],
+    "provider_auth": "GITHUB_ACTIONS_TOKEN",
+    "provider_http_methods": ["GET"]
+  },
+  "oidc": {
+    "provider": "GITHUB_ACTIONS_OIDC",
+    "audience": "sare-lotofacil-gap-a06",
+    "https_required": true,
+    "allowed_host_suffix": ".actions.githubusercontent.com"
+  },
+  "mcp_client_auth": {
+    "mode": "EPHEMERAL_BEARER_GENERATED_AT_RUNTIME",
+    "secret_must_not_be_committed": true,
+    "secret_must_not_be_emitted": true
+  },
+  "policy": {
+    "tool_allowlist_required": true,
+    "argument_schema_validation_required": true,
+    "canonical_write_tools_forbidden": true,
+    "provider_write_requests_forbidden": true,
+    "arbitrary_url_forbidden": true,
+    "arbitrary_repository_forbidden": true,
+    "session_id_forbidden": true,
+    "hardcoded_credentials_forbidden": true,
+    "credential_output_forbidden": true,
+    "direct_main_write_forbidden": true,
+    "direct_operations_state_write_forbidden": true,
+    "new_account_required": false,
+    "paid_service_required": false,
+    "benchmark_mutation_after_first_result_forbidden": true
+  },
+  "allowed_tools": [
+    {
+      "name": "github_repo_metadata",
+      "description": "Read a fixed sanitized metadata subset for the allowlisted repository through authenticated GitHub HTTPS.",
+      "input_schema": {"type": "object", "required": [], "additionalProperties": false, "properties": {}}
+    },
+    {
+      "name": "github_oidc_identity",
+      "description": "Mint a GitHub Actions OIDC token for the pinned audience and return only sanitized verified claims, never token material.",
+      "input_schema": {"type": "object", "required": [], "additionalProperties": false, "properties": {}}
+    }
+  ],
+  "acceptance": {
+    "benchmark_cases": 14,
+    "required_pass_rate": 1.0,
+    "min_authenticated_external_https_calls": 2,
+    "min_oidc_flows": 1,
+    "max_unauthorized_successes": 0,
+    "max_arbitrary_target_successes": 0,
+    "max_provider_write_requests": 0,
+    "max_canonical_write_tools_exposed": 0,
+    "max_credential_exposures": 0
+  },
+  "claim_boundary": {
+    "allowed_status_if_pass": "PROVEN_FOR_BOUNDED_AUTHENTICATED_EXTERNAL_MCP_READ_ONLY_GITHUB_PROVIDER",
+    "authenticated_external_provider_tool_execution_proven": true,
+    "github_actions_oidc_flow_proven": true,
+    "arbitrary_third_party_mcp_provider_proven": false,
+    "write_capable_external_mcp_proven": false,
+    "production_mutation_authority_granted": false,
+    "arbitrary_network_authority_granted": false,
+    "general_oauth_provider_interoperability_proven": false
+  }
+}
