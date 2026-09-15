@@ -71,11 +71,26 @@ def test_capability_gaps_preserve_bounded_scope_and_unproven_frontiers() -> None
     assert gaps["external_mcp_tool_execution"]["status"] == "PARTIALLY_PROVEN_ISOLATED_STATELESS_ADAPTER_ONLY"
     assert gaps["automatic_failure_recovery"]["status"] == "PARTIALLY_PROVEN_BOUNDED_TRANSIENT_RETRY_ONLY"
     assert gaps["semantic_handoff_quality_evaluation"]["status"] == "PARTIALLY_PROVEN_STRUCTURED_HANDOFF_EVALUATION_ONLY"
+    assert gaps["agent_proposed_code_change_to_pr_pipeline"]["status"] == "PARTIALLY_PROVEN_BRANCH_COMMIT_CHECKS_PR_CREATION_BLOCKED_BY_REPO_POLICY"
     for capability in (
         "open_ended_mission_planning",
         "adaptive_tool_selection",
         "dynamic_multi_agent_replanning",
     ):
         assert gaps[capability]["status"] == "NOT_PROVEN"
-    assert gaps["agent_proposed_code_change_to_pr_pipeline"]["status"] == "NOT_IMPLEMENTED"
     assert gaps["agent_runtime_framework_value"]["status"] == "NOT_ESTABLISHED"
+
+
+def test_a09_history_preserves_external_blocker_without_authority_escalation() -> None:
+    record = load_json("governance/agents/pr_pipeline_proof_history.json")["proofs"][0]
+    assert record["decision"] == "PARTIALLY_PROVEN_EXTERNAL_REPOSITORY_POLICY_BLOCKER"
+    assert record["proposal_scope"]["files_changed"] == 1
+    assert record["proposal_scope"]["production_effect"] is False
+    assert all(item["conclusion"] == "success" for item in record["required_workflows"])
+    assert record["pipeline_metrics"]["human_interventions"] == 0
+    assert record["pipeline_metrics"]["direct_main_writes"] == 0
+    assert record["pipeline_metrics"]["operations_state_writes"] == 0
+    assert record["pipeline_metrics"]["auto_merge_attempts"] == 0
+    assert record["pull_request_created"] is False
+    assert record["blocker"]["http_status"] == 403
+    assert record["governance_effect"]["general_code_write_authority_granted"] is False
