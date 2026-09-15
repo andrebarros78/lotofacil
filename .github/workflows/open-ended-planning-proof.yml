@@ -1,0 +1,54 @@
+name: Open-Ended Planning Proof
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/open-ended-planning-proof.yml"
+      - "governance/agents/open_ended_planning_policy.json"
+      - "governance/agents/open_ended_planning_benchmark.json"
+      - "scripts/run_open_ended_planning_proof.py"
+      - "tests/test_open_ended_planning.py"
+      - "governance/agents/capability_gaps.json"
+  pull_request:
+    paths:
+      - ".github/workflows/open-ended-planning-proof.yml"
+      - "governance/agents/open_ended_planning_policy.json"
+      - "governance/agents/open_ended_planning_benchmark.json"
+      - "scripts/run_open_ended_planning_proof.py"
+      - "tests/test_open_ended_planning.py"
+      - "governance/agents/capability_gaps.json"
+
+permissions:
+  contents: read
+
+jobs:
+  planning-proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: "3.13"
+      - name: Install locked environment
+        run: python -m pip install -c requirements.lock.txt -e '.[dev]'
+      - name: Verify GitHub-only governance
+        run: python scripts/verify_github_governance.py
+      - name: Validate agent ecosystem
+        run: python scripts/validate_agent_ecosystem.py
+      - name: Test frozen A02 benchmark contract
+        run: python -m pytest -q tests/test_open_ended_planning.py
+      - name: Execute bounded unseen-mission planning proof
+        run: |
+          mkdir -p artifacts
+          python scripts/run_open_ended_planning_proof.py --output artifacts/open_ended_planning_proof.json
+      - name: Upload A02 planning evidence
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: open-ended-planning-proof
+          path: artifacts/open_ended_planning_proof.json
+          if-no-files-found: error
+          retention-days: 90
