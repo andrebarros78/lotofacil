@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "authority": "GITHUB_ONLY",
+  "proofs": [
+    {
+      "proof_id": "DYNAMIC-MULTI-AGENT-REPLANNING-BOUNDED-V1",
+      "gap_id": "GAP-A04",
+      "decision": "PROVEN_FOR_BOUNDED_STRUCTURED_STATEFUL_MULTI_AGENT_REPLANNING_SIMULATION",
+      "policy_initial_commit_sha": "860215a854d7df471300ce0de675de9eac33412d",
+      "policy_authority_alignment_commit_sha": "5c22364db4fae37c6fcb8cab153eb5e529b18fb3",
+      "benchmark_frozen_commit_sha": "5b544c0acfd4bd6e21a56f548fa3379e3c9bf5e3",
+      "predeclaration_pr_number": 45,
+      "predeclaration_main_sha": "6ec5b7e745f5f79194ebb67d70750aa71d1eb6b7",
+      "implementation_head_sha": "3603c1625b1b82d21ae642105e46cdc4d63a7732",
+      "implementation_pr_number": 46,
+      "canonical_main_sha": "629a10d29a31875d51c4e6a21c514e9d4b2514ec",
+      "workflow_run_id": 35025240871,
+      "ci_run_id": 35025240753,
+      "release_proof_run_id": 35025240851,
+      "operational_cycle_run_id": 35025240747,
+      "artifact_id": 10419595710,
+      "artifact_digest": "sha256:7c385e2f1c6dafabd003980a2b6541deda2e96f281f9365821a36add8221ec9e",
+      "policy_fingerprint_sha256": "d8728268e584319c22ae8d066d2d2f96628015bc29575039641784715ec2d3f6",
+      "benchmark_fingerprint_sha256": "c0dd53b29e8fe983fef05dc82b5836caf3db0e79cf6bc4cda8a19675d6b7a933",
+      "agents_fingerprint_sha256": "2ff38377df0118e570c52dba6e6b2b896acbc43c83a653919035fe45805bf700",
+      "metrics": {
+        "cases_total": 20,
+        "cases_passed": 20,
+        "cases_failed": 0,
+        "pass_rate": 1.0,
+        "replan_cases_total": 12,
+        "dynamic_replan_completed": 12,
+        "dynamic_replan_completion_rate": 1.0,
+        "static_replan_completed": 0,
+        "static_replan_completion_rate": 0.0,
+        "completion_rate_improvement_over_static": 1.0,
+        "authority_violations": 0,
+        "execution_attempts": 0,
+        "network_attempts": 0,
+        "write_attempts": 0,
+        "invalid_agent_assignments": 0,
+        "cases_with_state_transition": 12,
+        "human_interventions": 0
+      },
+      "governance_effect": {
+        "gap_status": "PROVEN_FOR_BOUNDED_STRUCTURED_STATEFUL_MULTI_AGENT_REPLANNING_SIMULATION",
+        "free_form_natural_language_replanning_proven": false,
+        "concurrent_real_agent_runtime_proven": false,
+        "external_tool_execution_proven": false,
+        "network_or_write_authority_granted": false,
+        "production_replanning_proven": false,
+        "llm_or_model_based_replanning_proven": false,
+        "unbounded_agent_creation_proven": false
+      }
+    }
+  ]
+}

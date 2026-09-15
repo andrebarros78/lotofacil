@@ -95,7 +95,7 @@ def test_a02_registry_records_canonical_bounded_proof_without_claim_inflation() 
     gaps = {item["id"]: item for item in load_json("governance/agents/capability_gaps.json")["gaps"]}
     assert gaps["GAP-A02"]["status"] == "PROVEN_FOR_BOUNDED_STRUCTURED_UNSEEN_MISSION_PLANNING"
     assert gaps["GAP-A03"]["status"] == "PROVEN_FOR_BOUNDED_STRUCTURED_ADAPTIVE_TOOL_SELECTION"
-    assert gaps["GAP-A04"]["status"] == "NOT_PROVEN"
+    assert gaps["GAP-A04"]["status"] == "PROVEN_FOR_BOUNDED_STRUCTURED_STATEFUL_MULTI_AGENT_REPLANNING_SIMULATION"
 
     record = load_json("governance/agents/open_ended_planning_proof_history.json")["proofs"][-1]
     assert record["decision"] == "PROVEN_FOR_BOUNDED_STRUCTURED_UNSEEN_MISSION_PLANNING"

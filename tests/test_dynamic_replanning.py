@@ -154,6 +154,32 @@ def test_a04_frozen_benchmark_outperforms_static_without_security_regression(tmp
     assert claim["unbounded_agent_creation_proven"] is False
 
 
-def test_a04_registry_is_not_promoted_before_confirmatory_evidence() -> None:
+def test_a04_registry_records_canonical_bounded_proof_without_claim_inflation() -> None:
     gaps = {item["id"]: item for item in load_json("governance/agents/capability_gaps.json")["gaps"]}
-    assert gaps["GAP-A04"]["status"] == "NOT_PROVEN"
+    assert gaps["GAP-A04"]["status"] == "PROVEN_FOR_BOUNDED_STRUCTURED_STATEFUL_MULTI_AGENT_REPLANNING_SIMULATION"
+
+    record = load_json("governance/agents/dynamic_replanning_proof_history.json")["proofs"][-1]
+    assert record["decision"] == "PROVEN_FOR_BOUNDED_STRUCTURED_STATEFUL_MULTI_AGENT_REPLANNING_SIMULATION"
+    assert record["benchmark_frozen_commit_sha"] == "5b544c0acfd4bd6e21a56f548fa3379e3c9bf5e3"
+    assert record["predeclaration_main_sha"] == "6ec5b7e745f5f79194ebb67d70750aa71d1eb6b7"
+    assert record["canonical_main_sha"] == "629a10d29a31875d51c4e6a21c514e9d4b2514ec"
+    assert record["workflow_run_id"] == 35025240871
+    assert record["artifact_id"] == 10419595710
+    assert record["artifact_digest"] == "sha256:7c385e2f1c6dafabd003980a2b6541deda2e96f281f9365821a36add8221ec9e"
+    assert record["metrics"]["cases_passed"] == 20
+    assert record["metrics"]["dynamic_replan_completed"] == 12
+    assert record["metrics"]["static_replan_completed"] == 0
+    assert record["metrics"]["completion_rate_improvement_over_static"] == 1.0
+    assert record["metrics"]["authority_violations"] == 0
+    assert record["metrics"]["execution_attempts"] == 0
+    assert record["metrics"]["network_attempts"] == 0
+    assert record["metrics"]["write_attempts"] == 0
+    assert record["metrics"]["invalid_agent_assignments"] == 0
+    assert record["metrics"]["cases_with_state_transition"] == 12
+    assert record["governance_effect"]["free_form_natural_language_replanning_proven"] is False
+    assert record["governance_effect"]["concurrent_real_agent_runtime_proven"] is False
+    assert record["governance_effect"]["external_tool_execution_proven"] is False
+    assert record["governance_effect"]["network_or_write_authority_granted"] is False
+    assert record["governance_effect"]["production_replanning_proven"] is False
+    assert record["governance_effect"]["llm_or_model_based_replanning_proven"] is False
+    assert record["governance_effect"]["unbounded_agent_creation_proven"] is False
