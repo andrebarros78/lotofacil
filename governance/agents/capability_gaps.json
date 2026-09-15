@@ -30,8 +30,8 @@
     {
       "id": "GAP-A05",
       "capability": "durable_agent_checkpoint_resume",
-      "status": "NOT_PROVEN",
-      "closure_evidence": "interrupted mission resumes from verified checkpoint and reproduces terminal result"
+      "status": "PROVEN_FOR_BOUNDED_PREDECLARED_MISSIONS_CONTINUOUS_PROOF_REQUIRED",
+      "closure_evidence": "Agent Resilience Proof must interrupt after three missions, verify hashed checkpoint, resume in a separate process and reproduce the clean replay fingerprint"
     },
     {
       "id": "GAP-A06",
@@ -42,8 +42,8 @@
     {
       "id": "GAP-A07",
       "capability": "automatic_failure_recovery",
-      "status": "NOT_PROVEN",
-      "closure_evidence": "fault-injection benchmark demonstrates bounded retries or replanning with no hidden failures"
+      "status": "PARTIALLY_PROVEN_BOUNDED_TRANSIENT_RETRY_ONLY",
+      "closure_evidence": "bounded synthetic transient retry is proven by Agent Resilience Proof; broader network, authorization, dependency and replanning failure classes remain unproven"
     },
     {
       "id": "GAP-A08",
@@ -61,7 +61,7 @@
       "id": "GAP-A10",
       "capability": "agent_runtime_framework_value",
       "status": "NOT_ESTABLISHED",
-      "closure_evidence": "isolated framework experiment improves completion, recovery or human-intervention metrics enough to justify dependency cost"
+      "closure_evidence": "isolated framework experiment improves completion, recovery or human-intervention metrics enough to justify dependency cost beyond the proven framework-independent baseline"
     }
   ]
 }
