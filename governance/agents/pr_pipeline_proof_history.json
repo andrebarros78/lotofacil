@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "authority": "GITHUB_ONLY",
+  "proofs": [
+    {
+      "proof_id": "AGENT-PROPOSAL-TO-PR-BOUNDED-V1",
+      "gap_id": "GAP-A09",
+      "decision": "PARTIALLY_PROVEN_EXTERNAL_REPOSITORY_POLICY_BLOCKER",
+      "source_main_sha": "75069859b084c27f19bd4369e09e187e6c2f303d",
+      "proposal_branch": "agent-proof/75069859b084",
+      "proposal_commit_sha": "0a0e671380aed81227da2458dd134ded194389d7",
+      "proposal_parent_sha": "75069859b084c27f19bd4369e09e187e6c2f303d",
+      "proposal_path": "sandbox/agent-pr-proof/75069859b084.json",
+      "proposal_scope": {
+        "commits_ahead": 1,
+        "files_changed": 1,
+        "production_effect": false,
+        "scientific_claim_level": "NONE"
+      },
+      "required_workflows": [
+        {"workflow":"ci.yml","run_id":35014124494,"conclusion":"success","head_sha":"0a0e671380aed81227da2458dd134ded194389d7"},
+        {"workflow":"agent-capability-proof.yml","run_id":35014126503,"conclusion":"success","head_sha":"0a0e671380aed81227da2458dd134ded194389d7"},
+        {"workflow":"agent-resilience-proof.yml","run_id":35014129289,"conclusion":"success","head_sha":"0a0e671380aed81227da2458dd134ded194389d7"}
+      ],
+      "pipeline_metrics": {
+        "human_interventions": 0,
+        "direct_main_writes": 0,
+        "operations_state_writes": 0,
+        "auto_merge_attempts": 0
+      },
+      "terminal_phase": "CHECKS_PASSED",
+      "pull_request_created": false,
+      "blocker": {
+        "class": "GITHUB_REPOSITORY_ACTIONS_POLICY",
+        "http_status": 403,
+        "message": "GitHub Actions is not permitted to create or approve pull requests.",
+        "required_external_admin_action": "Enable the repository setting that permits GitHub Actions to create pull requests, then rerun Agent PR Pipeline Proof by workflow_dispatch.",
+        "connector_can_change_setting": false
+      },
+      "evidence": {
+        "workflow_run_id": 35014074072,
+        "artifact_id": 10414243729,
+        "artifact_digest": "sha256:38023df560021f56588d6416bf1ced239bbec77121bf8657ade2d52020466bbe",
+        "policy_fingerprint_sha256": "7bf55f02f6eeded6e246277e4f87ae87687ec7f5a9b3a129b41c06fb52dd99f6",
+        "payload_sha256": "3d0b98fa3348a88c5afdd719488830e03b93d6429da72f9e53491d063d8a875b"
+      },
+      "governance_effect": {
+        "gap_status": "PARTIALLY_PROVEN_BRANCH_COMMIT_CHECKS_PR_CREATION_BLOCKED_BY_REPO_POLICY",
+        "general_code_write_authority_granted": false,
+        "auto_merge_authority_granted": false,
+        "operations_state_authority_granted": false
+      }
+    }
+  ]
+}
