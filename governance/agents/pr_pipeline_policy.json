@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "proof_id": "AGENT-PROPOSAL-TO-PR-BOUNDED-V1",
+  "authority": "GITHUB_ONLY",
+  "base_branch": "main",
+  "proposal_branch_prefix": "agent-proof/",
+  "proposal_path_prefix": "sandbox/agent-pr-proof/",
+  "allowed_files_per_proposal": 1,
+  "direct_main_write_forbidden": true,
+  "operations_state_write_forbidden": true,
+  "auto_merge_forbidden": true,
+  "force_push_forbidden": true,
+  "required_workflow_dispatches": [
+    "ci.yml",
+    "agent-capability-proof.yml",
+    "agent-resilience-proof.yml"
+  ],
+  "required_conclusion": "success",
+  "poll_interval_seconds": 5,
+  "workflow_timeout_seconds": 900,
+  "generated_payload_contract": {
+    "schema_version": 1,
+    "effect": "EVIDENCE_ONLY_NO_PRODUCTION_EFFECT",
+    "scientific_claim_level": "NONE",
+    "requires_human_merge_review": true
+  },
+  "forbidden_path_prefixes": [
+    ".github/",
+    "governance/",
+    "src/",
+    "scripts/",
+    "tests/",
+    "config/",
+    "data/",
+    "operations/"
+  ],
+  "acceptance": {
+    "proposal_commit_parent_must_equal_source_main_sha": true,
+    "all_required_workflows_must_pass_before_pr_creation": true,
+    "pr_must_target_main": true,
+    "pr_must_remain_unmerged": true,
+    "human_interventions_during_pipeline": 0
+  },
+  "limitations": [
+    "This proof permits one evidence-only file under sandbox/agent-pr-proof and grants no general code-writing authority.",
+    "The generated pull request must not be auto-merged and cannot mutate operations/state.",
+    "Passing this proof does not establish open-ended planning, semantic tool selection, predictive evidence, or unrestricted autonomous development."
+  ]
+}

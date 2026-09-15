@@ -1,0 +1,73 @@
+name: Agent PR Pipeline Proof
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/agent-pr-pipeline-proof.yml'
+      - '.github/workflows/ci.yml'
+      - 'governance/github-only-policy.json'
+      - 'governance/agents/pr_pipeline_policy.json'
+      - 'scripts/run_agent_pr_pipeline_proof.py'
+      - 'tests/test_agent_pr_pipeline_proof.py'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/agent-pr-pipeline-proof.yml'
+      - '.github/workflows/ci.yml'
+      - 'governance/github-only-policy.json'
+      - 'governance/agents/pr_pipeline_policy.json'
+      - 'scripts/run_agent_pr_pipeline_proof.py'
+      - 'tests/test_agent_pr_pipeline_proof.py'
+
+permissions:
+  actions: write
+  contents: write
+  pull-requests: write
+
+jobs:
+  validate-bounded-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+      - name: Setup Python 3.13
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.13'
+      - name: Install locked environment
+        run: python -m pip install -c requirements.lock.txt -e '.[dev]'
+      - name: Verify GitHub-only governance
+        run: python scripts/verify_github_governance.py
+      - name: Test proposal-to-PR contract
+        run: python -m pytest -q tests/test_agent_pr_pipeline_proof.py
+      - name: Validate deterministic plan
+        run: python scripts/run_agent_pr_pipeline_proof.py --plan --source-sha 0000000000000000000000000000000000000000
+
+  prove-proposal-to-pr:
+    if: github.event_name != 'pull_request'
+    needs: validate-bounded-contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout canonical main
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          ref: main
+      - name: Setup Python 3.13
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.13'
+      - name: Execute bounded proposal-to-PR proof
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python scripts/run_agent_pr_pipeline_proof.py --output artifacts/agent_pr_pipeline_proof.json
+      - name: Upload proposal-to-PR evidence
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: agent-pr-pipeline-proof
+          path: artifacts/agent_pr_pipeline_proof.json
+          if-no-files-found: error
+          retention-days: 90
