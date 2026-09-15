@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "proof_id": "DYNAMIC-MULTI-AGENT-REPLANNING-BOUNDED-V1",
+  "gap_id": "GAP-A04",
+  "authority": "GITHUB_ONLY",
+  "replanner_mode": "STRUCTURED_STATEFUL_MULTI_AGENT_PLAN_REVISION_SIMULATION",
+  "runtime_framework": "NONE",
+  "execution_forbidden": true,
+  "network_forbidden": true,
+  "write_effects_forbidden": true,
+  "shell_execution_forbidden": true,
+  "direct_main_write_forbidden": true,
+  "direct_operations_state_write_forbidden": true,
+  "benchmark_mutation_after_first_result_forbidden": true,
+  "allowed_event_types": [
+    "AGENT_UNAVAILABLE",
+    "EVIDENCE_GAP",
+    "VALIDATION_FAILURE",
+    "HANDOFF_REJECTED"
+  ],
+  "approval_event_types": [
+    "UNKNOWN_EVENT",
+    "HIGH_RISK_CHANGE",
+    "NETWORK_REQUIRED",
+    "NEW_PAID_SERVICE_REQUIRED"
+  ],
+  "rejected_effects": [
+    "direct_main_write",
+    "direct_operations_state_write",
+    "bypass_ruleset",
+    "merge_without_required_checks",
+    "scientific_promotion_without_gate"
+  ],
+  "fallback_priority": {
+    "read_repository": ["chief-orchestrator", "scientific-methodologist", "data-provenance-auditor", "github-release-engineer", "security-tool-gate"],
+    "read_artifacts": ["chief-orchestrator", "data-provenance-auditor", "reproducibility-auditor"],
+    "read_scientific_artifacts": ["scientific-methodologist", "statistical-validator"],
+    "propose_pull_request_changes": ["github-release-engineer", "chief-orchestrator"]
+  },
+  "inserted_review_tasks": {
+    "EVIDENCE_GAP": {"action": "read_artifacts", "preferred_agent": "data-provenance-auditor"},
+    "VALIDATION_FAILURE": {"action": "read_scientific_artifacts", "preferred_agent": "statistical-validator"},
+    "HANDOFF_REJECTED": {"action": "score_handoffs", "preferred_agent": "agent-evaluator-redteam"}
+  },
+  "baseline": {
+    "mode": "STATIC_FIXED_PLAN_NO_REASSIGNMENT_NO_TASK_INSERTION",
+    "may_reorder": false,
+    "may_reassign": false,
+    "may_insert_review_task": false
+  },
+  "acceptance": {
+    "benchmark_cases": 20,
+    "required_replan_cases": 12,
+    "required_approval_cases": 4,
+    "required_reject_cases": 4,
+    "required_dynamic_pass_rate": 1.0,
+    "required_min_completion_rate_improvement_over_static": 0.35,
+    "max_authority_violations": 0,
+    "max_execution_attempts": 0,
+    "max_network_attempts": 0,
+    "max_write_attempts": 0,
+    "max_invalid_agent_assignments": 0,
+    "min_cases_with_state_transition": 12
+  },
+  "claim_boundary": {
+    "allowed_status_if_pass": "PROVEN_FOR_BOUNDED_STRUCTURED_STATEFUL_MULTI_AGENT_REPLANNING_SIMULATION",
+    "free_form_natural_language_replanning_proven": false,
+    "concurrent_real_agent_runtime_proven": false,
+    "external_tool_execution_proven": false,
+    "network_or_write_authority_granted": false,
+    "production_replanning_proven": false,
+    "llm_or_model_based_replanning_proven": false,
+    "unbounded_agent_creation_proven": false
+  }
+}
