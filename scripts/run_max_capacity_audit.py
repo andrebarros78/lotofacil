@@ -9,6 +9,7 @@ from sare_lotofacil.analysis.capacity_audit import (
     run_real_training_audit,
     run_synthetic_capacity_audit,
 )
+from sare_lotofacil.analysis.nested_walk_forward import run_nested_walk_forward
 from sare_lotofacil.analysis.portfolio_audit import run_primary_tiebreak_audit
 from sare_lotofacil.domain.rules import special_prize_ruleset_for_contest
 from sare_lotofacil.persistence.repository import load_snapshot_records
@@ -54,6 +55,7 @@ def main() -> int:
     real_training = run_real_training_audit(draws)
     parameter_training = run_parameter_training_audit(draws)
     calibration_error_20_rounds = run_calibration_error_rounds(draws, rounds=20)
+    nested_walk_forward_temporal = run_nested_walk_forward(draws)
     primary_tiebreak = run_primary_tiebreak_audit(
         draws,
         evaluation_start=int(parameter_training["validation_end"]),
@@ -64,6 +66,9 @@ def main() -> int:
         and special_3780["status"] == "PASS"
         and calibration_error_20_rounds["status"] == "PASS"
         and calibration_error_20_rounds["round_count"] == 20
+        and nested_walk_forward_temporal["status"] == "PASS"
+        and nested_walk_forward_temporal["leakage_safe"] is True
+        and nested_walk_forward_temporal["final_lockbox"]["used_for_model_selection"] is False
     )
     result = {
         "status": "PASS" if gates_pass else "FAIL",
@@ -74,6 +79,7 @@ def main() -> int:
         "real_history_training": real_training,
         "parameter_training_60_20_20": parameter_training,
         "calibration_error_20_rounds": calibration_error_20_rounds,
+        "nested_walk_forward_temporal": nested_walk_forward_temporal,
         "primary_tiebreak_holdout": primary_tiebreak,
         "special_contest_3780_rules": special_3780,
         "predictive_evidence": "NOT_ESTABLISHED",
