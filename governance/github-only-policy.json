@@ -4,7 +4,10 @@
   "canonical_code_branch": "main",
   "canonical_state_branch": "operations/state",
   "allowed_runners": ["ubuntu-latest"],
-  "write_workflows": [".github/workflows/github-operations.yml"],
+  "write_workflows": [
+    ".github/workflows/github-operations.yml",
+    ".github/workflows/agent-pr-pipeline-proof.yml"
+  ],
   "required_workflows": [
     ".github/workflows/ci.yml",
     ".github/workflows/github-operations.yml",
@@ -12,7 +15,8 @@
     ".github/workflows/operator-console.yml",
     ".github/workflows/operator-console-proof.yml",
     ".github/workflows/real-history-check.yml",
-    ".github/workflows/release-proof.yml"
+    ".github/workflows/release-proof.yml",
+    ".github/workflows/agent-pr-pipeline-proof.yml"
   ],
   "pinned_actions": {
     "actions/checkout": "fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
