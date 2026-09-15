@@ -171,7 +171,7 @@ def test_a03_frozen_benchmark_passes_with_zero_selection_regressions(tmp_path: P
 def test_a03_registry_records_canonical_bounded_proof_without_claim_inflation() -> None:
     gaps = {item["id"]: item for item in load_json("governance/agents/capability_gaps.json")["gaps"]}
     assert gaps["GAP-A03"]["status"] == "PROVEN_FOR_BOUNDED_STRUCTURED_ADAPTIVE_TOOL_SELECTION"
-    assert gaps["GAP-A04"]["status"] == "NOT_PROVEN"
+    assert gaps["GAP-A04"]["status"] == "PROVEN_FOR_BOUNDED_STRUCTURED_STATEFUL_MULTI_AGENT_REPLANNING_SIMULATION"
 
     record = load_json("governance/agents/adaptive_tool_selection_proof_history.json")["proofs"][-1]
     assert record["decision"] == "PROVEN_FOR_BOUNDED_STRUCTURED_ADAPTIVE_TOOL_SELECTION"
