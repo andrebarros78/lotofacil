@@ -1,0 +1,76 @@
+{
+    "schema_version":  1,
+    "mission":  "NATIVE_RULESET_HARDENING",
+    "status":  "MISSION_PROVEN",
+    "repository":  "andrebarros78/lotofacil",
+    "architecture":  "GITHUB_ONLY",
+    "executed_from_device":  "DESKTOP-4T6AS9K",
+    "authenticated_github_user":  "andrebarros78",
+    "recorded_at_utc":  "2026-09-15T15:00:05.2749133Z",
+    "main":  {
+                 "sha":  "7e961d5ce8bcece897991497561084ec58c613d9",
+                 "ruleset_id":  23459135,
+                 "ruleset_name":  "SARE Main Protection",
+                 "enforcement":  "active",
+                 "effective_rules":  [
+                                         "deletion",
+                                         "non_fast_forward",
+                                         "pull_request",
+                                         "required_status_checks"
+                                     ],
+                 "required_status_checks":  [
+                                                "test (3.12)",
+                                                "test (3.13)"
+                                            ],
+                 "merge_method":  "squash"
+             },
+    "operations_state":  {
+                             "before_sha":  "e4c59cff99ca9e033006a9a44fe98df8ce9c700e",
+                             "after_sha":  "49b94a0380609c56830bcc4a024d4b8cd6ea7170",
+                             "ruleset_id":  23459186,
+                             "ruleset_name":  "SARE Operations State Protection",
+                             "enforcement":  "active",
+                             "effective_rules":  [
+                                                     "deletion",
+                                                     "non_fast_forward"
+                                                 ],
+                             "normal_workflow_push_proven":  true
+                         },
+    "validation":  {
+                       "workflow_run_id":  34984904860,
+                       "workflow_conclusion":  "success",
+                       "jobs":  [
+                                    "cycle:success",
+                                    "committed-state-audit:success",
+                                    "economic-state-proof:success"
+                                ],
+                       "open_pull_requests":  0,
+                       "bypass_actors_empty":  true,
+                       "old_state_retrievable":  true,
+                       "current_state_retrievable":  true,
+                       "recovery_compare":  "ahead_by=1,behind_by=0"
+                   },
+    "artifacts":  [
+                      {
+                          "name":  "github-operational-cycle",
+                          "id":  10402489565,
+                          "digest":  "sha256:a27082bed3ce673aa439bd826f8b2d991bd724ea110f3bf35031a8d5276f44ed"
+                      },
+                      {
+                          "name":  "github-committed-state-audit",
+                          "id":  10402858171,
+                          "digest":  "sha256:95a8c8238d5d9b3d2d7cded0a9fbadd43b8d8778b2a9965a863dddd4453b9a35"
+                      },
+                      {
+                          "name":  "github-economic-state-proof",
+                          "id":  10403357055,
+                          "digest":  "sha256:8197ff866d24ed75f33d90ec080c49ad4db4bda02711c3dffe7bc1c6883bdad3"
+                      }
+                  ],
+    "scientific_claim":  "PREDICTIVE_EVIDENCE_NOT_ESTABLISHED",
+    "notes":  [
+                  "Native ruleset administrative gap closed.",
+                  "Main had already advanced beyond release 1.1.8 through legitimate 1.1.9 work; no rollback performed.",
+                  "Evidence branch is noncanonical provenance only."
+              ]
+}
