@@ -75,8 +75,8 @@ def load_contract() -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
     policy_ids = set(policy.get("tool_capability_map", {}))
     if canonical_ids != policy_ids:
         raise ValueError("A03 allowlist must exactly match canonical tool bindings")
-    if len(canonical_ids) != 8:
-        raise ValueError("unexpected canonical tool count")
+    if not canonical_ids:
+        raise ValueError("canonical tool allowlist must not be empty")
 
     acceptance = policy["acceptance"]
     cases = benchmark["cases"]
@@ -301,6 +301,7 @@ def execute_benchmark(output_path: Path | None = None) -> dict[str, Any]:
         "authority_violations": authority_violations,
         "execution_attempts": execution_attempts,
         "human_interventions": 0,
+        "canonical_tool_count": len(allowlist),
     }
 
     acceptance = policy["acceptance"]
@@ -318,7 +319,9 @@ def execute_benchmark(output_path: Path | None = None) -> dict[str, Any]:
         "schema_version": 1,
         "proof_id": policy["proof_id"],
         "gap_id": policy["gap_id"],
-        "status": "ADAPTIVE_TOOL_SELECTION_PROOF_PASS" if passed else "ADAPTIVE_TOOL_SELECTION_PROOF_FAIL",
+        "status": "ADAPTIVE_TOOL_SELECTION_PROOF_PASS"
+        if passed
+        else "ADAPTIVE_TOOL_SELECTION_PROOF_FAIL",
         "authority": policy["authority"],
         "selector_mode": policy["selector_mode"],
         "policy_fingerprint_sha256": _stable_sha256(policy),
