@@ -1,0 +1,94 @@
+{
+  "schema_version": 1,
+  "proof_id": "AGENT-RUNTIME-FRAMEWORK-VALUE-BOUNDED-V1",
+  "gap_id": "GAP-A10",
+  "authority": "GITHUB_ONLY",
+  "experiment_mode": "NON_CANONICAL_PINNED_FRAMEWORK_COMPARISON",
+  "canonical_runtime_framework": "NONE",
+  "candidate": {
+    "id": "langgraph",
+    "package": "langgraph",
+    "version": "1.2.11",
+    "license": "MIT",
+    "python_requires": ">=3.10",
+    "wheel_sha256": "8bab70de7b2d00b5300fb289bcf38d8b241400f3184c1e95e8ce706fb0e8686b",
+    "checkpoint_package": "langgraph-checkpoint-sqlite",
+    "checkpoint_version": "3.1.1",
+    "checkpoint_wheel_sha256": "8505c54c94a658080525d7e6780fdd4e0c078ff2566b30d399c02cc9f9af1c63",
+    "documented_runtime_apis_only": true,
+    "known_upstream_risk": {
+      "issue": "langchain-ai/langgraph#8834",
+      "state_at_predeclaration": "OPEN",
+      "class": "CONDITIONAL_ROUTER_EXCEPTION_RESUME",
+      "must_remain_in_benchmark": true
+    }
+  },
+  "baseline": {
+    "id": "framework-independent-existing-resilience-runtime",
+    "runtime_framework": "NONE",
+    "source": "scripts/run_agent_resilience_proof.py",
+    "policy": "governance/agents/resilience_policy.json",
+    "frozen_capabilities": ["SEQUENTIAL_STEPS", "ARTIFACT_CHECKPOINT_RESUME", "SINGLE_TRANSIENT_RETRY"],
+    "frozen_non_capabilities": ["DAG_FAN_OUT_FAN_IN", "CONDITIONAL_ROUTING", "ROUTER_LEVEL_FAILURE_RESUME"],
+    "must_not_be_artificially_degraded": true
+  },
+  "safety": {
+    "production_execution": false,
+    "canonical_state_writes": false,
+    "scientific_state_mutation": false,
+    "external_model_calls": false,
+    "paid_calls": false,
+    "new_accounts": false,
+    "runtime_external_network_calls": false,
+    "process_scope": "BOUNDED_PYTHON_EXPERIMENT_ONLY",
+    "private_framework_internals": false,
+    "benchmark_mutation_after_first_result": false,
+    "canonical_runtime_dependency_change": false
+  },
+  "fairness": {
+    "same_benchmark_cases_required": true,
+    "same_initial_state_required": true,
+    "same_expected_final_state_required": true,
+    "same_fault_schedule_required": true,
+    "unsupported_baseline_case_must_be_reported_as_unsupported_not_silently_skipped": true,
+    "candidate_nominal_success_with_wrong_final_state_counts_as_hidden_failure": true,
+    "all_attempts_and_resumes_must_be_audited": true
+  },
+  "primary_metrics": ["completion_rate", "recoverable_fault_recovery_rate", "human_interventions"],
+  "secondary_metrics": ["correct_final_state_rate", "hidden_failure_successes", "unsupported_cases", "runtime_dependency_distributions_delta", "direct_framework_dependencies", "adapter_source_lines", "median_case_duration_ms"],
+  "acceptance": {
+    "benchmark_cases": 24,
+    "fault_cases": 16,
+    "candidate_correct_final_state_rate_min": 1.0,
+    "candidate_hidden_failure_successes_max": 0,
+    "authority_violations_max": 0,
+    "production_write_attempts_max": 0,
+    "operations_state_write_attempts_max": 0,
+    "runtime_external_network_calls_max": 0,
+    "external_model_calls_max": 0,
+    "paid_calls_max": 0,
+    "direct_framework_dependencies_max": 2,
+    "runtime_dependency_distributions_delta_max": 25,
+    "meaningful_completion_rate_improvement_min": 0.10,
+    "meaningful_recovery_rate_improvement_min": 0.10,
+    "meaningful_human_intervention_reduction_min": 1,
+    "no_primary_metric_regression_required": true,
+    "framework_value_requires_at_least_one_meaningful_primary_improvement": true
+  },
+  "decision_rule": {
+    "value_established_status": "PROVEN_FOR_BOUNDED_LANGGRAPH_RUNTIME_VALUE_EXPERIMENT",
+    "no_value_status": "NOT_JUSTIFIED_FOR_CURRENT_BOUNDED_BASELINE",
+    "inconclusive_status": "NOT_ESTABLISHED_EXPERIMENT_INCONCLUSIVE",
+    "automatic_production_adoption": false
+  },
+  "claim_boundary": {
+    "synthetic_bounded_workflow_value_only": true,
+    "production_runtime_value_proven": false,
+    "general_agent_framework_superiority_proven": false,
+    "langgraph_security_proven": false,
+    "arbitrary_failure_recovery_proven": false,
+    "llm_quality_improvement_proven": false,
+    "scientific_predictive_value_proven": false,
+    "canonical_framework_adoption_authorized": false
+  }
+}
