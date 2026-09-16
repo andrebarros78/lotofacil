@@ -125,7 +125,7 @@ def main() -> int:
     parser.add_argument(
         "--cases",
         type=Path,
-        default=Path("governance/rag/eval_cases.json"),
+        default=Path(".github/rag/eval_cases.json"),
     )
     parser.add_argument("--out", type=Path)
     args = parser.parse_args()
