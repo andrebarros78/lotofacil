@@ -92,7 +92,7 @@ def test_rag_status_declares_read_only_no_external_runtime(tmp_path: Path) -> No
     assert status["read_only"] is True
     assert status["external_model"] is False
     assert status["external_vector_store"] is False
-    assert status["retriever"] == "tfidf_cosine_coverage_bigram_v2"
+    assert status["retriever"] == "tfidf_cosine_coverage_bigram_authority_v3"
     assert status["generator"] == "deterministic_extractive_v1"
     assert status["source_count"] == 2
     assert status["chunk_count"] >= 2
@@ -108,15 +108,16 @@ def test_rag_context_pack_contains_source_markers(tmp_path: Path) -> None:
     assert "GitHub Actions" in context
 
 
-def test_canonical_scientific_query_does_not_rank_rag_usage_doc_first() -> None:
+def test_canonical_scientific_query_prefers_current_evidence() -> None:
     repository_root = Path(__file__).resolve().parents[1]
     rag = RepositoryRAG.from_repository(repository_root)
 
     hits = rag.search("Qual é a conclusão científica sobre vantagem preditiva?", top_k=5)
+    result = rag.answer("Qual é a conclusão científica sobre vantagem preditiva?", top_k=5)
 
     assert hits
-    assert hits[0].path != "docs/RAG.md"
-    assert any(
-        hit.path == "README.md" or hit.path.startswith("docs/MISSION_PROVEN")
-        for hit in hits[:3]
-    )
+    assert hits[0].path in {"README.md", "docs/MISSION_PROVEN_1_1_10.md"}
+    assert result.abstained is False
+    assert result.citations
+    assert result.citations[0].path in {"README.md", "docs/MISSION_PROVEN_1_1_10.md"}
+    assert "docs/RAG.md" not in {citation.path for citation in result.citations}
