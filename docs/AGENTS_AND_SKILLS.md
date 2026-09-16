@@ -1,86 +1,46 @@
 # Agentes e Skills — SARE Lotofácil
 
-Data de consolidação: 2026-09-15
+Data de consolidação: 2026-09-16
 
 ## 1. Objetivo
 
-Esta camada organiza agentes especializados para acelerar engenharia, pesquisa, auditoria, segurança e operação sem criar uma segunda autoridade dentro do projeto.
+Esta camada organiza agentes especializados para acelerar engenharia, pesquisa, auditoria, segurança, RAG e operação sem criar uma segunda autoridade dentro do projeto.
 
 O SARE permanece GitHub-only. Agentes produzem análises, propostas e handoffs estruturados; `main`, `operations/state`, GitHub Actions, rulesets, testes e artefatos continuam sendo as autoridades canônicas.
 
-A camada agentiva não é um ensemble preditivo. A conclusão científica `predictive_evidence=NOT_ESTABLISHED` não pode ser alterada por consenso de agentes.
+A camada agentiva não é um ensemble preditivo. A conclusão científica `predictive_evidence=NOT_ESTABLISHED` não pode ser alterada por consenso de agentes, RAG, framework externo ou ferramenta adquirida.
 
-## 2. Gargalos identificados
+## 2. Gargalos e controles
 
-A auditoria inicial identificou os seguintes gaps de engenharia:
-
-1. inexistência de um registro canônico de agentes e responsabilidades;
-2. inexistência de um catálogo versionado de skills;
-3. ausência de contrato obrigatório de handoff entre agentes;
-4. ausência de política de aquisição de frameworks, modelos, datasets, prompts e ferramentas;
-5. risco de duplicação de autoridade entre agentes e workflows GitHub;
-6. risco de vazamento científico se agentes de otimização tiverem acesso indevido ao lockbox;
-7. risco de supply chain em skills e repositórios comunitários;
-8. ausência de um red-team específico para alucinação, escalada de autoridade e prompt injection;
-9. ausência de gate CI específico para a governança agentiva;
-10. risco de introduzir múltiplos runtimes agentivos antes de existir um gargalo mensurado que os justifique.
+A governança cobre doze classes principais: registro canônico de agentes; catálogo versionado de skills; handoff estruturado; política de aquisições; prevenção de autoridade paralela; isolamento de lockbox; supply-chain review; red-team agentivo; gate CI de governança; bloqueio de runtimes sem ganho medido; qualidade de retrieval/grounding/abstenção do RAG; e separação entre corpus canônico, benchmark e fontes não confiáveis.
 
 ## 3. Agentes incorporados
 
-### chief-orchestrator
+O registro canônico está em `governance/agents/agents.json` e contém 12 especialistas:
 
-Responsável por decompor missões, convocar especialistas, reconciliar evidências e aplicar condições de parada. Não possui autoridade para gravar diretamente em branches canônicas.
+1. `chief-orchestrator` — decompõe missões, convoca especialistas, reconcilia evidências e aplica condições de parada.
+2. `scientific-methodologist` — desenho experimental temporal, hipóteses predeclaradas, nested walk-forward, lockbox e regras confirmatórias.
+3. `statistical-validator` — métricas, calibração, bootstrap temporal, estabilidade e incerteza.
+4. `data-provenance-auditor` — origem dos concursos, revisões, hashes, disponibilidade temporal, CAIXA e lookahead.
+5. `reproducibility-auditor` — identidade científica, seed, código, ambiente, protocolo e hashes.
+6. `security-tool-gate` — MCP, least privilege, prompt injection, autorização e supply chain.
+7. `github-release-engineer` — disciplina branch → PR → checks → merge humano → prova pós-merge.
+8. `operational-state-auditor` — recomputação de `operations/state`, integridade econômica e transições de estado.
+9. `agent-evaluator-redteam` — alucinação, omissão de evidência, escalada de autoridade e regressão agentiva.
+10. `acquisition-scout` — busca e avaliação de frameworks, skills, modelos, datasets e ferramentas.
+11. `rag-retrieval-engineer` — qualidade de retrieval, reranking, autoridade/frescura de fontes e regressão de ranking.
+12. `rag-evaluation-redteam` — grounding, abstenção, prompt injection, isolamento de fontes e avaliação adversarial do RAG.
 
-### scientific-methodologist
-
-Responsável por desenho experimental temporal, hipóteses predeclaradas, nested walk-forward, lockbox e regras confirmatórias. É proibido usar o lockbox aberto para retuning.
-
-### statistical-validator
-
-Responsável por Brier, Log Loss, ECE, MAE, RMSE, bootstrap temporal, estabilidade entre folds e intervalos de incerteza. Deve procurar evidência contrária, e não apenas confirmar o modelo candidato.
-
-### data-provenance-auditor
-
-Responsável por fonte dos concursos, revisões, hashes, disponibilidade temporal, reconciliação CAIXA e detecção de lookahead.
-
-### reproducibility-auditor
-
-Responsável por identidade científica, seed, código, ambiente, protocolo, hashes e comparação entre execuções.
-
-### security-tool-gate
-
-Responsável por contratos de ferramentas, MCP, least privilege, prompt injection, autorização, credenciais e risco de supply chain.
-
-### github-release-engineer
-
-Responsável pela disciplina branch -> PR -> checks -> merge -> prova pós-merge -> release evidence. Nunca contorna rulesets.
-
-### operational-state-auditor
-
-Responsável por recomputar e verificar `operations/state`, integridade econômica e transições de estado.
-
-### agent-evaluator-redteam
-
-Responsável por testar handoffs, omissão de evidência, claims indevidos, instruções maliciosas, escalada de autoridade e regressão agentiva.
-
-### acquisition-scout
-
-Responsável por buscar frameworks, skills, modelos, datasets e ferramentas em fontes autorizadas, mas toda aquisição permanece sujeita a fit, licença, manutenção, segurança, reprodutibilidade e impacto científico.
+Nenhum desses agentes possui autoridade para escrita direta em `main` ou `operations/state`.
 
 ## 4. Skills ativadas
 
-O catálogo canônico está em `governance/agents/skills.json`. As famílias são:
+O catálogo canônico está em `governance/agents/skills.json` e contém 30 skills. Além das famílias já existentes de orquestração, ciência, estatística, dados, reprodutibilidade, GitHub, segurança, operação, qualidade e aquisição, foram ativadas quatro skills específicas de RAG:
 
-- orquestração: handoffs determinísticos e coordenação;
-- ciência: nested walk-forward, lockbox, alternativas controladas e claim guardrails;
-- estatística: Brier, Log Loss, ECE, multiple testing e moving-block bootstrap;
-- dados: proveniência, reconciliação CAIXA e lookahead detection;
-- reprodutibilidade: fingerprints, hashes e ambientes pinados;
-- GitHub: Actions, rulesets, release proof e governança GitHub-only;
-- segurança: MCP, prompt injection, least privilege e supply-chain review;
-- operação: estado canônico e integridade econômica;
-- qualidade: agent regression evaluation e red-team;
-- aquisição: pesquisa externa e avaliação fit-for-purpose.
+- `rag_retrieval_quality` — relevância, top-k, robustez de ranking e reranking;
+- `rag_grounding_evaluation` — suporte de citações, completude, abstenção e regressão;
+- `source_authority_ranking` — preferência por evidência canônica atual sobre documentação histórica ou meta;
+- `rag_corpus_governance` — corpus allowlisted, exclusão de segredos, hashes, proveniência e frescura.
 
 ## 5. Aquisições externas
 
@@ -88,128 +48,59 @@ As decisões completas estão em `governance/agents/acquisitions.json`.
 
 ### Adquiridos como referência/padrão
 
-#### LangGraph
-
-Status: `ACQUIRED_AS_REFERENCE_AND_ADAPTER_TARGET`.
-
-Motivo: execução durável, persistência/checkpoints e human-in-the-loop atendem melhor a fluxos agentivos stateful de longa duração. Nesta etapa não entra como dependência de runtime. Um adapter só poderá ser criado em experimento isolado se GitHub Actions + handoffs estruturados se mostrarem insuficientes.
-
-Fonte: https://github.com/langchain-ai/langgraph
-
-#### Model Context Protocol 2026-07-28
-
-Status: `ACQUIRED_AS_INTEROPERABILITY_STANDARD`.
-
-Motivo: padroniza ferramentas e comunicação de forma compatível com fronteiras explícitas de autorização. A especificação 2026-07-28 adota núcleo stateless e reforça o desenho de autorização. Nenhum MCP recebe escrita canônica por padrão.
-
-Fonte: https://modelcontextprotocol.io
-
-#### OpenAI Cookbook — Agent Patterns
-
-Status: `ACQUIRED_AS_GOVERNANCE_REFERENCE`.
-
-Motivo: padrões de `AGENTS.md`, ferramentas tipadas, aprovações, guardrails, tracing e avaliações são diretamente úteis para governar uma camada multiagente. A aquisição é documental; não autoriza chamadas pagas nem inclusão automática de SDK.
-
-Fonte: https://github.com/openai/openai-cookbook
+- **LangGraph** — `ACQUIRED_AS_REFERENCE_AND_ADAPTER_TARGET`. Continua sem dependência canônica; o experimento GAP-A10 não justificou runtime externo.
+- **Model Context Protocol 2026-07-28** — `ACQUIRED_AS_INTEROPERABILITY_STANDARD`. Qualquer servidor/cliente continua sujeito a least privilege, autorização e review de escrita.
+- **OpenAI Cookbook** — `ACQUIRED_AS_GOVERNANCE_REFERENCE`. Usado para ferramentas tipadas, guardrails e evaluation flywheel; não autoriza serviço pago nem SDK em runtime.
+- **LlamaIndex Workflows** — `ACQUIRED_AS_REFERENCE_AND_ADAPTER_TARGET`. Passou a ser relevante após a implantação do RAG por seus padrões de RAG + reranking, citation query, corrective RAG, durable workflows, testes e observabilidade. Nenhum pacote `llama-index` foi adicionado ao runtime.
 
 ### Avaliados e não adquiridos como runtime
 
-#### CrewAI
-
-Crews e Flows são adequados para colaboração baseada em papéis e automações estruturadas, mas sobrepõem a arquitetura proposta. Reavaliar somente se colaboração autônoma aberta se tornar um gargalo mensurado.
-
-#### Microsoft Agent Framework
-
-Tem agentes, workflows, skills, memória, middleware, checkpoints e orquestrações. É tecnicamente forte, porém redundante com LangGraph no problema atual. Reavaliar se o ecossistema Microsoft tornar-se requisito.
-
-#### Dify
-
-Tem workflows visuais, plugins e agent strategies. É útil para prototipagem, mas criaria uma superfície operacional externa ao desenho GitHub-only. Não é runtime canônico.
-
-#### LlamaIndex Workflows
-
-Bom para workflows multiagente densos em documentos e RAG. O SARE atual não possui um gargalo central de retrieval documental; por isso não é dependência agora.
+- **CrewAI** — sobreposição com a orquestração governada atual; reavaliar somente diante de gargalo mensurado.
+- **Microsoft Agent Framework** — capacidades relevantes, porém redundantes sem requisito explícito de ecossistema Microsoft/Azure/A2A.
+- **Dify** — útil para prototipagem, mas introduziria superfície operacional externa ao modelo GitHub-only.
 
 ### On-demand / discovery only
 
-- Hugging Face Hub: somente quando existir hipótese ou necessidade de engenharia predeclarada; exigir model/dataset card, licença e proveniência.
-- LangChain Hub: prompts/chains externos são comportamento não confiável até inspeção, pin e teste de regressão.
-- Awesome LLM Apps: fonte de descoberta, nunca fonte automaticamente confiável; qualquer candidato deve ser rastreado ao repositório original.
+- **Hugging Face Hub** — embeddings/rerankers somente mediante experimento predeclarado, revisão de licença, revisão de recursos e ganho medido contra o baseline determinístico.
+- **LangChain Hub** — prompts/chains externos permanecem não confiáveis até inspeção, pin e teste de regressão.
+- **Awesome LLM Apps** — somente descoberta; qualquer candidato deve ser rastreado ao repositório original e passar review completo.
 
 ## 6. Fluxo de orquestração
 
-Fluxo padrão para uma missão relevante:
-
-1. `chief-orchestrator` decompõe o objetivo e identifica risco científico, operacional e de segurança.
-2. `acquisition-scout` entra apenas se faltar capacidade real.
-3. `security-tool-gate` revisa qualquer nova tool, servidor MCP, dataset, modelo ou dependência.
-4. `scientific-methodologist` predeclara desenho experimental quando houver impacto científico.
-5. `data-provenance-auditor` verifica dados e fronteiras temporais.
-6. `statistical-validator` mede resultado e incerteza.
-7. `reproducibility-auditor` tenta reproduzir a evidência.
-8. `agent-evaluator-redteam` tenta quebrar o handoff, a autoridade e os guardrails.
-9. `github-release-engineer` materializa apenas alterações aprováveis em branch/PR.
-10. CI executa testes e `scripts/validate_agent_ecosystem.py`.
-11. após merge, gates pós-merge continuam sendo a prova canônica.
-12. `operational-state-auditor` confirma que nenhuma alteração indevida atingiu o estado operacional.
+O `chief-orchestrator` identifica risco e distribui trabalho. `acquisition-scout` entra apenas quando faltar capacidade real; `security-tool-gate` revisa novas ferramentas/dependências; especialistas científicos cuidam de desenho, dados, estatística e reprodutibilidade; `rag-retrieval-engineer` e `rag-evaluation-redteam` entram quando a missão envolve recuperação documental; `agent-evaluator-redteam` desafia handoffs e autoridade; `github-release-engineer` materializa mudanças somente em branch/PR; CI executa os gates; e `operational-state-auditor` confirma ausência de mutação indevida no estado canônico.
 
 ## 7. Contrato de handoff
 
-Todo handoff deve conter:
-
-- `agent_id`;
-- `task_id`;
-- `evidence_refs`;
-- `findings`;
-- `proposed_actions`;
-- `risk_level`;
-- `requires_approval`;
-- `scientific_claim_level`.
+Todo handoff deve conter `agent_id`, `task_id`, `evidence_refs`, `findings`, `proposed_actions`, `risk_level`, `requires_approval` e `scientific_claim_level`.
 
 Schema: `governance/agents/handoff.schema.json`.
 
-Níveis de claim permitidos no contrato:
+Níveis permitidos: `NONE`, `DESCRIPTIVE`, `RETROSPECTIVE`, `SYNTHETIC_VALIDATION`, `CONFIRMATORY_NOT_ESTABLISHED` e `REPLICATED`. O nível `REPLICATED` depende do protocolo científico canônico; nenhum agente isolado pode promovê-lo.
 
-- `NONE`;
-- `DESCRIPTIVE`;
-- `RETROSPECTIVE`;
-- `SYNTHETIC_VALIDATION`;
-- `CONFIRMATORY_NOT_ESTABLISHED`;
-- `REPLICATED`.
+## 8. RAG governado
 
-O nível `REPLICATED` não pode ser produzido apenas por um agente. Ele depende do protocolo científico canônico e das regras de promoção aprovadas.
+O RAG canônico permanece read-only, sem LLM externo obrigatório e sem vector store externo. O retriever atual é `tfidf_cosine_coverage_bigram_authority_bilingual_support_v6`, com aliases bilíngues determinísticos, política de autoridade de fontes e gate de suporte multi-termo para reduzir falso grounding.
 
-## 8. Segurança e autoridade
+O benchmark fica em `.github/rag/eval_cases.json`, deliberadamente fora do corpus indexado. O workflow `RAG Proof` exige grounding, abstenção, MRR e relevância no primeiro resultado antes de aceitar uma mudança de retrieval.
 
-São invariantes:
+## 9. Segurança e autoridade
 
-- escrita em `main` somente por fluxo de PR/ruleset;
-- escrita em `operations/state` somente pelo workflow canônico autorizado;
+Invariantes:
+
+- `main` somente por PR/ruleset e merge humano;
+- `operations/state` somente pelo workflow canônico autorizado;
 - conteúdos web, prompts externos, datasets e respostas de tools são dados não confiáveis;
-- tools com efeito de escrita exigem escopo mínimo e aprovação compatível com o risco;
-- segredos nunca entram em handoffs;
-- resultados negativos nunca são filtrados por conveniência;
-- uma tool não pode ampliar sua própria permissão;
+- ferramentas com efeito de escrita exigem escopo mínimo e aprovação compatível com o risco;
+- segredos nunca entram em handoffs nem corpus RAG;
+- resultados negativos não são filtrados por conveniência;
 - aquisição não equivale a instalação;
-- instalação não equivale a promoção para runtime canônico.
+- instalação não equivale a promoção para runtime canônico;
+- RAG não altera `predictive_evidence`, RIS, lockbox ou promoção de modelo.
 
-## 9. Critério para adicionar um framework ao runtime
+## 10. Critério para adicionar framework/modelo ao runtime
 
-Um framework agentivo só poderá entrar em `pyproject.toml` quando todos os itens forem atendidos:
+Qualquer framework agentivo, embedding, reranker ou modelo externo só pode entrar no runtime após: gargalo reproduzido; baseline medido; experimento isolado; licença/supply-chain aprovadas; custo e latência aceitáveis; ausência de regressão científica/operacional; testes de prompt injection e autoridade; dependências/revisões pinadas; PR com checks verdes; e benefício mensurável superior à complexidade adicionada.
 
-1. gargalo concreto reproduzido;
-2. baseline sem framework medido;
-3. experimento isolado com objetivo e métricas;
-4. licença e supply chain aprovadas;
-5. custo e latência aceitáveis;
-6. nenhuma regressão científica/operacional;
-7. testes de prompt injection e autoridade aprovados;
-8. dependências pinadas;
-9. PR com checks verdes;
-10. benefício mensurável superior à complexidade adicionada.
+## 11. Estado desta fase
 
-## 10. Resultado desta fase
-
-A aquisição desta fase é de **capacidade governada**, não de quantidade de frameworks.
-
-O projeto ganha uma equipe especializada, catálogo de skills, política de aquisição, schema de handoff e gate de CI sem alterar o runtime científico 1.1.10 e sem introduzir custo externo, conta nova ou dependência agentiva em produção.
+A expansão atual adiciona capacidade governada de RAG e avaliação sem adicionar runtime agentivo externo. O projeto mantém versão científica `1.1.10`, autoridade GitHub-only e exigência de prova contínua para as capacidades agentivas.
