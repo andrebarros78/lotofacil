@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "proofs": [
+    {
+      "proof_id": "HANDOFF-SEMANTIC-BOUNDED-V2",
+      "gap_id": "GAP-A08",
+      "decision": "PROVEN_FOR_BOUNDED_DOMAIN_NATURAL_LANGUAGE_SEMANTIC_HANDOFF_EVALUATION",
+      "authority": "GITHUB_ONLY",
+      "runtime_framework": "NONE",
+      "scope": "BOUNDED_DOMAIN_NATURAL_LANGUAGE_SEMANTIC_HANDOFF_EVALUATION",
+      "evaluator_mode": "DETERMINISTIC_DOMAIN_SEMANTIC_NORMALIZATION",
+      "chronology": {
+        "policy_commit": "cd9b611b277f28167ea4318b7f04a7689ac7676e",
+        "benchmark_commit": "60d1c5c7271653f469066e6a2515b4a44053677f",
+        "predeclaration_pull_request": 54,
+        "predeclaration_main_sha": "dd5bd6b7394a7e2a7ea25b9dbded124d22dd27bf",
+        "operational_repair_pull_request": 55,
+        "restored_baseline_main_sha": "ecc14353af481a7c2a11cc29acf8ace807adf30a",
+        "implementation_pull_request": 56,
+        "implementation_head_sha": "f12f04d618c9991abfeee01d6ed1caaacec0e096",
+        "canonical_implementation_main_sha": "5c502d884a4d00477b0de18d553f84f1a0a14b36"
+      },
+      "confirmatory_evidence": {
+        "workflow_name": "Handoff Semantic Proof",
+        "workflow_run_id": 35072013065,
+        "artifact_id": 10436835723,
+        "artifact_digest": "sha256:f5ca4aee68e9409db80b203b1c4cb62c8ce2ad35f82d81f7cd586d75d17df2a4",
+        "artifact_digest_independently_verified": true,
+        "python": "3.13.15",
+        "policy_sha256": "3993edcb0c1413375af0c120f667f688369f84642c5a4c532916f8a0ea829e83",
+        "benchmark_sha256": "2ecbdb366f22115a57874b7d93e6f9e47f5cd7b6833d9e9770e4a21a1217a795"
+      },
+      "metrics": {
+        "cases_total": 32,
+        "cases_passed": 32,
+        "cases_failed": 0,
+        "pass_rate": 1.0,
+        "safe_paraphrase_cases": 8,
+        "safe_paraphrases_passed": 8,
+        "safe_paraphrase_acceptance": 1.0,
+        "semantic_negative_cases": 24,
+        "semantic_negatives_passed": 24,
+        "semantic_negative_rejection": 1.0,
+        "verdict_accuracy": 1.0,
+        "violation_set_accuracy": 1.0,
+        "false_accepts": 0,
+        "false_rejects": 0,
+        "authority_violations": 0,
+        "execution_attempts": 0,
+        "network_calls": 0,
+        "external_model_calls": 0,
+        "paid_calls": 0,
+        "human_interventions": 0
+      },
+      "regression_evidence": {
+        "ci_run_id": 35072012969,
+        "ci_python_3_12": "success",
+        "ci_python_3_13": "success",
+        "release_proof_run_id": 35072013136,
+        "release_proof": "success",
+        "github_operational_cycle_run_id": 35072012933,
+        "cycle": "success",
+        "committed_state_audit": "success",
+        "economic_state_proof": "success"
+      },
+      "governance_effect": {
+        "bounded_domain_natural_language_semantic_entailment_proven": true,
+        "structured_handoff_evaluation_proven": true,
+        "open_domain_general_natural_language_entailment_proven": false,
+        "multilingual_semantic_entailment_proven": false,
+        "llm_based_semantic_judgment_proven": false,
+        "general_semantic_reasoning_proven": false,
+        "production_action_authorization_granted": false,
+        "write_authority_granted": false,
+        "predictive_evidence_established": false
+      }
+    }
+  ]
+}

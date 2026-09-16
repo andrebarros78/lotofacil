@@ -73,7 +73,7 @@ def test_capability_gaps_preserve_bounded_scope_and_unproven_frontiers() -> None
     assert gaps["durable_agent_checkpoint_resume"]["status"] == "PROVEN_FOR_BOUNDED_PREDECLARED_MISSIONS_CONTINUOUS_PROOF_REQUIRED"
     assert gaps["external_mcp_tool_execution"]["status"] == "PROVEN_FOR_BOUNDED_AUTHENTICATED_EXTERNAL_MCP_READ_ONLY_GITHUB_PROVIDER"
     assert gaps["automatic_failure_recovery"]["status"] == "PROVEN_FOR_BOUNDED_STRUCTURED_AUTOMATIC_FAILURE_RECOVERY"
-    assert gaps["semantic_handoff_quality_evaluation"]["status"] == "PARTIALLY_PROVEN_STRUCTURED_HANDOFF_EVALUATION_ONLY"
+    assert gaps["semantic_handoff_quality_evaluation"]["status"] == "PROVEN_FOR_BOUNDED_DOMAIN_NATURAL_LANGUAGE_SEMANTIC_HANDOFF_EVALUATION"
     assert gaps["agent_proposed_code_change_to_pr_pipeline"]["status"] == "PROVEN_FOR_BOUNDED_SANDBOX_PROPOSAL_TO_PR_WITH_HUMAN_MERGE_REQUIRED"
     assert gaps["agent_runtime_framework_value"]["status"] == "NOT_ESTABLISHED"
 
@@ -104,3 +104,25 @@ def test_a09_history_records_blocker_then_bounded_proof_without_authority_escala
     assert proven["governance_effect"]["general_code_write_authority_granted"] is False
     assert proven["governance_effect"]["auto_merge_authority_granted"] is False
     assert proven["governance_effect"]["operations_state_authority_granted"] is False
+
+
+def test_a08_history_records_bounded_semantic_proof_without_authority_escalation() -> None:
+    proof = load_json("governance/agents/handoff_semantic_proof_history.json")["proofs"][-1]
+    assert proof["decision"] == "PROVEN_FOR_BOUNDED_DOMAIN_NATURAL_LANGUAGE_SEMANTIC_HANDOFF_EVALUATION"
+    assert proof["confirmatory_evidence"]["workflow_run_id"] == 35072013065
+    assert proof["confirmatory_evidence"]["artifact_id"] == 10436835723
+    assert proof["metrics"]["cases_passed"] == 32
+    assert proof["metrics"]["false_accepts"] == 0
+    assert proof["metrics"]["false_rejects"] == 0
+    assert proof["metrics"]["authority_violations"] == 0
+    assert proof["metrics"]["network_calls"] == 0
+    assert proof["metrics"]["external_model_calls"] == 0
+    effect = proof["governance_effect"]
+    assert effect["bounded_domain_natural_language_semantic_entailment_proven"] is True
+    assert effect["open_domain_general_natural_language_entailment_proven"] is False
+    assert effect["multilingual_semantic_entailment_proven"] is False
+    assert effect["llm_based_semantic_judgment_proven"] is False
+    assert effect["general_semantic_reasoning_proven"] is False
+    assert effect["production_action_authorization_granted"] is False
+    assert effect["write_authority_granted"] is False
+    assert effect["predictive_evidence_established"] is False
