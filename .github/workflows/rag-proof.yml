@@ -65,14 +65,15 @@ jobs:
           assert status['read_only'] is True
           assert status['external_model'] is False
           assert status['external_vector_store'] is False
-          assert status['retriever'] == 'tfidf_cosine_coverage_bigram_v2'
+          assert status['retriever'] == 'tfidf_cosine_coverage_bigram_authority_v3'
           assert status['source_count'] > 0
           assert status['chunk_count'] > 0
 
           proof = rag.answer('Qual é a conclusão científica sobre vantagem preditiva?', top_k=5)
           assert proof.abstained is False
           assert proof.citations
-          assert proof.citations[0].path != 'docs/RAG.md'
+          assert proof.citations[0].path in {'README.md', 'docs/MISSION_PROVEN_1_1_10.md'}
+          assert 'docs/RAG.md' not in {c.path for c in proof.citations}
           assert all(c.path for c in proof.citations)
 
           question = os.environ.get('USER_QUESTION', '').strip()
@@ -108,7 +109,7 @@ jobs:
           import json
           status = json.load(open('/tmp/rag-cli-status.json', encoding='utf-8'))
           answer = json.load(open('/tmp/rag-cli-answer.json', encoding='utf-8'))
-          assert status['retriever'] == 'tfidf_cosine_coverage_bigram_v2'
+          assert status['retriever'] == 'tfidf_cosine_coverage_bigram_authority_v3'
           assert status['chunk_count'] > 0
           assert answer['abstained'] is False
           assert answer['citations']
