@@ -27,6 +27,7 @@ _RAG_META_TERMS = {
     "proveniencia",
     "rag",
     "retrieval",
+    "retriever",
     "tfidf",
 }
 _QUERY_ALIASES = {
@@ -77,8 +78,11 @@ def _query_tokens(text: str) -> tuple[str, ...]:
 
 
 def _source_weight(path: str, query_terms: set[str]) -> float:
+    rag_meta_query = bool(query_terms & _RAG_META_TERMS)
     if path == "docs/RAG.md":
-        return 1.15 if query_terms & _RAG_META_TERMS else 0.35
+        return 1.15 if rag_meta_query else 0.35
+    if path.startswith("src/sare_lotofacil/rag/"):
+        return 1.08 if rag_meta_query else 0.18
     if path == _CURRENT_MISSION_PATH:
         return 1.30
     if path.startswith("docs/MISSION_PROVEN_1_1_") and path.endswith(".md"):
@@ -101,10 +105,11 @@ class RepositoryRAG(_BaseRepositoryRAG):
 
     def status(self) -> dict[str, object]:
         payload = super().status()
-        payload["engine_version"] = "1.3"
-        payload["retriever"] = "tfidf_cosine_coverage_bigram_authority_bilingual_v4"
+        payload["engine_version"] = "1.4"
+        payload["retriever"] = "tfidf_cosine_coverage_bigram_authority_bilingual_v5"
         payload["current_mission_path"] = _CURRENT_MISSION_PATH
         payload["query_expansion"] = "deterministic_domain_aliases_v1"
+        payload["implementation_source_policy"] = "rag_code_meta_priority_only_v1"
         return payload
 
     def search(self, query: str, *, top_k: int = 5, min_score: float = 0.02) -> tuple[RagHit, ...]:
