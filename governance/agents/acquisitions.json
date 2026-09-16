@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "review_date": "2026-09-15",
+  "review_date": "2026-09-16",
   "policy": {
     "runtime_dependency_requires_separate_experiment": true,
     "paid_service_requires_explicit_approval": true,
@@ -14,9 +14,23 @@
       "source": "LangGraph by LangChain",
       "source_url": "https://github.com/langchain-ai/langgraph",
       "decision": "ACQUIRED_AS_REFERENCE_AND_ADAPTER_TARGET",
-      "reason": "Best fit for durable, stateful, checkpointed orchestration with human-in-the-loop while keeping orchestration separate from scientific code.",
+      "reason": "Best fit for durable, stateful, checkpointed orchestration with human-in-the-loop while keeping orchestration separate from scientific code. GAP-A10 now authorizes only the pinned non-canonical comparison recorded below; canonical adoption remains unauthorized.",
       "runtime_dependency": false,
-      "next_gate": "Build a non-canonical adapter experiment only if an actual long-running agent workflow cannot be expressed with existing GitHub Actions and structured handoffs."
+      "experiment": {
+        "authorization": "PINNED_NON_CANONICAL_ONLY",
+        "proof_id": "AGENT-RUNTIME-FRAMEWORK-VALUE-BOUNDED-V1",
+        "package": "langgraph",
+        "version": "1.2.11",
+        "wheel_sha256": "8bab70de7b2d00b5300fb289bcf38d8b241400f3184c1e95e8ce706fb0e8686b",
+        "checkpoint_package": "langgraph-checkpoint-sqlite",
+        "checkpoint_version": "3.1.1",
+        "checkpoint_wheel_sha256": "8505c54c94a658080525d7e6780fdd4e0c078ff2566b30d399c02cc9f9af1c63",
+        "license": "MIT",
+        "pypi_trusted_publishing": true,
+        "known_upstream_issue": "langchain-ai/langgraph#8834",
+        "canonical_dependency": false
+      },
+      "next_gate": "Run only the frozen GAP-A10 non-canonical benchmark. Any production or canonical runtime adoption requires a separate governance decision after the experiment."
     },
     {
       "id": "mcp-2026-07-28",

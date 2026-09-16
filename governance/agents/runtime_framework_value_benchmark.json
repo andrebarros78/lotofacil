@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "proof_id": "AGENT-RUNTIME-FRAMEWORK-VALUE-BOUNDED-V1",
+  "gap_id": "GAP-A10",
+  "frozen_before_implementation": true,
+  "predeclaration_base_sha": "76bde6894ca4b0d6d20de182b0757deb1c742d82",
+  "cases_total": 24,
+  "fault_cases_total": 16,
+  "classes": {
+    "LINEAR_CLEAN": {"count": 4, "fault": false, "baseline_supported": true},
+    "TRANSIENT_NODE_FAILURE": {"count": 4, "fault": true, "baseline_supported": true},
+    "PROCESS_INTERRUPT_RESUME": {"count": 4, "fault": true, "baseline_supported": true},
+    "DAG_FAN_OUT_FAN_IN": {"count": 4, "fault": false, "baseline_supported": false},
+    "CONDITIONAL_NODE_FAILURE_RESUME": {"count": 4, "fault": true, "baseline_supported": false},
+    "CONDITIONAL_ROUTER_FAILURE_RESUME": {"count": 4, "fault": true, "baseline_supported": false, "known_upstream_risk": "langchain-ai/langgraph#8834"}
+  },
+  "cases": [
+    {"id":"A10-L01","class":"LINEAR_CLEAN","baseline_supported":true,"input":{"value":1,"add":2,"multiply":3},"fault":{"kind":"NONE"},"expected":{"final_value":9,"path":["step1","step2"]}},
+    {"id":"A10-L02","class":"LINEAR_CLEAN","baseline_supported":true,"input":{"value":2,"add":3,"multiply":2},"fault":{"kind":"NONE"},"expected":{"final_value":10,"path":["step1","step2"]}},
+    {"id":"A10-L03","class":"LINEAR_CLEAN","baseline_supported":true,"input":{"value":4,"add":1,"multiply":4},"fault":{"kind":"NONE"},"expected":{"final_value":20,"path":["step1","step2"]}},
+    {"id":"A10-L04","class":"LINEAR_CLEAN","baseline_supported":true,"input":{"value":5,"add":5,"multiply":2},"fault":{"kind":"NONE"},"expected":{"final_value":20,"path":["step1","step2"]}},
+
+    {"id":"A10-T01","class":"TRANSIENT_NODE_FAILURE","baseline_supported":true,"input":{"value":1,"add":3,"multiply":2},"fault":{"kind":"NODE_FAIL_ONCE","target":"step2"},"expected":{"final_value":8,"path":["step1","step2"],"recovered":true}},
+    {"id":"A10-T02","class":"TRANSIENT_NODE_FAILURE","baseline_supported":true,"input":{"value":2,"add":2,"multiply":4},"fault":{"kind":"NODE_FAIL_ONCE","target":"step2"},"expected":{"final_value":16,"path":["step1","step2"],"recovered":true}},
+    {"id":"A10-T03","class":"TRANSIENT_NODE_FAILURE","baseline_supported":true,"input":{"value":3,"add":4,"multiply":3},"fault":{"kind":"NODE_FAIL_ONCE","target":"step2"},"expected":{"final_value":21,"path":["step1","step2"],"recovered":true}},
+    {"id":"A10-T04","class":"TRANSIENT_NODE_FAILURE","baseline_supported":true,"input":{"value":6,"add":1,"multiply":2},"fault":{"kind":"NODE_FAIL_ONCE","target":"step2"},"expected":{"final_value":14,"path":["step1","step2"],"recovered":true}},
+
+    {"id":"A10-P01","class":"PROCESS_INTERRUPT_RESUME","baseline_supported":true,"input":{"value":1,"add":2,"multiply":5},"fault":{"kind":"INTERRUPT_AFTER","target":"step1"},"expected":{"final_value":15,"path":["step1","step2"],"recovered":true}},
+    {"id":"A10-P02","class":"PROCESS_INTERRUPT_RESUME","baseline_supported":true,"input":{"value":2,"add":4,"multiply":2},"fault":{"kind":"INTERRUPT_AFTER","target":"step1"},"expected":{"final_value":12,"path":["step1","step2"],"recovered":true}},
+    {"id":"A10-P03","class":"PROCESS_INTERRUPT_RESUME","baseline_supported":true,"input":{"value":4,"add":3,"multiply":3},"fault":{"kind":"INTERRUPT_AFTER","target":"step1"},"expected":{"final_value":21,"path":["step1","step2"],"recovered":true}},
+    {"id":"A10-P04","class":"PROCESS_INTERRUPT_RESUME","baseline_supported":true,"input":{"value":7,"add":1,"multiply":2},"fault":{"kind":"INTERRUPT_AFTER","target":"step1"},"expected":{"final_value":16,"path":["step1","step2"],"recovered":true}},
+
+    {"id":"A10-F01","class":"DAG_FAN_OUT_FAN_IN","baseline_supported":false,"input":{"value":2,"left_add":3,"right_multiply":4},"fault":{"kind":"NONE"},"expected":{"final_value":13,"path":["split","left","right","join"]}},
+    {"id":"A10-F02","class":"DAG_FAN_OUT_FAN_IN","baseline_supported":false,"input":{"value":3,"left_add":2,"right_multiply":3},"fault":{"kind":"NONE"},"expected":{"final_value":14,"path":["split","left","right","join"]}},
+    {"id":"A10-F03","class":"DAG_FAN_OUT_FAN_IN","baseline_supported":false,"input":{"value":4,"left_add":4,"right_multiply":2},"fault":{"kind":"NONE"},"expected":{"final_value":16,"path":["split","left","right","join"]}},
+    {"id":"A10-F04","class":"DAG_FAN_OUT_FAN_IN","baseline_supported":false,"input":{"value":5,"left_add":1,"right_multiply":5},"fault":{"kind":"NONE"},"expected":{"final_value":31,"path":["split","left","right","join"]}},
+
+    {"id":"A10-N01","class":"CONDITIONAL_NODE_FAILURE_RESUME","baseline_supported":false,"input":{"value":1,"sink_add":4},"fault":{"kind":"NODE_FAIL_ONCE","target":"route_node"},"expected":{"final_value":5,"path":["route_node","sink"],"recovered":true}},
+    {"id":"A10-N02","class":"CONDITIONAL_NODE_FAILURE_RESUME","baseline_supported":false,"input":{"value":2,"sink_add":5},"fault":{"kind":"NODE_FAIL_ONCE","target":"route_node"},"expected":{"final_value":7,"path":["route_node","sink"],"recovered":true}},
+    {"id":"A10-N03","class":"CONDITIONAL_NODE_FAILURE_RESUME","baseline_supported":false,"input":{"value":5,"sink_add":3},"fault":{"kind":"NODE_FAIL_ONCE","target":"route_node"},"expected":{"final_value":8,"path":["route_node","sink"],"recovered":true}},
+    {"id":"A10-N04","class":"CONDITIONAL_NODE_FAILURE_RESUME","baseline_supported":false,"input":{"value":8,"sink_add":2},"fault":{"kind":"NODE_FAIL_ONCE","target":"route_node"},"expected":{"final_value":10,"path":["route_node","sink"],"recovered":true}},
+
+    {"id":"A10-R01","class":"CONDITIONAL_ROUTER_FAILURE_RESUME","baseline_supported":false,"input":{"value":1,"source_add":1,"sink_add":4},"fault":{"kind":"ROUTER_FAIL_ONCE","target":"conditional_router"},"expected":{"final_value":6,"path":["source","conditional_router","sink"],"recovered":true}},
+    {"id":"A10-R02","class":"CONDITIONAL_ROUTER_FAILURE_RESUME","baseline_supported":false,"input":{"value":2,"source_add":1,"sink_add":5},"fault":{"kind":"ROUTER_FAIL_ONCE","target":"conditional_router"},"expected":{"final_value":8,"path":["source","conditional_router","sink"],"recovered":true}},
+    {"id":"A10-R03","class":"CONDITIONAL_ROUTER_FAILURE_RESUME","baseline_supported":false,"input":{"value":5,"source_add":1,"sink_add":3},"fault":{"kind":"ROUTER_FAIL_ONCE","target":"conditional_router"},"expected":{"final_value":9,"path":["source","conditional_router","sink"],"recovered":true}},
+    {"id":"A10-R04","class":"CONDITIONAL_ROUTER_FAILURE_RESUME","baseline_supported":false,"input":{"value":8,"source_add":1,"sink_add":2},"fault":{"kind":"ROUTER_FAIL_ONCE","target":"conditional_router"},"expected":{"final_value":11,"path":["source","conditional_router","sink"],"recovered":true}}
+  ]
+}
