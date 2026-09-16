@@ -92,8 +92,9 @@ def test_rag_status_declares_read_only_no_external_runtime(tmp_path: Path) -> No
     assert status["read_only"] is True
     assert status["external_model"] is False
     assert status["external_vector_store"] is False
-    assert status["retriever"] == "tfidf_cosine_coverage_bigram_authority_bilingual_v4"
+    assert status["retriever"] == "tfidf_cosine_coverage_bigram_authority_bilingual_v5"
     assert status["query_expansion"] == "deterministic_domain_aliases_v1"
+    assert status["implementation_source_policy"] == "rag_code_meta_priority_only_v1"
     assert status["generator"] == "deterministic_extractive_v1"
     assert status["source_count"] == 2
     assert status["chunk_count"] >= 2
@@ -118,6 +119,7 @@ def test_canonical_scientific_query_prefers_current_evidence() -> None:
 
     assert hits
     assert hits[0].path in {"README.md", "docs/MISSION_PROVEN_1_1_10.md"}
+    assert not hits[0].path.startswith("src/sare_lotofacil/rag/")
     assert result.abstained is False
     assert result.citations
     assert result.citations[0].path in {"README.md", "docs/MISSION_PROVEN_1_1_10.md"}
