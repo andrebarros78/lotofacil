@@ -15,6 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 MISSIONS_PATH = ROOT / "governance" / "agents" / "capability_missions.json"
 TOOLS_PATH = ROOT / "governance" / "agents" / "tool_bindings.json"
 AGENTS_PATH = ROOT / "governance" / "agents" / "agents.json"
+SKILLS_PATH = ROOT / "governance" / "agents" / "skills.json"
 
 SAFE_SCRIPT_TARGETS = {
     "scripts/validate_agent_ecosystem.py",
@@ -55,38 +56,70 @@ def _safe_repo_path(relative: str, required_prefix: str) -> Path:
     return candidate
 
 
-def load_contract() -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
+def load_contract() -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], dict[str, Any]]:
     missions_doc = _load_json(MISSIONS_PATH)
     tools_doc = _load_json(TOOLS_PATH)
     agents_doc = _load_json(AGENTS_PATH)
-    if missions_doc.get("schema_version") != 1:
-        raise ValueError("unsupported capability mission schema")
-    if tools_doc.get("schema_version") != 1:
-        raise ValueError("unsupported tool binding schema")
+    skills_doc = _load_json(SKILLS_PATH)
+    for label, doc in (
+        ("capability mission", missions_doc),
+        ("tool binding", tools_doc),
+        ("agent", agents_doc),
+        ("skill", skills_doc),
+    ):
+        if doc.get("schema_version") != 1:
+            raise ValueError(f"unsupported {label} schema")
     if missions_doc.get("authority") != "GITHUB_ONLY":
         raise ValueError("capability proof authority drift")
+    if agents_doc.get("authority") != "GITHUB_ONLY":
+        raise ValueError("agent authority drift")
     if missions_doc.get("runtime_framework") != "NONE":
         raise ValueError("baseline must remain framework-independent")
-    return missions_doc, tools_doc, agents_doc
+    return missions_doc, tools_doc, agents_doc, skills_doc
 
 
 def validate_contract() -> dict[str, Any]:
-    missions_doc, tools_doc, agents_doc = load_contract()
-    agent_ids = {agent["id"] for agent in agents_doc.get("agents", [])}
+    missions_doc, tools_doc, agents_doc, skills_doc = load_contract()
+    agents = agents_doc.get("agents", [])
+    skills = skills_doc.get("skills", [])
     tools = tools_doc.get("tools", [])
     missions = missions_doc.get("missions", [])
+
+    agent_ids = [agent.get("id") for agent in agents]
+    skill_ids = [skill.get("id") for skill in skills]
     tool_ids = [tool.get("id") for tool in tools]
     mission_ids = [mission.get("id") for mission in missions]
 
-    if len(tool_ids) != len(set(tool_ids)):
-        raise ValueError("duplicate tool id")
-    if len(mission_ids) != len(set(mission_ids)):
-        raise ValueError("duplicate mission id")
-    if len(missions) < 8:
+    for label, ids in (
+        ("agent", agent_ids),
+        ("skill", skill_ids),
+        ("tool", tool_ids),
+        ("mission", mission_ids),
+    ):
+        if len(ids) != len(set(ids)):
+            raise ValueError(f"duplicate {label} id")
+
+    if len(missions) < 12:
         raise ValueError("capability baseline unexpectedly small")
 
+    agents_by_id = {agent["id"]: agent for agent in agents}
+    skills_by_id = {skill["id"]: skill for skill in skills}
     tools_by_id = {tool["id"]: tool for tool in tools}
     bound_agents: set[str] = set()
+    assigned_skills: set[str] = set()
+
+    for agent in agents:
+        declared_skills = agent.get("skills")
+        if not isinstance(declared_skills, list) or not declared_skills:
+            raise ValueError(f"agent without skills: {agent.get('id')}")
+        unknown = sorted(set(declared_skills) - set(skills_by_id))
+        if unknown:
+            raise ValueError(f"agent {agent['id']} has unknown skills: {unknown}")
+        assigned_skills.update(declared_skills)
+
+    unassigned_skills = sorted(set(skills_by_id) - assigned_skills)
+    if unassigned_skills:
+        raise ValueError(f"catalog skills without agent assignment: {unassigned_skills}")
 
     for tool in tools:
         kind = tool.get("kind")
@@ -109,10 +142,23 @@ def validate_contract() -> dict[str, Any]:
     for mission in missions:
         agent_id = mission.get("agent_id")
         tool_id = mission.get("tool_id")
-        if agent_id not in agent_ids:
+        required_skills = mission.get("required_skills")
+        if agent_id not in agents_by_id:
             raise ValueError(f"unknown mission agent: {agent_id}")
         if tool_id not in tools_by_id:
             raise ValueError(f"unknown mission tool: {tool_id}")
+        if not isinstance(required_skills, list) or not required_skills:
+            raise ValueError(f"mission without required_skills: {mission.get('id')}")
+        unknown_required = sorted(set(required_skills) - set(skills_by_id))
+        if unknown_required:
+            raise ValueError(
+                f"mission {mission['id']} has unknown required skills: {unknown_required}"
+            )
+        missing = sorted(set(required_skills) - set(agents_by_id[agent_id]["skills"]))
+        if missing:
+            raise ValueError(
+                f"mission {mission['id']} agent {agent_id} lacks required skills: {missing}"
+            )
         if mission.get("risk_level") != "LOW":
             raise ValueError(f"baseline mission is not LOW risk: {mission.get('id')}")
         if mission.get("scientific_claim_level") not in ALLOWED_CLAIM_LEVELS:
@@ -120,6 +166,10 @@ def validate_contract() -> dict[str, Any]:
         if mission.get("acceptance") != "exit_code_zero":
             raise ValueError(f"unsupported acceptance rule: {mission.get('id')}")
         bound_agents.add(agent_id)
+
+    unbound_agents = sorted(set(agents_by_id) - bound_agents)
+    if unbound_agents:
+        raise ValueError(f"agents without executable mission binding: {unbound_agents}")
 
     policy = missions_doc.get("mission_policy", {})
     if policy.get("read_only_only") is not True:
@@ -140,7 +190,12 @@ def validate_contract() -> dict[str, Any]:
     return {
         "missions": len(missions),
         "tools": len(tools),
+        "agents": len(agents),
+        "skills": len(skills),
         "bound_agents": len(bound_agents),
+        "assigned_skills": len(assigned_skills),
+        "all_agents_bound": len(bound_agents) == len(agents),
+        "all_skills_assigned": len(assigned_skills) == len(skills),
         "runtime_framework": missions_doc["runtime_framework"],
         "authority": missions_doc["authority"],
     }
@@ -156,16 +211,20 @@ def build_command(tool: dict[str, Any]) -> list[str]:
 
 
 def build_plan() -> list[dict[str, Any]]:
-    missions_doc, tools_doc, _ = load_contract()
+    missions_doc, tools_doc, agents_doc, _ = load_contract()
     validate_contract()
     tools_by_id = {tool["id"]: tool for tool in tools_doc["tools"]}
+    agents_by_id = {agent["id"]: agent for agent in agents_doc["agents"]}
     plan: list[dict[str, Any]] = []
     for mission in missions_doc["missions"]:
         tool = tools_by_id[mission["tool_id"]]
+        agent = agents_by_id[mission["agent_id"]]
         plan.append(
             {
                 "mission_id": mission["id"],
                 "agent_id": mission["agent_id"],
+                "required_skills": mission["required_skills"],
+                "agent_skills": agent["skills"],
                 "tool_id": mission["tool_id"],
                 "purpose": mission["purpose"],
                 "risk_level": mission["risk_level"],
@@ -178,7 +237,7 @@ def build_plan() -> list[dict[str, Any]]:
 
 def execute(output_path: Path) -> dict[str, Any]:
     contract = validate_contract()
-    missions_doc, tools_doc, _ = load_contract()
+    missions_doc, tools_doc, agents_doc, skills_doc = load_contract()
     tools_by_id = {tool["id"]: tool for tool in tools_doc["tools"]}
     timeout = int(tools_doc.get("policy", {}).get("timeout_seconds", 180))
 
@@ -218,6 +277,7 @@ def execute(output_path: Path) -> dict[str, Any]:
             "ordinal": ordinal,
             "mission_id": mission["id"],
             "agent_id": mission["agent_id"],
+            "required_skills": mission["required_skills"],
             "tool_id": mission["tool_id"],
             "status": status,
             "returncode": returncode,
@@ -248,6 +308,7 @@ def execute(output_path: Path) -> dict[str, Any]:
         {
             "mission_id": result["mission_id"],
             "agent_id": result["agent_id"],
+            "required_skills": result["required_skills"],
             "tool_id": result["tool_id"],
             "returncode": result["returncode"],
             "status": result["status"],
@@ -255,6 +316,8 @@ def execute(output_path: Path) -> dict[str, Any]:
         for result in results
     ]
     definition_material = {
+        "agents": agents_doc["agents"],
+        "skills": skills_doc["skills"],
         "missions": missions_doc["missions"],
         "tools": tools_doc["tools"],
     }
@@ -266,7 +329,7 @@ def execute(output_path: Path) -> dict[str, Any]:
         "status": status,
         "authority": contract["authority"],
         "runtime_framework": contract["runtime_framework"],
-        "baseline_type": "BOUNDED_DETERMINISTIC_AUTONOMY",
+        "baseline_type": "BOUNDED_DETERMINISTIC_AUTONOMY_WITH_SKILL_BINDING",
         "environment": {
             "python": platform.python_version(),
             "platform": platform.platform(),
@@ -277,9 +340,12 @@ def execute(output_path: Path) -> dict[str, Any]:
             "missions_total": len(results),
             "missions_passed": passed,
             "missions_failed": failed,
+            "agents_bound": contract["bound_agents"],
+            "skills_assigned": contract["assigned_skills"],
             "autonomous_completion_rate": passed / len(results) if results else 0.0,
             "human_interventions": 0,
             "tool_binding_violations": 0,
+            "skill_binding_violations": 0,
             "runtime_framework_dependencies": 0,
             "total_duration_ms": total_duration_ms,
         },
@@ -288,8 +354,8 @@ def execute(output_path: Path) -> dict[str, Any]:
         "results": results,
         "handoffs": handoffs,
         "limitations": [
-            "This proves bounded deterministic autonomous execution of predeclared read-only missions; it does not prove open-ended LLM planning or adaptive reasoning.",
-            "No external MCP server, paid model, new account or agent runtime framework is exercised by this baseline.",
+            "This proves bounded deterministic autonomous execution of predeclared read-only missions with explicit agent-to-skill-to-tool bindings; it does not prove open-ended LLM planning.",
+            "No paid model, new account or external agent runtime framework is exercised by this baseline.",
             "Passing capability missions does not change predictive_evidence and cannot promote a scientific claim.",
         ],
     }
@@ -314,7 +380,16 @@ def main() -> int:
         return 0
 
     report = execute((ROOT / args.output).resolve())
-    print(json.dumps({"status": report["status"], "metrics": report["metrics"], "replay_fingerprint_sha256": report["replay_fingerprint_sha256"]}, sort_keys=True))
+    print(
+        json.dumps(
+            {
+                "status": report["status"],
+                "metrics": report["metrics"],
+                "replay_fingerprint_sha256": report["replay_fingerprint_sha256"],
+            },
+            sort_keys=True,
+        )
+    )
     return 0 if report["status"] == "AGENT_CAPABILITY_PROOF_PASS" else 1
 
 
