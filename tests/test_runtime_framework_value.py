@@ -123,3 +123,22 @@ def test_a10_report_path_cannot_escape_artifacts() -> None:
     with pytest.raises(ValueError):
         a10.artifact_path("outside-a10.json")
     assert a10.artifact_path("artifacts/a10-runtime-value-test.json").parent == (ROOT / "artifacts").resolve()
+
+
+def test_a10_registry_and_history_record_conclusive_negative_decision() -> None:
+    gaps = {gap["id"]: gap for gap in load_json("governance/agents/capability_gaps.json")["gaps"]}
+    assert gaps["GAP-A10"]["status"] == "NOT_JUSTIFIED_FOR_CURRENT_BOUNDED_BASELINE"
+
+    proof = load_json("governance/agents/runtime_framework_value_proof_history.json")["proofs"][-1]
+    assert proof["decision"] == "NOT_JUSTIFIED_FOR_CURRENT_BOUNDED_BASELINE"
+    assert proof["confirmatory_evidence"]["workflow_run_id"] == 35098538835
+    assert proof["confirmatory_evidence"]["artifact_id"] == 10447710205
+    assert proof["confirmatory_evidence"]["github_sha"] == "2b9a24ff6b83ef54a9f6b34be3f45b6196f3ef63"
+    assert proof["metrics"]["candidate"]["correct_final_states"] == 20
+    assert proof["metrics"]["candidate"]["hidden_failure_successes"] == 4
+    assert proof["metrics"]["dependency_cost"]["runtime_dependency_distributions_delta"] == 29
+    assert proof["metrics"]["comparison"]["value_established"] is False
+    assert proof["safety"]["authority_violations"] == 0
+    assert proof["governance_effect"]["canonical_runtime_framework"] == "NONE"
+    assert proof["governance_effect"]["canonical_framework_adoption_authorized"] is False
+    assert proof["governance_effect"]["general_agent_framework_inferiority_proven"] is False
