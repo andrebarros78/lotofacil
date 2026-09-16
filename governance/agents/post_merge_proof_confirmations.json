@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "authority": "GITHUB_ONLY",
+  "policy": {
+    "mode": "APPEND_ONLY_POST_MERGE_CONFIRMATION",
+    "historical_proof_mutation_forbidden": true,
+    "claim_expansion_forbidden": true,
+    "authority_expansion_forbidden": true
+  },
+  "confirmations": [
+    {
+      "confirmation_id": "GAP-A10-POST-MERGE-414FA645-V1",
+      "gap_id": "GAP-A10",
+      "registry_status": "NOT_JUSTIFIED_FOR_CURRENT_BOUNDED_BASELINE",
+      "proof_history_file": "runtime_framework_value_proof_history.json",
+      "proof_id": "AGENT-RUNTIME-FRAMEWORK-VALUE-BOUNDED-V1",
+      "original_confirmatory_evidence": {
+        "github_sha": "2b9a24ff6b83ef54a9f6b34be3f45b6196f3ef63",
+        "workflow_run_id": 35098538835,
+        "artifact_id": 10447710205,
+        "artifact_digest": "sha256:1fab203f43802d224067b95910d6cdc996a012dd4a24075dc880ed3dc1c04710"
+      },
+      "post_merge_confirmation": {
+        "governance_pr_number": 60,
+        "canonical_main_sha": "414fa645e37a4576e2327445c7d9e8575362966f",
+        "workflow_name": "Runtime Framework Value Proof",
+        "workflow_run_id": 35099323802,
+        "workflow_conclusion": "success",
+        "artifact_id": 10447876134,
+        "artifact_name": "runtime-framework-value-proof",
+        "artifact_digest": "sha256:da163d02d0f25faa71d8a389feb39a051b16751a178e2789586d07db61d762cc"
+      },
+      "governance_effect": {
+        "status_changed": false,
+        "claim_expanded": false,
+        "runtime_framework_changed": false,
+        "new_authority_granted": false
+      }
+    }
+  ]
+}
