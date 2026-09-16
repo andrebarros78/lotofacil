@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from sare_lotofacil.rag.core import RepositoryRAG
+from sare_lotofacil.rag import RepositoryRAG
 
 
 def _fixture_repository(root: Path) -> None:
@@ -92,7 +92,7 @@ def test_rag_status_declares_read_only_no_external_runtime(tmp_path: Path) -> No
     assert status["read_only"] is True
     assert status["external_model"] is False
     assert status["external_vector_store"] is False
-    assert status["retriever"] == "tfidf_cosine_v1"
+    assert status["retriever"] == "tfidf_cosine_coverage_bigram_v2"
     assert status["generator"] == "deterministic_extractive_v1"
     assert status["source_count"] == 2
     assert status["chunk_count"] >= 2
@@ -106,3 +106,17 @@ def test_rag_context_pack_contains_source_markers(tmp_path: Path) -> None:
 
     assert "[SOURCE README.md:L" in context
     assert "GitHub Actions" in context
+
+
+def test_canonical_scientific_query_does_not_rank_rag_usage_doc_first() -> None:
+    repository_root = Path(__file__).resolve().parents[1]
+    rag = RepositoryRAG.from_repository(repository_root)
+
+    hits = rag.search("Qual é a conclusão científica sobre vantagem preditiva?", top_k=5)
+
+    assert hits
+    assert hits[0].path != "docs/RAG.md"
+    assert any(
+        hit.path == "README.md" or hit.path.startswith("docs/MISSION_PROVEN")
+        for hit in hits[:3]
+    )
