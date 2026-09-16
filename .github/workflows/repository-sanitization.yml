@@ -1,0 +1,48 @@
+name: Repository Sanitization
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  sanitize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: "3.13"
+      - name: Install locked environment
+        run: python -m pip install -c requirements.lock.txt -e '.[dev]'
+      - name: Repository sanitization tests
+        run: python -m pytest -q tests/test_repository_sanitization.py
+      - name: Scan tracked repository
+        run: |
+          mkdir -p artifacts
+          python scripts/sanitize_repository.py --root . --out artifacts/repository-sanitization.json
+      - name: Verify sanitization report
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          report = json.loads(Path('artifacts/repository-sanitization.json').read_text(encoding='utf-8'))
+          assert report['status'] == 'REPOSITORY_SANITIZATION_PASS'
+          assert report['metrics']['violations'] == 0
+          assert len(report['manifest_sha256']) == 64
+          print('REPOSITORY_SANITIZATION_PROOF_PASS')
+          print('MANIFEST_SHA256=' + report['manifest_sha256'])
+          print('FILES_SCANNED=' + str(report['metrics']['files_scanned']))
+          PY
+      - name: Upload sanitization evidence
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: repository-sanitization
+          path: artifacts/repository-sanitization.json
+          if-no-files-found: error
