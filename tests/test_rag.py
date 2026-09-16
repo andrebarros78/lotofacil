@@ -61,6 +61,20 @@ def test_rag_abstains_when_repository_has_no_support(tmp_path: Path) -> None:
     assert "Não encontrei evidência suficiente" in result.answer
 
 
+def test_rag_multiterm_query_requires_more_than_incidental_single_term_match(tmp_path: Path) -> None:
+    _fixture_repository(tmp_path)
+    (tmp_path / "README.md").write_text(
+        "# Sistema\n\nO valor inexistente é tratado como ausência de dado.\n",
+        encoding="utf-8",
+    )
+    rag = RepositoryRAG.from_repository(tmp_path, source_specs=("README.md", "docs"), max_chunk_chars=256)
+
+    result = rag.answer("xilofonium quasar ultravioleta inexistente zqpt", top_k=5)
+
+    assert result.abstained is True
+    assert result.citations == ()
+
+
 def test_rag_source_digest_is_deterministic_and_changes_with_source(tmp_path: Path) -> None:
     _fixture_repository(tmp_path)
     first = RepositoryRAG.from_repository(tmp_path, source_specs=("README.md", "docs"), max_chunk_chars=256)
@@ -92,9 +106,10 @@ def test_rag_status_declares_read_only_no_external_runtime(tmp_path: Path) -> No
     assert status["read_only"] is True
     assert status["external_model"] is False
     assert status["external_vector_store"] is False
-    assert status["retriever"] == "tfidf_cosine_coverage_bigram_authority_bilingual_v5"
+    assert status["retriever"] == "tfidf_cosine_coverage_bigram_authority_bilingual_support_v6"
     assert status["query_expansion"] == "deterministic_domain_aliases_v1"
     assert status["implementation_source_policy"] == "rag_code_meta_priority_only_v1"
+    assert status["multi_term_support_policy"] == "minimum_two_matches_for_expanded_queries_ge_4_v1"
     assert status["generator"] == "deterministic_extractive_v1"
     assert status["source_count"] == 2
     assert status["chunk_count"] >= 2
