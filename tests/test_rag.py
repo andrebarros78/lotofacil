@@ -92,7 +92,8 @@ def test_rag_status_declares_read_only_no_external_runtime(tmp_path: Path) -> No
     assert status["read_only"] is True
     assert status["external_model"] is False
     assert status["external_vector_store"] is False
-    assert status["retriever"] == "tfidf_cosine_coverage_bigram_authority_v3"
+    assert status["retriever"] == "tfidf_cosine_coverage_bigram_authority_bilingual_v4"
+    assert status["query_expansion"] == "deterministic_domain_aliases_v1"
     assert status["generator"] == "deterministic_extractive_v1"
     assert status["source_count"] == 2
     assert status["chunk_count"] >= 2
@@ -121,3 +122,21 @@ def test_canonical_scientific_query_prefers_current_evidence() -> None:
     assert result.citations
     assert result.citations[0].path in {"README.md", "docs/MISSION_PROVEN_1_1_10.md"}
     assert "docs/RAG.md" not in {citation.path for citation in result.citations}
+
+
+def test_rag_expands_portuguese_governance_query_to_english(tmp_path: Path) -> None:
+    _fixture_repository(tmp_path)
+    (tmp_path / "AGENTS.md").write_text(
+        "# Authority\n\nNo agent writes directly to main or operations/state.\n",
+        encoding="utf-8",
+    )
+    rag = RepositoryRAG.from_repository(
+        tmp_path,
+        source_specs=("README.md", "AGENTS.md", "docs"),
+        max_chunk_chars=256,
+    )
+
+    hits = rag.search("Um agente pode escrever diretamente em main ou operations/state?", top_k=3)
+
+    assert hits
+    assert hits[0].path == "AGENTS.md"
