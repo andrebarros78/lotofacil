@@ -4,7 +4,7 @@ import argparse
 import json
 from pathlib import Path
 
-from sare_lotofacil.rag.core import RepositoryRAG
+from sare_lotofacil.rag import RepositoryRAG
 
 
 def build_parser() -> argparse.ArgumentParser:
