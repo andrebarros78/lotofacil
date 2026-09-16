@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "proof_id": "AUTOMATIC-FAILURE-RECOVERY-BOUNDED-V1",
+  "gap_id": "GAP-A07",
+  "frozen_before_implementation": true,
+  "cases": [
+    {"id":"A07-01","failure_class":"NETWORK_TRANSIENT","retryable":true,"same_target":true,"outcomes":["FAIL","PASS"],"expected":"RECOVER","expected_action":"RETRY_SAME_OPERATION"},
+    {"id":"A07-02","failure_class":"NETWORK_TRANSIENT","retryable":true,"same_target":true,"outcomes":["FAIL","FAIL"],"expected":"BLOCK","expected_action":"RETRY_SAME_OPERATION"},
+    {"id":"A07-03","failure_class":"NETWORK_PERSISTENT","outcomes":["FAIL"],"expected":"BLOCK","expected_action":"BLOCK"},
+    {"id":"A07-04","failure_class":"NETWORK_TRANSIENT","retryable":false,"same_target":true,"outcomes":["FAIL"],"expected":"BLOCK","expected_action":"BLOCK"},
+    {"id":"A07-05","failure_class":"NETWORK_TRANSIENT","retryable":true,"same_target":false,"outcomes":["FAIL"],"expected":"BLOCK","expected_action":"BLOCK"},
+
+    {"id":"A07-06","failure_class":"AUTHORIZATION_EXPIRED_REFRESHABLE","refresh_capability_declared":true,"same_authority":true,"outcomes":["FAIL","PASS"],"expected":"RECOVER","expected_action":"REFRESH_DECLARED_AUTH_CONTEXT"},
+    {"id":"A07-07","failure_class":"AUTHORIZATION_EXPIRED_REFRESHABLE","refresh_capability_declared":true,"same_authority":true,"outcomes":["FAIL","FAIL"],"expected":"BLOCK","expected_action":"REFRESH_DECLARED_AUTH_CONTEXT"},
+    {"id":"A07-08","failure_class":"AUTHORIZATION_FORBIDDEN","outcomes":["FAIL"],"expected":"BLOCK","expected_action":"BLOCK"},
+    {"id":"A07-09","failure_class":"AUTHORIZATION_EXPIRED_REFRESHABLE","refresh_capability_declared":false,"same_authority":true,"outcomes":["FAIL"],"expected":"BLOCK","expected_action":"BLOCK"},
+    {"id":"A07-10","failure_class":"AUTHORIZATION_EXPIRED_REFRESHABLE","refresh_capability_declared":true,"same_authority":false,"outcomes":["FAIL"],"expected":"BLOCK","expected_action":"BLOCK"},
+
+    {"id":"A07-11","failure_class":"DEPENDENCY_UNAVAILABLE_WITH_FALLBACK","fallback_declared":true,"fallback_same_authority":true,"outcomes":["FAIL","PASS"],"expected":"RECOVER","expected_action":"SWITCH_DECLARED_FALLBACK"},
+    {"id":"A07-12","failure_class":"DEPENDENCY_UNAVAILABLE_WITH_FALLBACK","fallback_declared":true,"fallback_same_authority":true,"outcomes":["FAIL","FAIL"],"expected":"BLOCK","expected_action":"SWITCH_DECLARED_FALLBACK"},
+    {"id":"A07-13","failure_class":"DEPENDENCY_UNAVAILABLE_NO_FALLBACK","outcomes":["FAIL"],"expected":"BLOCK","expected_action":"BLOCK"},
+    {"id":"A07-14","failure_class":"DEPENDENCY_UNAVAILABLE_WITH_FALLBACK","fallback_declared":false,"fallback_same_authority":true,"outcomes":["FAIL"],"expected":"BLOCK","expected_action":"BLOCK"},
+    {"id":"A07-15","failure_class":"DEPENDENCY_UNAVAILABLE_WITH_FALLBACK","fallback_declared":true,"fallback_same_authority":false,"outcomes":["FAIL"],"expected":"BLOCK","expected_action":"BLOCK"},
+
+    {"id":"A07-16","failure_class":"REPLANNABLE_STEP_FAILURE","alternative_step_declared":true,"alternative_same_authority":true,"outcomes":["FAIL","PASS"],"expected":"RECOVER","expected_action":"REPLAN_TO_DECLARED_ALTERNATIVE"},
+    {"id":"A07-17","failure_class":"REPLANNABLE_STEP_FAILURE","alternative_step_declared":true,"alternative_same_authority":true,"outcomes":["FAIL","FAIL"],"expected":"BLOCK","expected_action":"REPLAN_TO_DECLARED_ALTERNATIVE"},
+    {"id":"A07-18","failure_class":"NON_REPLANNABLE_STEP_FAILURE","outcomes":["FAIL"],"expected":"BLOCK","expected_action":"BLOCK"},
+    {"id":"A07-19","failure_class":"REPLANNABLE_STEP_FAILURE","alternative_step_declared":false,"alternative_same_authority":true,"outcomes":["FAIL"],"expected":"BLOCK","expected_action":"BLOCK"},
+    {"id":"A07-20","failure_class":"REPLANNABLE_STEP_FAILURE","alternative_step_declared":true,"alternative_same_authority":false,"outcomes":["FAIL"],"expected":"BLOCK","expected_action":"BLOCK"},
+
+    {"id":"A07-21","failure_class":"UNKNOWN_FAILURE","outcomes":["FAIL"],"expected":"BLOCK","expected_action":"BLOCK"},
+    {"id":"A07-22","failure_class":"NETWORK_TRANSIENT","retryable":true,"same_target":true,"outcomes":["PASS"],"expected":"PASS","expected_action":"NONE"},
+    {"id":"A07-23","failure_class":"NETWORK_TRANSIENT","retryable":true,"same_target":true,"outcomes":["FAIL","PASS"],"requests_write":true,"expected":"BLOCK","expected_action":"BLOCK"},
+    {"id":"A07-24","failure_class":"DEPENDENCY_UNAVAILABLE_WITH_FALLBACK","fallback_declared":true,"fallback_same_authority":true,"outcomes":["FAIL","PASS"],"requests_credential_material":true,"expected":"BLOCK","expected_action":"BLOCK"}
+  ]
+}
