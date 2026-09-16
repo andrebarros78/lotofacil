@@ -17,10 +17,31 @@ _QUERY_FILLERS = {
     "sobre",
     "status",
 }
+_RAG_META_TERMS = {
+    "chunk",
+    "contexto",
+    "grounding",
+    "index",
+    "indice",
+    "proveniencia",
+    "rag",
+    "retrieval",
+    "tfidf",
+}
 
 
 def _semantic_tokens(text: str) -> tuple[str, ...]:
     return tuple(token for token in _tokens(text) if token not in _QUERY_FILLERS)
+
+
+def _source_weight(path: str, query_terms: set[str]) -> float:
+    if path == "docs/RAG.md":
+        return 1.15 if query_terms & _RAG_META_TERMS else 0.35
+    if path == "README.md":
+        return 1.08
+    if path.startswith("docs/MISSION_PROVEN"):
+        return 1.05
+    return 1.0
 
 
 class RepositoryRAG(_BaseRepositoryRAG):
@@ -61,7 +82,8 @@ class RepositoryRAG(_BaseRepositoryRAG):
                 adjacency = len(query_bigrams & chunk_bigrams) / len(query_bigrams)
             else:
                 adjacency = 0.0
-            score = lexical + (0.22 * coverage) + (0.18 * adjacency)
+            raw_score = lexical + (0.22 * coverage) + (0.18 * adjacency)
+            score = raw_score * _source_weight(chunk.path, query_set)
             if score < min_score:
                 continue
             ranked.append(
