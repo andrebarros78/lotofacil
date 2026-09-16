@@ -29,11 +29,51 @@ _RAG_META_TERMS = {
     "retrieval",
     "tfidf",
 }
+_QUERY_ALIASES = {
+    "agente": ("agent",),
+    "agentes": ("agent", "agents"),
+    "escrever": ("write", "writes"),
+    "escrita": ("write", "writing"),
+    "diretamente": ("direct", "directly"),
+    "autoridade": ("authority",),
+    "operacional": ("operational",),
+    "operacao": ("operation", "operational"),
+    "canonica": ("canonical",),
+    "canonico": ("canonical",),
+    "executor": ("executor",),
+    "aceito": ("accepted", "allowed"),
+    "adquirido": ("acquired",),
+    "autorizacao": ("authorization", "auth"),
+    "controles": ("controls",),
+    "carteira": ("portfolio",),
+    "carteiras": ("portfolio", "portfolios"),
+    "cartoes": ("cards",),
+    "quantidade": ("count", "quantity"),
+    "custo": ("cost",),
+    "despesa": ("spend", "expense", "actual"),
+    "real": ("actual",),
+    "protege": ("protect", "protection"),
+    "aberto": ("opened", "open"),
+    "vantagem": ("advantage",),
+    "preditiva": ("predictive",),
+    "conclusao": ("conclusion",),
+    "cientifica": ("scientific",),
+    "padrao": ("standard",),
+    "exigidos": ("required",),
+}
 _CURRENT_MISSION_PATH = f"docs/MISSION_PROVEN_{__version__.replace('.', '_')}.md"
 
 
 def _semantic_tokens(text: str) -> tuple[str, ...]:
     return tuple(token for token in _tokens(text) if token not in _QUERY_FILLERS)
+
+
+def _query_tokens(text: str) -> tuple[str, ...]:
+    base = _semantic_tokens(text)
+    expanded: list[str] = list(base)
+    for token in base:
+        expanded.extend(_QUERY_ALIASES.get(token, ()))
+    return tuple(expanded)
 
 
 def _source_weight(path: str, query_terms: set[str]) -> float:
@@ -43,6 +83,12 @@ def _source_weight(path: str, query_terms: set[str]) -> float:
         return 1.30
     if path.startswith("docs/MISSION_PROVEN_1_1_") and path.endswith(".md"):
         return 0.68
+    if path == "AGENTS.md" and query_terms & {"agent", "agents", "write", "direct", "directly", "main", "operations/state"}:
+        return 1.32
+    if path == "docs/GITHUB_OPERATIONS.md" and query_terms & {"authority", "operational", "canonical", "github", "executor"}:
+        return 1.25
+    if path.startswith("governance/agents/") and query_terms & {"agent", "agents", "mcp", "acquired", "authorization", "write"}:
+        return 1.18
     if path == "README.md":
         return 1.18
     if path == "docs/MISSION_PROVEN.md":
@@ -55,9 +101,10 @@ class RepositoryRAG(_BaseRepositoryRAG):
 
     def status(self) -> dict[str, object]:
         payload = super().status()
-        payload["engine_version"] = "1.2"
-        payload["retriever"] = "tfidf_cosine_coverage_bigram_authority_v3"
+        payload["engine_version"] = "1.3"
+        payload["retriever"] = "tfidf_cosine_coverage_bigram_authority_bilingual_v4"
         payload["current_mission_path"] = _CURRENT_MISSION_PATH
+        payload["query_expansion"] = "deterministic_domain_aliases_v1"
         return payload
 
     def search(self, query: str, *, top_k: int = 5, min_score: float = 0.02) -> tuple[RagHit, ...]:
@@ -68,7 +115,7 @@ class RepositoryRAG(_BaseRepositoryRAG):
         if not 0.0 <= min_score <= 2.0:
             raise ValueError("RAG_MIN_SCORE_OUT_OF_RANGE")
 
-        query_terms = _semantic_tokens(query)
+        query_terms = _query_tokens(query)
         if not query_terms:
             return ()
         query_counts = Counter(query_terms)
@@ -77,7 +124,8 @@ class RepositoryRAG(_BaseRepositoryRAG):
             return ()
 
         query_set = set(query_terms)
-        query_bigrams = set(zip(query_terms, query_terms[1:]))
+        semantic_query_terms = _semantic_tokens(query)
+        query_bigrams = set(zip(semantic_query_terms, semantic_query_terms[1:]))
         ranked: list[RagHit] = []
         for chunk in self.chunks:
             chunk_terms = _semantic_tokens(chunk.content)
@@ -121,7 +169,7 @@ class RepositoryRAG(_BaseRepositoryRAG):
             )
 
         strong_threshold = max(0.05, hits[0].score * 0.55)
-        query_terms = set(_semantic_tokens(question))
+        query_terms = set(_query_tokens(question))
         selected: list[tuple[RagHit, str]] = []
         seen_excerpts: set[str] = set()
         for hit in hits:
