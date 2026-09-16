@@ -105,11 +105,12 @@ class RepositoryRAG(_BaseRepositoryRAG):
 
     def status(self) -> dict[str, object]:
         payload = super().status()
-        payload["engine_version"] = "1.4"
-        payload["retriever"] = "tfidf_cosine_coverage_bigram_authority_bilingual_v5"
+        payload["engine_version"] = "1.5"
+        payload["retriever"] = "tfidf_cosine_coverage_bigram_authority_bilingual_support_v6"
         payload["current_mission_path"] = _CURRENT_MISSION_PATH
         payload["query_expansion"] = "deterministic_domain_aliases_v1"
         payload["implementation_source_policy"] = "rag_code_meta_priority_only_v1"
+        payload["multi_term_support_policy"] = "minimum_two_matches_for_expanded_queries_ge_4_v1"
         return payload
 
     def search(self, query: str, *, top_k: int = 5, min_score: float = 0.02) -> tuple[RagHit, ...]:
@@ -129,14 +130,18 @@ class RepositoryRAG(_BaseRepositoryRAG):
             return ()
 
         query_set = set(query_terms)
+        minimum_matches = 2 if len(query_set) >= 4 else 1
         semantic_query_terms = _semantic_tokens(query)
         query_bigrams = set(zip(semantic_query_terms, semantic_query_terms[1:]))
         ranked: list[RagHit] = []
         for chunk in self.chunks:
             chunk_terms = _semantic_tokens(chunk.content)
             chunk_set = set(chunk_terms)
+            matched_terms = len(query_set & chunk_set)
+            if matched_terms < minimum_matches:
+                continue
             lexical = self._cosine(query_vector, self._vector(self._token_counts[chunk.chunk_id]))
-            coverage = len(query_set & chunk_set) / len(query_set)
+            coverage = matched_terms / len(query_set)
             if query_bigrams:
                 chunk_bigrams = set(zip(chunk_terms, chunk_terms[1:]))
                 adjacency = len(query_bigrams & chunk_bigrams) / len(query_bigrams)
