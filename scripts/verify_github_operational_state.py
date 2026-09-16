@@ -22,7 +22,7 @@ def _sha256(payload: object) -> str:
 
 
 def _prediction_hash_payload(prediction: dict[str, object]) -> dict[str, object]:
-    return {
+    payload = {
         "target_contest": prediction["target_contest"],
         "created_at_utc": prediction["created_at_utc"],
         "training_last_contest": prediction["training_last_contest"],
@@ -30,6 +30,11 @@ def _prediction_hash_payload(prediction: dict[str, object]) -> dict[str, object]
         "protocol_hash": prediction["protocol_hash"],
         "models": prediction["models"],
     }
+    # Keep the auditor cryptographically compatible with the producer:
+    # legacy predictions did not include PRIMARY_CARD, while current ones do.
+    if "primary_card" in prediction:
+        payload["primary_card"] = prediction["primary_card"]
+    return payload
 
 
 def verify(state_dir: Path) -> dict[str, object]:
