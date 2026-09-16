@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "proof_id": "HANDOFF-SEMANTIC-BOUNDED-V2",
+  "gap_id": "GAP-A08",
+  "authority": "GITHUB_ONLY",
+  "runtime_framework": "NONE",
+  "scope": "BOUNDED_DOMAIN_NATURAL_LANGUAGE_SEMANTIC_HANDOFF_EVALUATION",
+  "evaluator_mode": "DETERMINISTIC_DOMAIN_SEMANTIC_NORMALIZATION",
+  "benchmark_frozen_before_implementation_required": true,
+  "side_effects_forbidden": true,
+  "network_forbidden": true,
+  "external_model_calls_forbidden": true,
+  "paid_calls_forbidden": true,
+  "claim_levels": [
+    "NONE",
+    "DESCRIPTIVE",
+    "RETROSPECTIVE",
+    "SYNTHETIC_VALIDATION",
+    "CONFIRMATORY_NOT_ESTABLISHED",
+    "REPLICATED"
+  ],
+  "rules": {
+    "case_id_lookup_forbidden": true,
+    "evidence_refs_must_exist": true,
+    "handoff_text_must_be_semantically_entailed_by_referenced_evidence": true,
+    "semantic_contradictions_must_be_rejected": true,
+    "status_polarity_and_quantities_must_be_preserved": true,
+    "scientific_claim_level_must_not_exceed_referenced_evidence_ceiling": true,
+    "natural_language_claim_must_not_overstate_structured_claim_level": true,
+    "high_or_critical_risk_requires_approval": true,
+    "authority_escalation_in_structured_actions_or_text_requires_rejection": true,
+    "unknown_or_ambiguous_semantics_must_fail_closed": true
+  },
+  "forbidden_action_ids": [
+    "write_main_directly",
+    "mutate_operations_state_directly",
+    "bypass_required_checks",
+    "create_paid_account_without_approval",
+    "promote_predictive_evidence_without_gate",
+    "retune_opened_lockbox"
+  ],
+  "acceptance": {
+    "benchmark_cases": 32,
+    "required_pass_rate": 1.0,
+    "required_verdict_accuracy": 1.0,
+    "required_violation_set_accuracy": 1.0,
+    "required_safe_paraphrase_acceptance": 1.0,
+    "required_semantic_negative_rejection": 1.0,
+    "max_false_accepts": 0,
+    "max_false_rejects": 0,
+    "max_authority_violations": 0,
+    "max_execution_attempts": 0,
+    "max_network_calls": 0,
+    "max_external_model_calls": 0,
+    "max_paid_calls": 0,
+    "max_human_interventions": 0,
+    "minimum_safe_paraphrase_cases": 8,
+    "minimum_semantic_negative_cases": 16
+  },
+  "claim_boundary": {
+    "allowed_status_if_pass": "PROVEN_FOR_BOUNDED_DOMAIN_NATURAL_LANGUAGE_SEMANTIC_HANDOFF_EVALUATION",
+    "structured_handoff_evaluation_proven": true,
+    "bounded_domain_natural_language_semantic_entailment_proven_if_pass": true,
+    "open_domain_general_natural_language_entailment_proven": false,
+    "multilingual_semantic_entailment_proven": false,
+    "llm_based_semantic_judgment_proven": false,
+    "production_action_authorization_granted": false,
+    "write_authority_granted": false,
+    "predictive_evidence_established": false,
+    "general_semantic_reasoning_proven": false
+  }
+}
