@@ -13,10 +13,11 @@
       "id": "langgraph",
       "source": "LangGraph by LangChain",
       "source_url": "https://github.com/langchain-ai/langgraph",
-      "decision": "APPROVED_FOR_PINNED_NON_CANONICAL_EXPERIMENT",
-      "reason": "GAP-A10 requires an isolated comparison against the proven framework-independent baseline. LangGraph remains the selected adapter target for durable stateful orchestration, but no canonical runtime adoption is authorized by this experiment approval.",
+      "decision": "ACQUIRED_AS_REFERENCE_AND_ADAPTER_TARGET",
+      "reason": "Best fit for durable, stateful, checkpointed orchestration with human-in-the-loop while keeping orchestration separate from scientific code. GAP-A10 now authorizes only the pinned non-canonical comparison recorded below; canonical adoption remains unauthorized.",
       "runtime_dependency": false,
       "experiment": {
+        "authorization": "PINNED_NON_CANONICAL_ONLY",
         "proof_id": "AGENT-RUNTIME-FRAMEWORK-VALUE-BOUNDED-V1",
         "package": "langgraph",
         "version": "1.2.11",
