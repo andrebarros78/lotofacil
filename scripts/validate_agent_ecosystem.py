@@ -4,13 +4,15 @@ import json
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-AGENTS_PATH = ROOT / "governance" / "agents" / "agents.json"
-SKILLS_PATH = ROOT / "governance" / "agents" / "skills.json"
-ACQUISITIONS_PATH = ROOT / "governance" / "agents" / "acquisitions.json"
-HANDOFF_SCHEMA_PATH = ROOT / "governance" / "agents" / "handoff.schema.json"
-REDTEAM_PATH = ROOT / "governance" / "agents" / "redteam_cases.json"
-CAPABILITY_MISSIONS_PATH = ROOT / "governance" / "agents" / "capability_missions.json"
-TOOL_BINDINGS_PATH = ROOT / "governance" / "agents" / "tool_bindings.json"
+AGENTS_DIR = ROOT / "governance" / "agents"
+AGENTS_PATH = AGENTS_DIR / "agents.json"
+SKILLS_PATH = AGENTS_DIR / "skills.json"
+ACQUISITIONS_PATH = AGENTS_DIR / "acquisitions.json"
+HANDOFF_SCHEMA_PATH = AGENTS_DIR / "handoff.schema.json"
+REDTEAM_PATH = AGENTS_DIR / "redteam_cases.json"
+CAPABILITY_MISSIONS_PATH = AGENTS_DIR / "capability_missions.json"
+TOOL_BINDINGS_PATH = AGENTS_DIR / "tool_bindings.json"
+CAPABILITY_GAPS_PATH = AGENTS_DIR / "capability_gaps.json"
 AGENTS_MD_PATH = ROOT / "AGENTS.md"
 
 REQUIRED_HANDOFF_FIELDS = {
@@ -41,6 +43,18 @@ VALID_ACQUISITION_DECISIONS = {
 VALID_REDTEAM_DECISIONS = {"REJECT", "REQUIRE_APPROVAL"}
 VALID_TOOL_KINDS = {"script", "pytest"}
 
+CONTINUOUS_PROOF_GAPS = {"GAP-A01", "GAP-A05"}
+PROOF_HISTORY_BY_GAP = {
+    "GAP-A02": "open_ended_planning_proof_history.json",
+    "GAP-A03": "adaptive_tool_selection_proof_history.json",
+    "GAP-A04": "dynamic_replanning_proof_history.json",
+    "GAP-A06": "external_mcp_authenticated_proof_history.json",
+    "GAP-A07": "automatic_failure_recovery_proof_history.json",
+    "GAP-A08": "handoff_semantic_proof_history.json",
+    "GAP-A09": "pr_pipeline_proof_history.json",
+    "GAP-A10": "runtime_framework_value_proof_history.json",
+}
+
 
 def load_json(path: Path) -> dict:
     with path.open("r", encoding="utf-8") as handle:
@@ -50,6 +64,89 @@ def load_json(path: Path) -> dict:
 def require(condition: bool, message: str) -> None:
     if not condition:
         raise AssertionError(message)
+
+
+def validate_capability_gap_governance(
+    gaps_path: Path = CAPABILITY_GAPS_PATH,
+    agents_dir: Path = AGENTS_DIR,
+) -> dict:
+    require(gaps_path.is_file(), f"missing registry: {gaps_path}")
+    gaps_doc = load_json(gaps_path)
+    require(gaps_doc.get("schema_version") == 1, "unsupported capability gap schema")
+
+    gaps = gaps_doc.get("gaps", [])
+    gap_ids = [gap.get("id") for gap in gaps]
+    require(None not in gap_ids, "capability gap without id")
+    require(len(gap_ids) == len(set(gap_ids)), "duplicate capability gap id")
+
+    expected_gap_ids = CONTINUOUS_PROOF_GAPS | set(PROOF_HISTORY_BY_GAP)
+    require(
+        set(gap_ids) == expected_gap_ids,
+        "capability gap registry coverage drift",
+    )
+
+    for gap in gaps:
+        gap_id = gap["id"]
+        status = gap.get("status")
+        require(bool(gap.get("capability")), f"capability gap {gap_id} missing capability")
+        require(bool(status), f"capability gap {gap_id} missing status")
+        require(bool(gap.get("closure_evidence")), f"capability gap {gap_id} missing closure evidence")
+
+        if gap_id in CONTINUOUS_PROOF_GAPS:
+            require(
+                "CONTINUOUS_PROOF_REQUIRED" in str(status),
+                f"continuous-proof status drift for {gap_id}",
+            )
+            continue
+
+        history_name = PROOF_HISTORY_BY_GAP[gap_id]
+        history_path = agents_dir / history_name
+        require(history_path.is_file(), f"missing proof history for {gap_id}: {history_name}")
+        history_doc = load_json(history_path)
+        require(
+            history_doc.get("schema_version") == 1,
+            f"unsupported proof history schema for {gap_id}",
+        )
+
+        proofs = history_doc.get("proofs", [])
+        require(isinstance(proofs, list) and proofs, f"empty proof history for {gap_id}")
+        for proof in proofs:
+            require(
+                proof.get("gap_id") == gap_id,
+                f"proof history {history_name} references wrong gap for {gap_id}",
+            )
+            require(bool(proof.get("decision")), f"proof in {history_name} missing decision")
+
+        latest = proofs[-1]
+        history_authority = history_doc.get("authority") or latest.get("authority")
+        require(
+            history_authority == "GITHUB_ONLY",
+            f"proof history authority drift for {gap_id}",
+        )
+        require(
+            latest.get("decision") == status,
+            f"proof decision/status drift for {gap_id}",
+        )
+
+        governance_gap_status = latest.get("governance_effect", {}).get("gap_status")
+        if governance_gap_status is not None:
+            require(
+                governance_gap_status == status,
+                f"proof governance/status drift for {gap_id}",
+            )
+
+    expected_histories = set(PROOF_HISTORY_BY_GAP.values())
+    observed_histories = {path.name for path in agents_dir.glob("*_proof_history.json")}
+    require(
+        observed_histories == expected_histories,
+        "proof history inventory drift",
+    )
+
+    return {
+        "capability_gaps": len(gaps),
+        "dedicated_proof_histories": len(expected_histories),
+        "continuous_proof_gaps": len(CONTINUOUS_PROOF_GAPS),
+    }
 
 
 def validate() -> dict:
@@ -62,6 +159,7 @@ def validate() -> dict:
         REDTEAM_PATH,
         CAPABILITY_MISSIONS_PATH,
         TOOL_BINDINGS_PATH,
+        CAPABILITY_GAPS_PATH,
     ):
         require(path.is_file(), f"missing registry: {path.relative_to(ROOT)}")
 
@@ -72,6 +170,7 @@ def validate() -> dict:
     redteam_doc = load_json(REDTEAM_PATH)
     capability_doc = load_json(CAPABILITY_MISSIONS_PATH)
     tools_doc = load_json(TOOL_BINDINGS_PATH)
+    gap_governance = validate_capability_gap_governance()
 
     require(agents_doc.get("schema_version") == 1, "unsupported agents schema")
     require(skills_doc.get("schema_version") == 1, "unsupported skills schema")
@@ -212,6 +311,9 @@ def validate() -> dict:
         "redteam_cases": len(redteam_cases),
         "capability_missions": len(missions),
         "capability_tools": len(tools),
+        "capability_gaps": gap_governance["capability_gaps"],
+        "dedicated_proof_histories": gap_governance["dedicated_proof_histories"],
+        "continuous_proof_gaps": gap_governance["continuous_proof_gaps"],
         "runtime_framework_dependencies": 0,
         "authority": agents_doc["authority"],
     }
