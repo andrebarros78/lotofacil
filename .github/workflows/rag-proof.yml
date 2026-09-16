@@ -1,0 +1,119 @@
+name: RAG Proof
+
+on:
+  workflow_dispatch:
+    inputs:
+      question:
+        description: "Pergunta opcional para o RAG canônico"
+        required: false
+        type: string
+      top_k:
+        description: "Quantidade de chunks recuperados (1-20)"
+        required: false
+        default: "5"
+        type: string
+  pull_request:
+    paths:
+      - "src/sare_lotofacil/rag/**"
+      - "tests/test_rag.py"
+      - "docs/RAG.md"
+      - "pyproject.toml"
+      - ".github/workflows/rag-proof.yml"
+  push:
+    branches: [main]
+    paths:
+      - "src/sare_lotofacil/rag/**"
+      - "tests/test_rag.py"
+      - "docs/RAG.md"
+      - "pyproject.toml"
+      - ".github/workflows/rag-proof.yml"
+      - "README.md"
+      - "AGENTS.md"
+      - "docs/**"
+      - "governance/**"
+
+permissions:
+  contents: read
+
+jobs:
+  prove:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: "3.13"
+      - name: Install locked environment
+        run: python -m pip install -c requirements.lock.txt -e '.[dev]'
+      - name: RAG unit proof
+        run: python -m pytest -q tests/test_rag.py
+      - name: Build canonical index and prove grounded answer
+        env:
+          USER_QUESTION: ${{ inputs.question }}
+          USER_TOP_K: ${{ inputs.top_k || '5' }}
+        run: |
+          mkdir -p artifacts
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          from sare_lotofacil.rag.core import RepositoryRAG
+
+          rag = RepositoryRAG.from_repository(Path('.'))
+          status = rag.status()
+          assert status['read_only'] is True
+          assert status['external_model'] is False
+          assert status['external_vector_store'] is False
+          assert status['source_count'] > 0
+          assert status['chunk_count'] > 0
+
+          proof = rag.answer('Qual é a conclusão científica sobre vantagem preditiva?', top_k=5)
+          assert proof.abstained is False
+          assert proof.citations
+          assert all(c.path for c in proof.citations)
+
+          question = os.environ.get('USER_QUESTION', '').strip()
+          try:
+              top_k = int(os.environ.get('USER_TOP_K', '5'))
+          except ValueError:
+              top_k = 5
+          top_k = min(20, max(1, top_k))
+          user_answer = rag.answer(question, top_k=top_k) if question else None
+
+          Path('artifacts/rag-status.json').write_text(
+              json.dumps(status, ensure_ascii=False, indent=2, sort_keys=True) + '\n',
+              encoding='utf-8',
+          )
+          Path('artifacts/rag-proof.json').write_text(
+              json.dumps(proof.to_dict(), ensure_ascii=False, indent=2, sort_keys=True) + '\n',
+              encoding='utf-8',
+          )
+          if user_answer is not None:
+              Path('artifacts/rag-query.json').write_text(
+                  json.dumps(user_answer.to_dict(), ensure_ascii=False, indent=2, sort_keys=True) + '\n',
+                  encoding='utf-8',
+              )
+          print('RAG_PROOF_PASS')
+          print(f"SOURCE_DIGEST={status['source_digest']}")
+          print(f"SOURCES={status['source_count']} CHUNKS={status['chunk_count']}")
+          PY
+      - name: CLI smoke
+        run: |
+          sare-rag --root . status > /tmp/rag-cli-status.json
+          sare-rag --root . answer "vantagem preditiva comprovada" --top-k 3 > /tmp/rag-cli-answer.json
+          python - <<'PY'
+          import json
+          status = json.load(open('/tmp/rag-cli-status.json', encoding='utf-8'))
+          answer = json.load(open('/tmp/rag-cli-answer.json', encoding='utf-8'))
+          assert status['chunk_count'] > 0
+          assert answer['abstained'] is False
+          assert answer['citations']
+          print('RAG_CLI_SMOKE_PASS')
+          PY
+      - name: Upload RAG evidence
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: rag-proof
+          path: artifacts/rag-*.json
+          if-no-files-found: error
