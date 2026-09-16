@@ -1,0 +1,85 @@
+{
+  "schema_version": 1,
+  "authority": "GITHUB_ONLY",
+  "description": "Deterministic repository-RAG retrieval and grounding evaluation cases. These cases evaluate engineering quality only and do not establish predictive evidence.",
+  "acceptance": {
+    "all_cases_pass": true,
+    "minimum_mrr": 0.70,
+    "minimum_relevant_at_1": 0.60,
+    "grounding_required": true,
+    "abstention_cases_must_abstain": true
+  },
+  "cases": [
+    {
+      "id": "RAG-E01-PREDICTIVE-CONCLUSION",
+      "query": "Qual é a conclusão científica atual sobre vantagem preditiva?",
+      "top_k": 5,
+      "expect_abstain": false,
+      "expected_path_prefixes": ["docs/MISSION_PROVEN_1_1_10.md", "README.md"],
+      "forbidden_first_path_prefixes": ["docs/RAG.md"]
+    },
+    {
+      "id": "RAG-E02-GITHUB-AUTHORITY",
+      "query": "Qual é a autoridade operacional canônica e qual executor é aceito?",
+      "top_k": 5,
+      "expect_abstain": false,
+      "expected_path_prefixes": ["AGENTS.md", "docs/GITHUB_OPERATIONS.md", "README.md"]
+    },
+    {
+      "id": "RAG-E03-PORTFOLIO-RANGE",
+      "query": "Qual é o intervalo operacional T30 para quantidade de cartões da carteira?",
+      "top_k": 5,
+      "expect_abstain": false,
+      "expected_path_prefixes": ["README.md"]
+    },
+    {
+      "id": "RAG-E04-LOCKBOX",
+      "query": "Como o sistema protege o lockbox contra retuning depois de aberto?",
+      "top_k": 5,
+      "expect_abstain": false,
+      "expected_path_prefixes": ["AGENTS.md", "README.md", "docs/MISSION_PROVEN_1_1_10.md", "governance/agents/"]
+    },
+    {
+      "id": "RAG-E05-MCP-GOVERNANCE",
+      "query": "Qual padrão MCP foi adquirido e quais controles de autorização são exigidos?",
+      "top_k": 5,
+      "expect_abstain": false,
+      "expected_path_prefixes": ["governance/agents/acquisitions.json", "governance/agents/skills.json", "docs/AGENTS_AND_SKILLS.md"]
+    },
+    {
+      "id": "RAG-E06-RAG-ARCHITECTURE",
+      "query": "Qual é o retriever do RAG e quais são seus guardrails de operação?",
+      "top_k": 5,
+      "expect_abstain": false,
+      "expected_path_prefixes": ["docs/RAG.md", "src/sare_lotofacil/rag/"]
+    },
+    {
+      "id": "RAG-E07-AGENT-WRITE-BOUNDARY",
+      "query": "Um agente pode escrever diretamente em main ou operations/state?",
+      "top_k": 5,
+      "expect_abstain": false,
+      "expected_path_prefixes": ["AGENTS.md", "governance/agents/agents.json", "docs/AGENTS_AND_SKILLS.md"]
+    },
+    {
+      "id": "RAG-E08-ECONOMIC-INTEGRITY",
+      "query": "Como o SARE separa custo teórico de despesa real em carteiras?",
+      "top_k": 5,
+      "expect_abstain": false,
+      "expected_path_prefixes": ["README.md", "docs/MISSION_PROVEN_1_1_6.md", "src/sare_lotofacil/economics/"]
+    },
+    {
+      "id": "RAG-E09-NONSENSE-ABSTENTION",
+      "query": "xilofonium quasar ultravioleta inexistente zqpt",
+      "top_k": 5,
+      "expect_abstain": true,
+      "expected_path_prefixes": []
+    },
+    {
+      "id": "RAG-E10-SECRET-ABSTENTION",
+      "query": "SUPER_SECRET_TOKEN_DO_NOT_INDEX_998877",
+      "top_k": 5,
+      "expect_abstain": true,
+      "expected_path_prefixes": []
+    }
+  ]
+}
