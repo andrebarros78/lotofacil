@@ -16,7 +16,7 @@ Por padrão são indexados somente caminhos explícitos do checkout:
 - `governance/`;
 - `src/sare_lotofacil/`.
 
-São aceitos apenas arquivos textuais com extensões `.md`, `.txt`, `.json`, `.yaml`, `.yml`, `.toml` e `.py`. Symlinks, diretórios de ambiente/cache e arquivos acima do limite interno são excluídos. Arquivos fora dos caminhos declarados, como `.env`, não entram no índice.
+São aceitos apenas arquivos textuais com extensões `.md`, `.txt`, `.json`, `.yaml`, `.yml`, `.toml` e `.py`. Symlinks, diretórios de ambiente/cache e arquivos acima do limite interno são excluídos. Arquivos fora dos caminhos declarados, como `.env` e o corpus de avaliação em `.github/rag/`, não entram no índice.
 
 ## Pipeline
 
@@ -24,14 +24,15 @@ São aceitos apenas arquivos textuais com extensões `.md`, `.txt`, `.json`, `.y
 2. leitura UTF-8 e hash por fonte;
 3. chunking por linhas, preservando `path`, `line_start` e `line_end`;
 4. tokenização normalizada com remoção limitada de termos interrogativos/fillers;
-5. índice TF-IDF em memória;
-6. recuperação por `tfidf_cosine_coverage_bigram_authority_v3`, combinando similaridade, cobertura lexical, adjacência de termos e prioridade de autoridade/frescura documental;
-7. deduplicação de evidência repetida;
-8. geração extrativa determinística a partir dos chunks recuperados;
-9. emissão de citações com caminho, faixa de linhas, `chunk_id` e score;
-10. abstenção quando a consulta não possui suporte no índice.
+5. expansão lexical bilíngue determinística para vocabulário técnico controlado do SARE;
+6. índice TF-IDF em memória;
+7. recuperação por `tfidf_cosine_coverage_bigram_authority_bilingual_v4`, combinando similaridade, cobertura lexical, adjacência de termos, aliases técnicos e prioridade de autoridade/frescura documental;
+8. deduplicação de evidência repetida;
+9. geração extrativa determinística a partir dos chunks recuperados;
+10. emissão de citações com caminho, faixa de linhas, `chunk_id` e score;
+11. abstenção quando a consulta não possui suporte no índice.
 
-A prioridade de autoridade impede que exemplos de uso do próprio RAG ou provas históricas obsoletas precedam documentação canônica mais atual quando a consulta pergunta pelo estado vigente.
+A prioridade de autoridade impede que exemplos de uso do próprio RAG ou provas históricas obsoletas precedam documentação canônica mais atual quando a consulta pergunta pelo estado vigente. A expansão bilíngue não usa tradução por modelo: é uma tabela versionada e pequena de aliases técnicos como `agente → agent`, `escrever → write` e `diretamente → directly`.
 
 ## Invariantes
 
@@ -56,7 +57,7 @@ sare-rag --root . context "como funciona a autoridade operacional?" --top-k 5
 sare-rag --root . answer "qual é a conclusão científica atual?" --top-k 5
 ```
 
-`status` reconstrói o índice e informa `source_count`, `chunk_count`, `source_digest`, retriever e generator.
+`status` reconstrói o índice e informa `source_count`, `chunk_count`, `source_digest`, retriever, expansão de consulta e generator.
 
 `search` retorna os chunks ordenados com proveniência.
 
@@ -66,7 +67,7 @@ sare-rag --root . answer "qual é a conclusão científica atual?" --top-k 5
 
 ## Benchmark canônico de qualidade
 
-O corpus de avaliação versionado fica em `governance/rag/eval_cases.json` e é executado por `scripts/evaluate_rag.py`.
+O corpus de avaliação versionado fica em `.github/rag/eval_cases.json` e é executado por `scripts/evaluate_rag.py`. Ele fica deliberadamente fora dos caminhos indexados para impedir contaminação do retriever pelos próprios enunciados e respostas esperadas do benchmark.
 
 O benchmark cobre, no mínimo:
 
@@ -76,7 +77,7 @@ O benchmark cobre, no mínimo:
 - governança do lockbox;
 - aquisição/segurança MCP;
 - arquitetura do próprio RAG;
-- limites de escrita de agentes;
+- limites de escrita de agentes em consulta portuguesa contra documentação técnica inglesa;
 - integridade econômica;
 - abstenção para consulta sem suporte;
 - isolamento de pseudo-segredo fora do corpus.
@@ -99,7 +100,7 @@ O workflow `RAG Proof` executa:
 1. validação da governança agentiva;
 2. testes unitários do RAG;
 3. construção do índice e resposta fundamentada de prova;
-4. benchmark canônico de qualidade;
+4. benchmark canônico de qualidade isolado do corpus indexado;
 5. smoke test da CLI;
 6. publicação das evidências.
 
