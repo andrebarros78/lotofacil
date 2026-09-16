@@ -188,6 +188,17 @@ def test_a08_semantic_report_path_cannot_escape_artifacts() -> None:
     assert semantic.artifact_path("artifacts/a08-semantic-test.json").parent == (ROOT / "artifacts").resolve()
 
 
-def test_a08_registry_stays_partial_before_confirmatory_main_semantic_evidence() -> None:
+def test_a08_registry_and_history_record_confirmatory_main_semantic_evidence() -> None:
     gaps = {item["id"]: item for item in load_json("governance/agents/capability_gaps.json")["gaps"]}
-    assert gaps["GAP-A08"]["status"] == "PARTIALLY_PROVEN_STRUCTURED_HANDOFF_EVALUATION_ONLY"
+    assert gaps["GAP-A08"]["status"] == "PROVEN_FOR_BOUNDED_DOMAIN_NATURAL_LANGUAGE_SEMANTIC_HANDOFF_EVALUATION"
+    proof = load_json("governance/agents/handoff_semantic_proof_history.json")["proofs"][-1]
+    assert proof["proof_id"] == "HANDOFF-SEMANTIC-BOUNDED-V2"
+    assert proof["chronology"]["canonical_implementation_main_sha"] == "5c502d884a4d00477b0de18d553f84f1a0a14b36"
+    assert proof["confirmatory_evidence"]["workflow_run_id"] == 35072013065
+    assert proof["confirmatory_evidence"]["artifact_id"] == 10436835723
+    assert proof["metrics"]["cases_passed"] == 32
+    assert proof["metrics"]["false_accepts"] == 0
+    assert proof["metrics"]["false_rejects"] == 0
+    assert proof["governance_effect"]["open_domain_general_natural_language_entailment_proven"] is False
+    assert proof["governance_effect"]["llm_based_semantic_judgment_proven"] is False
+    assert proof["governance_effect"]["production_action_authorization_granted"] is False
