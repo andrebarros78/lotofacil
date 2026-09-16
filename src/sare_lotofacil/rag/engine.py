@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections import Counter
 
+from sare_lotofacil import __version__
 from sare_lotofacil.rag.core import RagAnswer, RagCitation, RagHit, RepositoryRAG as _BaseRepositoryRAG, _tokens
 
 _QUERY_FILLERS = {
@@ -28,6 +29,7 @@ _RAG_META_TERMS = {
     "retrieval",
     "tfidf",
 }
+_CURRENT_MISSION_PATH = f"docs/MISSION_PROVEN_{__version__.replace('.', '_')}.md"
 
 
 def _semantic_tokens(text: str) -> tuple[str, ...]:
@@ -37,10 +39,14 @@ def _semantic_tokens(text: str) -> tuple[str, ...]:
 def _source_weight(path: str, query_terms: set[str]) -> float:
     if path == "docs/RAG.md":
         return 1.15 if query_terms & _RAG_META_TERMS else 0.35
+    if path == _CURRENT_MISSION_PATH:
+        return 1.30
+    if path.startswith("docs/MISSION_PROVEN_1_1_") and path.endswith(".md"):
+        return 0.68
     if path == "README.md":
+        return 1.18
+    if path == "docs/MISSION_PROVEN.md":
         return 1.08
-    if path.startswith("docs/MISSION_PROVEN"):
-        return 1.05
     return 1.0
 
 
@@ -49,8 +55,9 @@ class RepositoryRAG(_BaseRepositoryRAG):
 
     def status(self) -> dict[str, object]:
         payload = super().status()
-        payload["engine_version"] = "1.1"
-        payload["retriever"] = "tfidf_cosine_coverage_bigram_v2"
+        payload["engine_version"] = "1.2"
+        payload["retriever"] = "tfidf_cosine_coverage_bigram_authority_v3"
+        payload["current_mission_path"] = _CURRENT_MISSION_PATH
         return payload
 
     def search(self, query: str, *, top_k: int = 5, min_score: float = 0.02) -> tuple[RagHit, ...]:
@@ -114,8 +121,31 @@ class RepositoryRAG(_BaseRepositoryRAG):
             )
 
         strong_threshold = max(0.05, hits[0].score * 0.55)
-        selected = tuple(hit for hit in hits if hit.score >= strong_threshold)[:max_citations]
         query_terms = set(_semantic_tokens(question))
+        selected: list[tuple[RagHit, str]] = []
+        seen_excerpts: set[str] = set()
+        for hit in hits:
+            if hit.score < strong_threshold:
+                continue
+            excerpt = self._best_excerpt(hit, query_terms)
+            excerpt_key = " ".join(_semantic_tokens(excerpt))
+            if not excerpt_key or excerpt_key in seen_excerpts:
+                continue
+            seen_excerpts.add(excerpt_key)
+            selected.append((hit, excerpt))
+            if len(selected) >= max_citations:
+                break
+
+        if not selected:
+            return RagAnswer(
+                question=question,
+                answer="Não encontrei evidência suficiente nas fontes canônicas indexadas para responder com segurança.",
+                citations=(),
+                source_digest=self.source_digest,
+                generator="deterministic_extractive_v1",
+                abstained=True,
+            )
+
         citations = tuple(
             RagCitation(
                 citation_id=index,
@@ -125,11 +155,11 @@ class RepositoryRAG(_BaseRepositoryRAG):
                 line_end=hit.line_end,
                 score=hit.score,
             )
-            for index, hit in enumerate(selected, start=1)
+            for index, (hit, _) in enumerate(selected, start=1)
         )
         answer_parts = [
-            f"{self._best_excerpt(hit, query_terms)} [{index}]"
-            for index, hit in enumerate(selected, start=1)
+            f"{excerpt} [{index}]"
+            for index, (_, excerpt) in enumerate(selected, start=1)
         ]
         return RagAnswer(
             question=question,
