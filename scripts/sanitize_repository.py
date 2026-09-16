@@ -103,6 +103,12 @@ GENERIC_CREDENTIAL_ASSIGNMENT = re.compile(
     r"\s*[:=]\s*[\"']([^\"'\r\n]{8,})[\"']"
 )
 
+ACTION_USE_PATTERN = re.compile(r"(?m)^\s*-?\s*uses:\s*([^\s#]+)")
+PINNED_SHA_PATTERN = re.compile(r"^[0-9a-fA-F]{40}$")
+REMOTE_PIPE_EXECUTION_PATTERN = re.compile(
+    r"(?im)\b(?:curl|wget)\b[^\n|]*\|\s*(?:sudo\s+)?(?:sh|bash)\b"
+)
+
 PLACEHOLDER_MARKERS = {
     "${{",
     "secrets.",
@@ -174,6 +180,48 @@ def _looks_like_placeholder(value: str) -> bool:
     return any(marker in normalized for marker in PLACEHOLDER_MARKERS)
 
 
+def _scan_workflow_supply_chain(relative: str, text: str) -> list[dict[str, Any]]:
+    if not relative.startswith(".github/workflows/") or not relative.endswith((".yml", ".yaml")):
+        return []
+
+    violations: list[dict[str, Any]] = []
+    for match in ACTION_USE_PATTERN.finditer(text):
+        action_spec = match.group(1)
+        if action_spec.startswith("./") or action_spec.startswith("docker://"):
+            continue
+        if "@" not in action_spec:
+            violations.append(
+                {
+                    "code": "UNPINNED_GITHUB_ACTION",
+                    "path": relative,
+                    "line": _line_number(text, match.start()),
+                    "action": action_spec,
+                }
+            )
+            continue
+        _, ref = action_spec.rsplit("@", 1)
+        if not PINNED_SHA_PATTERN.fullmatch(ref):
+            violations.append(
+                {
+                    "code": "UNPINNED_GITHUB_ACTION",
+                    "path": relative,
+                    "line": _line_number(text, match.start()),
+                    "action": action_spec,
+                }
+            )
+
+    for match in REMOTE_PIPE_EXECUTION_PATTERN.finditer(text):
+        violations.append(
+            {
+                "code": "REMOTE_PIPE_EXECUTION",
+                "path": relative,
+                "line": _line_number(text, match.start()),
+            }
+        )
+
+    return violations
+
+
 def _scan_text(relative: str, text: str) -> list[dict[str, Any]]:
     violations: list[dict[str, Any]] = []
 
@@ -200,6 +248,7 @@ def _scan_text(relative: str, text: str) -> list[dict[str, Any]]:
             }
         )
 
+    violations.extend(_scan_workflow_supply_chain(relative, text))
     return violations
 
 
@@ -253,6 +302,8 @@ def scan_repository(root: Path, *, max_text_bytes: int = DEFAULT_MAX_TEXT_BYTES)
             "private_key_material_forbidden": True,
             "runtime_databases_forbidden": True,
             "generated_archives_forbidden": True,
+            "external_actions_sha_pinned": True,
+            "remote_pipe_execution_forbidden": True,
             "canonical_state_mutation": False,
         },
         "metrics": {
