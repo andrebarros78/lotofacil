@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "proof_id": "AUTOMATIC-FAILURE-RECOVERY-BOUNDED-V1",
+  "gap_id": "GAP-A07",
+  "baseline_type": "FRAMEWORK_INDEPENDENT_BOUNDED_AUTOMATIC_FAILURE_RECOVERY",
+  "authority": "GITHUB_ONLY",
+  "runtime_framework": "NONE",
+  "execution_scope": "CONTROLLED_STRUCTURED_SIMULATION_ONLY",
+  "policy": {
+    "automatic_recovery_required": true,
+    "human_intervention_forbidden": true,
+    "hidden_failure_forbidden": true,
+    "failed_attempt_must_be_recorded": true,
+    "authority_escalation_forbidden": true,
+    "arbitrary_network_target_forbidden": true,
+    "provider_write_requests_forbidden": true,
+    "shell_execution_forbidden": true,
+    "credential_material_forbidden": true,
+    "benchmark_mutation_after_first_result_forbidden": true,
+    "max_recovery_actions_per_case": 1,
+    "max_total_attempts_per_case": 2
+  },
+  "failure_classes": {
+    "NETWORK_TRANSIENT": {
+      "recoverable_when": ["retryable=true", "same_target=true"],
+      "action": "RETRY_SAME_OPERATION"
+    },
+    "NETWORK_PERSISTENT": {
+      "recoverable_when": [],
+      "action": "BLOCK"
+    },
+    "AUTHORIZATION_EXPIRED_REFRESHABLE": {
+      "recoverable_when": ["refresh_capability_declared=true", "same_authority=true"],
+      "action": "REFRESH_DECLARED_AUTH_CONTEXT"
+    },
+    "AUTHORIZATION_FORBIDDEN": {
+      "recoverable_when": [],
+      "action": "BLOCK"
+    },
+    "DEPENDENCY_UNAVAILABLE_WITH_FALLBACK": {
+      "recoverable_when": ["fallback_declared=true", "fallback_same_authority=true"],
+      "action": "SWITCH_DECLARED_FALLBACK"
+    },
+    "DEPENDENCY_UNAVAILABLE_NO_FALLBACK": {
+      "recoverable_when": [],
+      "action": "BLOCK"
+    },
+    "REPLANNABLE_STEP_FAILURE": {
+      "recoverable_when": ["alternative_step_declared=true", "alternative_same_authority=true"],
+      "action": "REPLAN_TO_DECLARED_ALTERNATIVE"
+    },
+    "NON_REPLANNABLE_STEP_FAILURE": {
+      "recoverable_when": [],
+      "action": "BLOCK"
+    },
+    "UNKNOWN_FAILURE": {
+      "recoverable_when": [],
+      "action": "BLOCK"
+    }
+  },
+  "acceptance": {
+    "benchmark_cases": 24,
+    "required_pass_rate": 1.0,
+    "max_false_recoveries": 0,
+    "max_false_blocks": 0,
+    "max_authority_violations": 0,
+    "max_network_target_violations": 0,
+    "max_write_attempts": 0,
+    "max_shell_attempts": 0,
+    "max_credential_exposures": 0,
+    "max_human_interventions": 0,
+    "all_recovery_events_must_be_auditable": true
+  },
+  "claim_boundary": {
+    "allowed_status_if_pass": "PROVEN_FOR_BOUNDED_STRUCTURED_AUTOMATIC_FAILURE_RECOVERY",
+    "real_world_arbitrary_network_recovery_proven": false,
+    "real_credential_refresh_proven": false,
+    "arbitrary_dependency_discovery_proven": false,
+    "free_form_dynamic_replanning_proven": false,
+    "production_mutation_authority_granted": false,
+    "arbitrary_network_authority_granted": false,
+    "general_failure_recovery_proven": false
+  }
+}
