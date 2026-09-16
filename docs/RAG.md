@@ -26,13 +26,14 @@ São aceitos apenas arquivos textuais com extensões `.md`, `.txt`, `.json`, `.y
 4. tokenização normalizada com remoção limitada de termos interrogativos/fillers;
 5. expansão lexical bilíngue determinística para vocabulário técnico controlado do SARE;
 6. índice TF-IDF em memória;
-7. recuperação por `tfidf_cosine_coverage_bigram_authority_bilingual_v4`, combinando similaridade, cobertura lexical, adjacência de termos, aliases técnicos e prioridade de autoridade/frescura documental;
-8. deduplicação de evidência repetida;
-9. geração extrativa determinística a partir dos chunks recuperados;
-10. emissão de citações com caminho, faixa de linhas, `chunk_id` e score;
-11. abstenção quando a consulta não possui suporte no índice.
+7. recuperação por `tfidf_cosine_coverage_bigram_authority_bilingual_v5`, combinando similaridade, cobertura lexical, adjacência de termos, aliases técnicos e prioridade de autoridade/frescura documental;
+8. aplicação de política de autoridade de implementação: `src/sare_lotofacil/rag/` só recebe prioridade normal/alta quando a consulta é sobre RAG/retrieval; em consultas científicas ou operacionais, código interno do motor é subordinado às fontes canônicas do domínio;
+9. deduplicação de evidência repetida;
+10. geração extrativa determinística a partir dos chunks recuperados;
+11. emissão de citações com caminho, faixa de linhas, `chunk_id` e score;
+12. abstenção quando a consulta não possui suporte no índice.
 
-A prioridade de autoridade impede que exemplos de uso do próprio RAG ou provas históricas obsoletas precedam documentação canônica mais atual quando a consulta pergunta pelo estado vigente. A expansão bilíngue não usa tradução por modelo: é uma tabela versionada e pequena de aliases técnicos como `agente → agent`, `escrever → write` e `diretamente → directly`.
+A prioridade de autoridade impede que exemplos de uso do próprio RAG, tabelas de aliases do motor ou provas históricas obsoletas precedam documentação canônica mais atual quando a consulta pergunta pelo estado vigente. A expansão bilíngue não usa tradução por modelo: é uma tabela versionada e pequena de aliases técnicos como `agente → agent`, `escrever → write` e `diretamente → directly`.
 
 ## Invariantes
 
@@ -44,6 +45,7 @@ A prioridade de autoridade impede que exemplos de uso do próprio RAG ou provas 
 - nenhuma resposta afirmativa sem chunk recuperado;
 - toda resposta não abstida possui citações;
 - alteração de qualquer fonte indexada altera o `source_digest`;
+- código do próprio motor RAG não é fonte prioritária para fatos científicos/operacionais;
 - RAG não altera `predictive_evidence`, RIS, promoção de modelo, lockbox ou conclusão científica.
 
 ## Modos de uso
@@ -57,7 +59,7 @@ sare-rag --root . context "como funciona a autoridade operacional?" --top-k 5
 sare-rag --root . answer "qual é a conclusão científica atual?" --top-k 5
 ```
 
-`status` reconstrói o índice e informa `source_count`, `chunk_count`, `source_digest`, retriever, expansão de consulta e generator.
+`status` reconstrói o índice e informa `source_count`, `chunk_count`, `source_digest`, retriever, expansão de consulta, política de autoridade de implementação e generator.
 
 `search` retorna os chunks ordenados com proveniência.
 
