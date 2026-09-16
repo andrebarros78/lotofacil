@@ -72,6 +72,20 @@
         "tests/test_agent_ecosystem.py",
         "tests/test_hardening.py"
       ]
+    },
+    {
+      "id": "agent_integration_tests",
+      "kind": "pytest",
+      "targets": [
+        "tests/test_agent_skill_integration.py"
+      ]
+    },
+    {
+      "id": "rag_tests",
+      "kind": "pytest",
+      "targets": [
+        "tests/test_rag.py"
+      ]
     }
   ]
 }

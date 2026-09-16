@@ -37,7 +37,9 @@
     "reproducibility_tests": ["evidence_hashing", "protocol_identity", "experiment_reproducibility"],
     "operational_contract_tests": ["github_operations", "operator_console", "prize_state_contract"],
     "release_governance_tests": ["version_integrity", "release_integrity"],
-    "agent_redteam_tests": ["authority_regression", "acquisition_guard", "hardening_regression"]
+    "agent_redteam_tests": ["authority_regression", "acquisition_guard", "hardening_regression"],
+    "agent_integration_tests": ["agent_skill_integration", "deterministic_routing", "handoff_contract"],
+    "rag_tests": ["rag_retrieval", "rag_grounding", "rag_abstention"]
   },
   "acceptance": {
     "benchmark_cases": 30,

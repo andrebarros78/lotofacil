@@ -83,6 +83,20 @@
       "skills": ["acquisition_review", "supply_chain_review", "web_research", "mcp_tool_contracts"],
       "allowed_actions": ["research_authorized_ecosystems", "compare_frameworks", "propose_reference_acquisition", "propose_dependency_experiment"],
       "prohibited_actions": ["direct_main_write", "direct_operations_state_write", "unreviewed_dependency_install", "community_code_auto_vendoring", "new_paid_service_without_approval"]
+    },
+    {
+      "id": "rag-retrieval-engineer",
+      "role": "Owns retrieval quality, source authority, corpus freshness, ranking diagnostics and deterministic RAG performance without changing scientific authority.",
+      "skills": ["rag_retrieval_quality", "source_authority_ranking", "rag_corpus_governance", "evidence_hashing", "github_actions"],
+      "allowed_actions": ["read_repository", "read_artifacts", "evaluate_retrieval", "propose_reranking_changes", "propose_rag_tests", "inspect_source_digest"],
+      "prohibited_actions": ["direct_main_write", "direct_operations_state_write", "unreviewed_external_corpus", "source_authority_override", "scientific_promotion_without_gate"]
+    },
+    {
+      "id": "rag-evaluation-redteam",
+      "role": "Challenges RAG grounding, citation faithfulness, abstention, stale-source preference, prompt injection and secret-source isolation through repeatable evaluations.",
+      "skills": ["rag_grounding_evaluation", "rag_retrieval_quality", "prompt_injection_defense", "source_authority_ranking", "agent_evaluation"],
+      "allowed_actions": ["read_repository", "read_artifacts", "run_rag_eval_cases", "inject_untrusted_queries", "challenge_citations", "propose_regression_tests"],
+      "prohibited_actions": ["direct_main_write", "direct_operations_state_write", "accept_unsupported_answer", "index_secret_source", "weaken_abstention_gate"]
     }
   ]
 }

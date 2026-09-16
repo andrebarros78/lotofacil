@@ -1,0 +1,80 @@
+name: Agent Skill Integration Proof
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "src/sare_lotofacil/agents/**"
+      - "tests/test_agent_skill_integration.py"
+      - "governance/agents/agents.json"
+      - "governance/agents/skills.json"
+      - "governance/agents/capability_missions.json"
+      - "governance/agents/tool_bindings.json"
+      - "scripts/run_agent_capability_proof.py"
+      - "pyproject.toml"
+      - ".github/workflows/agent-skill-integration-proof.yml"
+  push:
+    branches: [main]
+    paths:
+      - "src/sare_lotofacil/agents/**"
+      - "tests/test_agent_skill_integration.py"
+      - "governance/agents/**"
+      - "scripts/run_agent_capability_proof.py"
+      - "pyproject.toml"
+      - ".github/workflows/agent-skill-integration-proof.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  prove:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: "3.13"
+      - name: Install locked environment
+        run: python -m pip install -c requirements.lock.txt -e '.[dev]'
+      - name: Validate agent ecosystem
+        run: python scripts/validate_agent_ecosystem.py
+      - name: Agent skill integration tests
+        run: python -m pytest -q tests/test_agent_skill_integration.py
+      - name: Prove executable registry status
+        run: |
+          mkdir -p artifacts
+          sare-agents --root . status > artifacts/agent-skill-status.json
+          sare-agents --root . plan > artifacts/agent-skill-plan.json
+          sare-agents --root . resolve CAP-011-rag-retrieval-integration > artifacts/agent-skill-resolve.json
+          sare-agents --root . recommend --skill rag_grounding_evaluation --skill prompt_injection_defense > artifacts/agent-skill-recommend.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          status = json.loads(Path('artifacts/agent-skill-status.json').read_text(encoding='utf-8'))
+          plan = json.loads(Path('artifacts/agent-skill-plan.json').read_text(encoding='utf-8'))
+          resolved = json.loads(Path('artifacts/agent-skill-resolve.json').read_text(encoding='utf-8'))
+          recommendation = json.loads(Path('artifacts/agent-skill-recommend.json').read_text(encoding='utf-8'))
+
+          assert status['status'] == 'AGENT_SKILL_INTEGRATION_VALID'
+          assert status['agents'] == 12
+          assert status['skills'] == 30
+          assert status['missions'] == 12
+          assert status['all_agents_bound'] is True
+          assert status['all_skills_assigned'] is True
+          assert plan['status'] == 'AGENT_SKILL_INTEGRATION_PLAN_VALID'
+          assert len(plan['plan']) == 12
+          assert resolved['agent']['id'] == 'rag-retrieval-engineer'
+          assert recommendation['agents'][0]['agent_id'] == 'rag-evaluation-redteam'
+          print('AGENT_SKILL_INTEGRATION_PROOF_PASS')
+          print('REGISTRY_FINGERPRINT=' + status['registry_fingerprint_sha256'])
+          PY
+      - name: Capability proof plan validates skill bindings
+        run: python scripts/run_agent_capability_proof.py --plan > artifacts/agent-capability-plan.json
+      - name: Upload integration evidence
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: agent-skill-integration-proof
+          path: artifacts/agent-*.json
+          if-no-files-found: error

@@ -18,6 +18,8 @@ dev = ["pytest==9.1.1", "httpx==0.28.1"]
 
 [project.scripts]
 sare-lotofacil = "sare_lotofacil.cli:main"
+sare-rag = "sare_lotofacil.rag.cli:main"
+sare-agents = "sare_lotofacil.agents.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

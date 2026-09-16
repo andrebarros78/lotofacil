@@ -15,7 +15,9 @@ import run_agent_resilience_proof as resilience  # noqa: E402
 
 
 def load_policy() -> dict:
-    with (ROOT / "governance" / "agents" / "resilience_policy.json").open("r", encoding="utf-8") as handle:
+    with (ROOT / "governance" / "agents" / "resilience_policy.json").open(
+        "r", encoding="utf-8"
+    ) as handle:
         return json.load(handle)
 
 
@@ -30,12 +32,42 @@ def test_resilience_policy_is_framework_independent_and_bounded() -> None:
     assert policy["fault_injection"]["controlled_only"] is True
     assert policy["success_criteria"]["human_interventions"] == 0
     assert policy["success_criteria"]["runtime_framework_dependencies"] == 0
-    assert policy["success_criteria"]["replay_fingerprint_must_match_clean_baseline"] is True
+    assert (
+        policy["success_criteria"]["replay_fingerprint_must_match_clean_baseline"]
+        is True
+    )
 
 
-def test_resilience_definition_fingerprint_matches_capability_baseline() -> None:
-    assert resilience.definition_fingerprint() == "74c33e83f6018796075d1d86ec93725c7aff30ea8538d2350fb5a1c47fb95702"
-    assert resilience.CLEAN_REPLAY_FINGERPRINT == "603b9444be2982a60840530e092f379e61f775958592443705654994b2db87cd"
+def test_resilience_fingerprints_follow_current_integrated_baseline() -> None:
+    definition = resilience.definition_fingerprint()
+    replay = resilience.clean_replay_fingerprint()
+
+    assert len(definition) == 64
+    assert len(replay) == 64
+    assert resilience.CLEAN_REPLAY_FINGERPRINT == replay
+
+    missions_doc, tools_doc, agents_doc, skills_doc = resilience.load_contract()
+    assert definition == resilience.stable_hash(
+        {
+            "agents": agents_doc["agents"],
+            "skills": skills_doc["skills"],
+            "missions": missions_doc["missions"],
+            "tools": tools_doc["tools"],
+        }
+    )
+
+    expected_replay = [
+        {
+            "mission_id": mission["id"],
+            "agent_id": mission["agent_id"],
+            "required_skills": mission["required_skills"],
+            "tool_id": mission["tool_id"],
+            "returncode": 0,
+            "status": "PASS",
+        }
+        for mission in missions_doc["missions"]
+    ]
+    assert replay == resilience.stable_hash(expected_replay)
 
 
 def test_checkpoint_payload_hash_detects_mutation() -> None:

@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "authority": "GITHUB_ONLY",
+  "seal_status": "PRE_MERGE_BASELINE_SEALED",
+  "scope_status": "READY_FOR_HUMAN_MERGE",
+  "branch": "feat/rag-auditable-foundation",
+  "base_branch": "main",
+  "reconciled_base_sha": "4e51dac672a67a4445fe86ed943e2eaa40b966cb",
+  "reconciled_input_head_sha": "2046210142b5277ef4f86cc80d4c37d9bbe79dc8",
+  "ahead_by_at_reconciliation": 63,
+  "behind_by_at_reconciliation": 0,
+  "release": {
+    "declared_version": "1.1.10",
+    "versioning_decision": "NO_VERSION_BUMP_BEFORE_CANONICAL_MERGE",
+    "tagging_decision": "NO_NEW_TAG_BEFORE_CANONICAL_MERGE",
+    "immutable_existing_release_tag": "release/v1.1.10"
+  },
+  "sealed_scope": [
+    "auditable_repository_rag",
+    "executable_agent_skill_integration",
+    "repository_sanitization_and_supply_chain_gate"
+  ],
+  "scientific_authority": {
+    "predictive_evidence": "NOT_ESTABLISHED",
+    "canonical_conclusion": "EVIDENCIA_PREDITIVA_INSUFICIENTE",
+    "changed_by_this_scope": false
+  },
+  "guardrails": {
+    "direct_main_write": false,
+    "direct_operations_state_write": false,
+    "auto_merge": false,
+    "external_agent_runtime_dependency": false,
+    "external_llm_required": false,
+    "external_vector_store_required": false,
+    "lockbox_reopened": false
+  },
+  "sanitization_evidence": {
+    "workflow": "Repository Sanitization #5",
+    "status": "SUCCESS",
+    "tests_passed": 9,
+    "files_scanned": 247,
+    "bytes_scanned": 1237767,
+    "violations": 0,
+    "manifest_sha256": "36a0122ee16baf39e7b315f70b3fca4eabb5f9de7c49a012ce19c5fac95fbd8e",
+    "artifact_id": 10462727254,
+    "artifact_sha256": "cc60910a8a34bc78a0cd03488d8a32a1638b01c5cfc83081630f5d2ed4e3f04e"
+  },
+  "validated_gates": [
+    "CI #388",
+    "Max Capacity Audit #90",
+    "RAG Proof #57",
+    "Agent Capability Proof #131",
+    "Agent Skill Integration Proof #16",
+    "Agent Resilience Proof #129",
+    "Adaptive Tool Selection Proof #37",
+    "Automatic Failure Recovery Proof #68",
+    "Dynamic Multi-Agent Replanning Proof #59",
+    "Handoff Semantic Proof #67",
+    "Handoff Quality Proof #23",
+    "Agent PR Pipeline Proof #37",
+    "Runtime Framework Value Proof #50",
+    "Repository Sanitization #5"
+  ],
+  "closure_policy": {
+    "scope_expansion_after_seal": "REQUIRES_NEW_RECONCILIATION_AND_FULL_RETEST",
+    "canonical_incorporation": "HUMAN_MERGE_REQUIRED",
+    "post_merge_proof": "REQUIRED_BEFORE_RELEASE_TAGGING"
+  }
+}

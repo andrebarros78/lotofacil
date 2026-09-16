@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "baseline_date": "2026-09-15",
+  "baseline_date": "2026-09-16",
   "authority": "GITHUB_ONLY",
   "runtime_framework": "NONE",
   "mission_policy": {
@@ -15,6 +15,7 @@
     {
       "id": "CAP-001-agent-governance-self-audit",
       "agent_id": "security-tool-gate",
+      "required_skills": ["mcp_tool_contracts", "prompt_injection_defense", "least_privilege", "supply_chain_review"],
       "purpose": "Prove that the agent registry, skills, acquisitions and red-team contracts remain internally valid.",
       "tool_id": "agent_governance_validator",
       "risk_level": "LOW",
@@ -24,6 +25,7 @@
     {
       "id": "CAP-002-scientific-temporal-integrity",
       "agent_id": "scientific-methodologist",
+      "required_skills": ["nested_walk_forward", "lockbox_governance", "multiple_testing_control", "controlled_alternatives"],
       "purpose": "Prove nested temporal selection, lockbox isolation and backtest anti-lookahead controls.",
       "tool_id": "scientific_temporal_tests",
       "risk_level": "LOW",
@@ -33,6 +35,7 @@
     {
       "id": "CAP-003-statistical-calibration-integrity",
       "agent_id": "statistical-validator",
+      "required_skills": ["brier_logloss_ece", "moving_block_bootstrap", "nested_walk_forward", "multiple_testing_control"],
       "purpose": "Prove calibration rounds, statistical inference and baseline metrics remain executable and passing.",
       "tool_id": "statistical_integrity_tests",
       "risk_level": "LOW",
@@ -42,6 +45,7 @@
     {
       "id": "CAP-004-data-provenance-integrity",
       "agent_id": "data-provenance-auditor",
+      "required_skills": ["data_provenance", "caixa_history_reconciliation", "lookahead_detection", "evidence_hashing"],
       "purpose": "Prove CAIXA parsing contracts, CSV history validation and ingestion invariants locally without external writes.",
       "tool_id": "data_provenance_tests",
       "risk_level": "LOW",
@@ -51,6 +55,7 @@
     {
       "id": "CAP-005-reproducibility-integrity",
       "agent_id": "reproducibility-auditor",
+      "required_skills": ["scientific_fingerprinting", "evidence_hashing", "dependency_reproducibility", "github_actions"],
       "purpose": "Prove evidence hashing, protocol identity and experiment reproducibility contracts.",
       "tool_id": "reproducibility_tests",
       "risk_level": "LOW",
@@ -60,6 +65,7 @@
     {
       "id": "CAP-006-operational-contract-integrity",
       "agent_id": "operational-state-auditor",
+      "required_skills": ["operational_state_audit", "economic_integrity", "github_actions", "evidence_hashing"],
       "purpose": "Prove GitHub operational-cycle, operator-console and canonical prize-state contracts without mutating canonical state.",
       "tool_id": "operational_contract_tests",
       "risk_level": "LOW",
@@ -69,6 +75,7 @@
     {
       "id": "CAP-007-release-governance-integrity",
       "agent_id": "github-release-engineer",
+      "required_skills": ["github_governance", "github_actions", "release_proof", "dependency_reproducibility"],
       "purpose": "Prove repository governance and release/version integrity from a read-only execution path.",
       "tool_id": "release_governance_tests",
       "risk_level": "LOW",
@@ -78,8 +85,49 @@
     {
       "id": "CAP-008-agent-redteam-regression",
       "agent_id": "agent-evaluator-redteam",
+      "required_skills": ["agent_evaluation", "prompt_injection_defense", "deterministic_handoffs", "scientific_claim_guardrails"],
       "purpose": "Prove authority, acquisition and hardening regressions remain blocked by canonical tests.",
       "tool_id": "agent_redteam_tests",
+      "risk_level": "LOW",
+      "scientific_claim_level": "NONE",
+      "acceptance": "exit_code_zero"
+    },
+    {
+      "id": "CAP-009-orchestrator-skill-routing",
+      "agent_id": "chief-orchestrator",
+      "required_skills": ["deterministic_handoffs", "github_governance", "agent_evaluation", "acquisition_review"],
+      "purpose": "Prove executable routing across the agent, skill, mission and tool registries with deterministic handoffs.",
+      "tool_id": "agent_integration_tests",
+      "risk_level": "LOW",
+      "scientific_claim_level": "NONE",
+      "acceptance": "exit_code_zero"
+    },
+    {
+      "id": "CAP-010-acquisition-governance-integration",
+      "agent_id": "acquisition-scout",
+      "required_skills": ["acquisition_review", "supply_chain_review", "web_research", "mcp_tool_contracts"],
+      "purpose": "Prove acquisition capability remains integrated with security and governance without installing unreviewed dependencies.",
+      "tool_id": "agent_governance_validator",
+      "risk_level": "LOW",
+      "scientific_claim_level": "NONE",
+      "acceptance": "exit_code_zero"
+    },
+    {
+      "id": "CAP-011-rag-retrieval-integration",
+      "agent_id": "rag-retrieval-engineer",
+      "required_skills": ["rag_retrieval_quality", "source_authority_ranking", "rag_corpus_governance", "evidence_hashing", "github_actions"],
+      "purpose": "Prove RAG retrieval, source authority and corpus governance are executable under the dedicated retrieval specialist.",
+      "tool_id": "rag_tests",
+      "risk_level": "LOW",
+      "scientific_claim_level": "NONE",
+      "acceptance": "exit_code_zero"
+    },
+    {
+      "id": "CAP-012-rag-redteam-integration",
+      "agent_id": "rag-evaluation-redteam",
+      "required_skills": ["rag_grounding_evaluation", "rag_retrieval_quality", "prompt_injection_defense", "source_authority_ranking", "agent_evaluation"],
+      "purpose": "Prove RAG grounding, abstention and authority regressions remain covered by the dedicated RAG red-team specialist.",
+      "tool_id": "rag_tests",
       "risk_level": "LOW",
       "scientific_claim_level": "NONE",
       "acceptance": "exit_code_zero"

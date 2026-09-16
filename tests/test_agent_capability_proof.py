@@ -13,7 +13,7 @@ def load_json(relative: str) -> dict:
         return json.load(handle)
 
 
-def test_capability_plan_is_executable_and_bounded() -> None:
+def test_capability_plan_is_executable_skill_bound_and_bounded() -> None:
     completed = subprocess.run(
         [sys.executable, "scripts/run_agent_capability_proof.py", "--plan"],
         cwd=ROOT,
@@ -22,12 +22,24 @@ def test_capability_plan_is_executable_and_bounded() -> None:
         capture_output=True,
     )
     payload = json.loads(completed.stdout)
+    contract = payload["contract"]
     assert payload["status"] == "AGENT_CAPABILITY_PLAN_VALID"
-    assert payload["contract"]["missions"] == 8
-    assert payload["contract"]["tools"] == 8
-    assert payload["contract"]["runtime_framework"] == "NONE"
-    assert len(payload["plan"]) == 8
+    assert contract["missions"] == 12
+    assert contract["tools"] == 10
+    assert contract["agents"] == 12
+    assert contract["skills"] == 30
+    assert contract["bound_agents"] == 12
+    assert contract["assigned_skills"] == 30
+    assert contract["all_agents_bound"] is True
+    assert contract["all_skills_assigned"] is True
+    assert contract["runtime_framework"] == "NONE"
+    assert len(payload["plan"]) == 12
     assert all(item["risk_level"] == "LOW" for item in payload["plan"])
+    assert all(item["required_skills"] for item in payload["plan"])
+    assert all(
+        set(item["required_skills"]) <= set(item["agent_skills"])
+        for item in payload["plan"]
+    )
     assert all(item["command"][0] == sys.executable for item in payload["plan"])
 
 
@@ -49,33 +61,76 @@ def test_tool_bindings_have_no_generic_shell_or_external_runtime() -> None:
     assert doc["policy"]["write_effects_forbidden"] is True
     assert doc["policy"]["network_required"] is False
     assert {tool["kind"] for tool in doc["tools"]} <= {"script", "pytest"}
+    assert len(doc["tools"]) == 10
 
 
-def test_every_capability_mission_has_a_known_agent_and_tool() -> None:
-    agents = {agent["id"] for agent in load_json("governance/agents/agents.json")["agents"]}
-    tools = {tool["id"] for tool in load_json("governance/agents/tool_bindings.json")["tools"]}
+def test_every_capability_mission_has_known_agent_tool_and_skills() -> None:
+    agents_doc = load_json("governance/agents/agents.json")
+    skills_doc = load_json("governance/agents/skills.json")
+    agents = {agent["id"]: agent for agent in agents_doc["agents"]}
+    skills = {skill["id"] for skill in skills_doc["skills"]}
+    tools = {
+        tool["id"]
+        for tool in load_json("governance/agents/tool_bindings.json")["tools"]
+    }
     missions = load_json("governance/agents/capability_missions.json")["missions"]
-    assert len(missions) == 8
+    assert len(missions) == 12
+    assert {mission["agent_id"] for mission in missions} == set(agents)
     for mission in missions:
         assert mission["agent_id"] in agents
         assert mission["tool_id"] in tools
         assert mission["acceptance"] == "exit_code_zero"
+        assert mission["required_skills"]
+        assert set(mission["required_skills"]) <= skills
+        assert set(mission["required_skills"]) <= set(
+            agents[mission["agent_id"]]["skills"]
+        )
 
 
 def test_capability_gaps_preserve_bounded_scope_and_unproven_frontiers() -> None:
     doc = load_json("governance/agents/capability_gaps.json")
     gaps = {gap["capability"]: gap for gap in doc["gaps"]}
     assert doc["baseline_type"] == "BOUNDED_DETERMINISTIC_AUTONOMY"
-    assert gaps["bounded_predeclared_mission_execution"]["status"] == "IMPLEMENTED_CONTINUOUS_PROOF_REQUIRED"
-    assert gaps["open_ended_mission_planning"]["status"] == "PROVEN_FOR_BOUNDED_STRUCTURED_UNSEEN_MISSION_PLANNING"
-    assert gaps["adaptive_tool_selection"]["status"] == "PROVEN_FOR_BOUNDED_STRUCTURED_ADAPTIVE_TOOL_SELECTION"
-    assert gaps["dynamic_multi_agent_replanning"]["status"] == "PROVEN_FOR_BOUNDED_STRUCTURED_STATEFUL_MULTI_AGENT_REPLANNING_SIMULATION"
-    assert gaps["durable_agent_checkpoint_resume"]["status"] == "PROVEN_FOR_BOUNDED_PREDECLARED_MISSIONS_CONTINUOUS_PROOF_REQUIRED"
-    assert gaps["external_mcp_tool_execution"]["status"] == "PROVEN_FOR_BOUNDED_AUTHENTICATED_EXTERNAL_MCP_READ_ONLY_GITHUB_PROVIDER"
-    assert gaps["automatic_failure_recovery"]["status"] == "PROVEN_FOR_BOUNDED_STRUCTURED_AUTOMATIC_FAILURE_RECOVERY"
-    assert gaps["semantic_handoff_quality_evaluation"]["status"] == "PROVEN_FOR_BOUNDED_DOMAIN_NATURAL_LANGUAGE_SEMANTIC_HANDOFF_EVALUATION"
-    assert gaps["agent_proposed_code_change_to_pr_pipeline"]["status"] == "PROVEN_FOR_BOUNDED_SANDBOX_PROPOSAL_TO_PR_WITH_HUMAN_MERGE_REQUIRED"
-    assert gaps["agent_runtime_framework_value"]["status"] == "NOT_JUSTIFIED_FOR_CURRENT_BOUNDED_BASELINE"
+    assert (
+        gaps["bounded_predeclared_mission_execution"]["status"]
+        == "IMPLEMENTED_CONTINUOUS_PROOF_REQUIRED"
+    )
+    assert (
+        gaps["open_ended_mission_planning"]["status"]
+        == "PROVEN_FOR_BOUNDED_STRUCTURED_UNSEEN_MISSION_PLANNING"
+    )
+    assert (
+        gaps["adaptive_tool_selection"]["status"]
+        == "PROVEN_FOR_BOUNDED_STRUCTURED_ADAPTIVE_TOOL_SELECTION"
+    )
+    assert (
+        gaps["dynamic_multi_agent_replanning"]["status"]
+        == "PROVEN_FOR_BOUNDED_STRUCTURED_STATEFUL_MULTI_AGENT_REPLANNING_SIMULATION"
+    )
+    assert (
+        gaps["durable_agent_checkpoint_resume"]["status"]
+        == "PROVEN_FOR_BOUNDED_PREDECLARED_MISSIONS_CONTINUOUS_PROOF_REQUIRED"
+    )
+    assert (
+        gaps["external_mcp_tool_execution"]["status"]
+        == "PROVEN_FOR_BOUNDED_AUTHENTICATED_EXTERNAL_MCP_READ_ONLY_GITHUB_PROVIDER"
+    )
+    assert (
+        gaps["automatic_failure_recovery"]["status"]
+        == "PROVEN_FOR_BOUNDED_STRUCTURED_AUTOMATIC_FAILURE_RECOVERY"
+    )
+    assert (
+        gaps["semantic_handoff_quality_evaluation"]["status"]
+        == "PROVEN_FOR_BOUNDED_DOMAIN_NATURAL_LANGUAGE_SEMANTIC_HANDOFF_EVALUATION"
+    )
+    assert (
+        gaps["agent_proposed_code_change_to_pr_pipeline"]["status"]
+        == "PROVEN_FOR_BOUNDED_SANDBOX_PROPOSAL_TO_PR_WITH_HUMAN_MERGE_REQUIRED"
+    )
+    assert (
+        gaps["agent_runtime_framework_value"]["status"]
+        == "NOT_JUSTIFIED_FOR_CURRENT_BOUNDED_BASELINE"
+    )
 
 
 def test_a09_history_records_blocker_then_bounded_proof_without_authority_escalation() -> None:
@@ -87,7 +142,10 @@ def test_a09_history_records_blocker_then_bounded_proof_without_authority_escala
     assert blocked["pull_request_created"] is False
     assert blocked["blocker"]["http_status"] == 403
 
-    assert proven["decision"] == "PROVEN_FOR_BOUNDED_SANDBOX_PROPOSAL_TO_PR_WITH_HUMAN_MERGE_REQUIRED"
+    assert (
+        proven["decision"]
+        == "PROVEN_FOR_BOUNDED_SANDBOX_PROPOSAL_TO_PR_WITH_HUMAN_MERGE_REQUIRED"
+    )
     assert proven["proposal_scope"]["files_changed"] == 1
     assert proven["proposal_scope"]["production_effect"] is False
     assert all(item["conclusion"] == "success" for item in proven["required_workflows"])
@@ -107,8 +165,13 @@ def test_a09_history_records_blocker_then_bounded_proof_without_authority_escala
 
 
 def test_a08_history_records_bounded_semantic_proof_without_authority_escalation() -> None:
-    proof = load_json("governance/agents/handoff_semantic_proof_history.json")["proofs"][-1]
-    assert proof["decision"] == "PROVEN_FOR_BOUNDED_DOMAIN_NATURAL_LANGUAGE_SEMANTIC_HANDOFF_EVALUATION"
+    proof = load_json("governance/agents/handoff_semantic_proof_history.json")[
+        "proofs"
+    ][-1]
+    assert (
+        proof["decision"]
+        == "PROVEN_FOR_BOUNDED_DOMAIN_NATURAL_LANGUAGE_SEMANTIC_HANDOFF_EVALUATION"
+    )
     assert proof["confirmatory_evidence"]["workflow_run_id"] == 35072013065
     assert proof["confirmatory_evidence"]["artifact_id"] == 10436835723
     assert proof["metrics"]["cases_passed"] == 32
@@ -129,12 +192,20 @@ def test_a08_history_records_bounded_semantic_proof_without_authority_escalation
 
 
 def test_a10_history_records_negative_value_decision_without_framework_adoption() -> None:
-    proof = load_json("governance/agents/runtime_framework_value_proof_history.json")["proofs"][-1]
+    proof = load_json("governance/agents/runtime_framework_value_proof_history.json")[
+        "proofs"
+    ][-1]
     assert proof["decision"] == "NOT_JUSTIFIED_FOR_CURRENT_BOUNDED_BASELINE"
     assert proof["confirmatory_evidence"]["workflow_run_id"] == 35098538835
     assert proof["confirmatory_evidence"]["artifact_id"] == 10447710205
-    assert proof["metrics"]["candidate"]["completion_rate"] > proof["metrics"]["baseline"]["completion_rate"]
-    assert proof["metrics"]["candidate"]["recoverable_fault_recovery_rate"] > proof["metrics"]["baseline"]["recoverable_fault_recovery_rate"]
+    assert (
+        proof["metrics"]["candidate"]["completion_rate"]
+        > proof["metrics"]["baseline"]["completion_rate"]
+    )
+    assert (
+        proof["metrics"]["candidate"]["recoverable_fault_recovery_rate"]
+        > proof["metrics"]["baseline"]["recoverable_fault_recovery_rate"]
+    )
     assert proof["metrics"]["candidate"]["hidden_failure_successes"] == 4
     assert proof["metrics"]["comparison"]["candidate_correctness_gate"] is False
     assert proof["metrics"]["comparison"]["candidate_hidden_failure_gate"] is False

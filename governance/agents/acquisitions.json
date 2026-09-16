@@ -14,7 +14,7 @@
       "source": "LangGraph by LangChain",
       "source_url": "https://github.com/langchain-ai/langgraph",
       "decision": "ACQUIRED_AS_REFERENCE_AND_ADAPTER_TARGET",
-      "reason": "Best fit for durable, stateful, checkpointed orchestration with human-in-the-loop while keeping orchestration separate from scientific code. GAP-A10 now authorizes only the pinned non-canonical comparison recorded below; canonical adoption remains unauthorized.",
+      "reason": "Durable execution, persistence and human-in-the-loop remain relevant reference patterns, but the frozen GAP-A10 experiment did not justify a canonical runtime dependency for the current bounded baseline.",
       "runtime_dependency": false,
       "experiment": {
         "authorization": "PINNED_NON_CANONICAL_ONLY",
@@ -30,14 +30,14 @@
         "known_upstream_issue": "langchain-ai/langgraph#8834",
         "canonical_dependency": false
       },
-      "next_gate": "Run only the frozen GAP-A10 non-canonical benchmark. Any production or canonical runtime adoption requires a separate governance decision after the experiment."
+      "next_gate": "Do not adopt as production runtime unless a new measured bottleneck and separate governance experiment demonstrate concrete value beyond the framework-independent baseline."
     },
     {
       "id": "mcp-2026-07-28",
       "source": "Model Context Protocol",
       "source_url": "https://modelcontextprotocol.io",
       "decision": "ACQUIRED_AS_INTEROPERABILITY_STANDARD",
-      "reason": "Current specification provides a stateless protocol core, capability/tool contracts and hardened authorization suitable for bounded agent-tool integration.",
+      "reason": "The 2026-07-28 specification provides a stateless core, deterministic/cacheable discovery behavior, explicit extensions and hardened authorization suitable for bounded agent-tool integration.",
       "runtime_dependency": false,
       "next_gate": "Any MCP server/client added to the project must pass least-privilege, authorization, prompt-injection and write-scope review."
     },
@@ -46,54 +46,54 @@
       "source": "OpenAI Cookbook",
       "source_url": "https://github.com/openai/openai-cookbook",
       "decision": "ACQUIRED_AS_GOVERNANCE_REFERENCE",
-      "reason": "Useful patterns for AGENTS.md, typed/function tools, approvals, guardrails, tracing and agent regression evaluation.",
+      "reason": "Provides practical patterns for typed/function tools, approvals, guardrails, tracing and an evaluation flywheel that maps directly to RAG and agent regression engineering.",
       "runtime_dependency": false,
-      "next_gate": "No OpenAI API runtime dependency or paid model call is authorized by this reference acquisition alone."
+      "next_gate": "Use as a methodology/reference source only; no OpenAI API runtime dependency or paid model call is authorized by this acquisition alone."
     },
     {
       "id": "crewai",
       "source": "CrewAI",
       "source_url": "https://github.com/crewAIInc/crewAI",
       "decision": "EVALUATED_NOT_ACQUIRED",
-      "reason": "Role-based crews and flows are relevant, but overlap with the proposed specialist registry and introduce a second orchestration runtime before a concrete need is proven.",
+      "reason": "Crews, flows, skills and production observability are relevant, but they duplicate orchestration already represented by the SARE specialist registry and would add a second runtime before a measured need exists.",
       "runtime_dependency": false,
-      "next_gate": "Re-evaluate only if autonomous collaborative exploration becomes a measured bottleneck."
+      "next_gate": "Re-evaluate only if collaborative role orchestration becomes a measured bottleneck that the framework-independent GitHub execution model cannot satisfy."
     },
     {
       "id": "microsoft-agent-framework",
       "source": "Microsoft Agent Framework",
       "source_url": "https://github.com/microsoft/agent-framework",
       "decision": "EVALUATED_NOT_ACQUIRED",
-      "reason": "Strong agents, workflows, skills, persistence and orchestration capabilities, but functionally overlaps with LangGraph for the current use case.",
+      "reason": "Current framework capabilities include graph workflows, checkpoints, specialized agents, context providers and human-in-the-loop, but they overlap with LangGraph/reference patterns and are not required by the GitHub-only SARE runtime.",
       "runtime_dependency": false,
-      "next_gate": "Re-evaluate if Microsoft hosting or ecosystem integration becomes a project requirement."
+      "next_gate": "Re-evaluate if Microsoft/Azure hosting, A2A integration or typed cross-service workflows become explicit project requirements."
     },
     {
       "id": "dify",
       "source": "Dify",
       "source_url": "https://github.com/langgenius/dify",
       "decision": "EVALUATED_NOT_ACQUIRED",
-      "reason": "Low-code workflow and plugin capabilities are useful for application construction, but would create an external orchestration surface inconsistent with the current GitHub-only canonical operation.",
+      "reason": "Low-code workflow, knowledge and plugin capabilities are useful for application construction, but would create an external orchestration surface inconsistent with current GitHub-only canonical operation.",
       "runtime_dependency": false,
-      "next_gate": "Use only as a non-canonical prototyping surface if later justified."
+      "next_gate": "Use only as a non-canonical prototyping surface if later justified by an explicit application-delivery requirement."
     },
     {
       "id": "llamaindex-workflows",
       "source": "LlamaIndex Workflows",
-      "source_url": "https://github.com/run-llama/llama_index",
-      "decision": "EVALUATED_NOT_ACQUIRED",
-      "reason": "Strong event-driven and data/document-centric multi-agent patterns, but the current bottleneck is agent governance rather than RAG or document retrieval.",
+      "source_url": "https://developers.llamaindex.ai/python/llamaagents/workflows/",
+      "decision": "ACQUIRED_AS_REFERENCE_AND_ADAPTER_TARGET",
+      "reason": "RAG is now an implemented SARE capability. Official LlamaIndex Workflows patterns cover RAG plus reranking, citation query engines, corrective RAG, durable workflows, testing and observability, making them directly useful as controlled design and benchmark references without importing the framework.",
       "runtime_dependency": false,
-      "next_gate": "Re-evaluate if scientific literature, large document corpora or retrieval-heavy workflows become central."
+      "next_gate": "Use the patterns to expand deterministic RAG evaluation and compare retrieval strategies. Any llama-index package dependency requires a separate pinned benchmark, license/security review and measurable improvement over the built-in retriever."
     },
     {
       "id": "hugging-face-hub",
       "source": "Hugging Face Hub",
       "source_url": "https://huggingface.co",
       "decision": "ON_DEMAND_ONLY",
-      "reason": "Models and datasets must not be added merely to increase model count; every acquisition must answer a predeclared scientific or engineering gap and preserve license/provenance.",
+      "reason": "Embedding and reranker models may become relevant for semantic-retrieval experiments, but models and datasets must not be added merely to increase capability count; each candidate needs a predeclared quality gap and reproducible evaluation.",
       "runtime_dependency": false,
-      "next_gate": "Require dataset/model card, license, provenance, reproducibility and scientific-impact review."
+      "next_gate": "Before any model acquisition require model card, exact revision, license, provenance, resource budget, offline reproducibility and measured retrieval gain against the deterministic lexical baseline."
     },
     {
       "id": "langchain-hub",
