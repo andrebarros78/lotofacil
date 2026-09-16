@@ -96,7 +96,7 @@ A auditoria real demonstrou que M1 não se distingue do M0 no holdout e que M2 `
 
 A versão 1.1.7 fechou T30–T39:
 
-- **T30 — quantidade operacional:** carteiras fora do intervalo 3–100 são rejeitadas.
+- **T30 — quantidade operacional:** carteiras fora do intervalo 1–100 são rejeitadas.
 - **T31 — cartão duplicado:** duplicatas geram `DUPLICATE_CARD`; a quantidade entregue é validada e não pode cair silenciosamente abaixo da quantidade solicitada.
 - **T32 — busca limitada:** esgotar `max_attempts` retorna `SEARCH_LIMIT_REACHED`; isso não é convertido em prova de inviabilidade.
 - **T33 — relaxamento de restrição:** overlap, exposição, seed, orçamento de tentativas e nome da política participam da identidade da configuração; alterar restrição produz outro `config_id`/hash.
