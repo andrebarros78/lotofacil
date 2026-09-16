@@ -17,7 +17,7 @@ Execuções fora do GitHub são estritamente não canônicas: podem servir para 
 - GitHub Artifacts: SQLite reconstruído, relatórios e evidências de cada execução.
 - Git history: trilha temporal e de proveniência.
 
-O banco SQLite não é usado como memória permanente do Git. A memória canônica persistida é textual e versionável: `canonical_history.json`, `bootstrap_manifest.json`, `prospective_ledger.json` e `latest.json`. Cada execução reconstrói um SQLite a partir desse estado, exige `integrity_check=ok` e publica o banco como artefato de prova.
+O banco SQLite não é usado como memória permanente do Git. A memória canônica persistida é textual e versionável: `canonical_history.json`, `bootstrap_manifest.json`, `prospective_ledger.json`, `operator_card_ledger.json` quando inicializado e `latest.json`. Cada execução reconstrói um SQLite a partir desse estado, exige `integrity_check=ok` e publica o banco como artefato de prova.
 
 ## Ciclo automático
 
@@ -29,10 +29,29 @@ Quando os gates passam, o ciclo:
 2. nas execuções seguintes, usa o histórico canônico já commitado e busca diretamente na CAIXA apenas concursos novos;
 3. publica um snapshot reproduzível e executa o Core retrospectivo;
 4. avalia previsões prospectivas antigas cujo resultado oficial já exista;
-5. congela uma única previsão para `último_concurso + 1`;
+5. congela uma única previsão científica para `último_concurso + 1`;
 6. grava SHA-256 do payload da previsão antes de qualquer avaliação;
 7. atualiza o ledger e o relatório, valida tudo novamente e faz commit em `operations/state`;
 8. um segundo job faz novo checkout do estado já commitado e recalcula scores/hashes independentemente.
+
+A unicidade acima pertence à **previsão científica prospectiva**, não limita a quantidade de cartões solicitados pelo operador.
+
+## Cartões operacionais sob demanda
+
+O workflow `SARE Operator Card Freeze` é o caminho canônico para comandos de geração de cartões feitos pelo operador.
+
+- cada solicitação positiva deve ser atendida e adicionada ao estado, sem substituir solicitações anteriores;
+- várias solicitações para o mesmo concurso são cumulativas;
+- `1` seguido de `1` congela dois novos cartões distintos;
+- uma sequência `1 + 1 + 10 + 1 + 4` acrescenta 17 cartões; se seis já estavam congelados, o total passa a 23;
+- cartões repetidos para o mesmo concurso são proibidos;
+- cartões científicos já congelados em `prospective_ledger.json` são tratados como combinações reservadas e não podem ser duplicados pelo ledger do operador;
+- não existe o antigo limite operacional de 100 cartões por solicitação neste caminho; a limitação absoluta é apenas o espaço matemático de `C(25,15) = 3.268.760` combinações distintas por concurso;
+- cada request registra cursor de geração, cartões, hashes, snapshot do estado e SHA-256 do request;
+- `operator_card_ledger.json` é append-only e auditado antes de qualquer persistência;
+- a geração operacional continua rotulada `CARTEIRA COMBINATÓRIA — SEM VANTAGEM PREDITIVA COMPROVADA`.
+
+O console read-only pode continuar produzindo prévias e diagnósticos, mas uma ordem do operador para **gerar cartões** deve usar o workflow de congelamento, para que os resultados sejam persistidos canonicamente em `operations/state`.
 
 ## Protocolo prospectivo congelado
 
@@ -61,7 +80,10 @@ O histórico de commits do branch `operations/state` fornece marca temporal inde
 - modificação do payload previsto;
 - score divergente do resultado canônico;
 - previsão pendente para concurso cujo resultado já esteja no histórico;
-- divergência entre ledger e relatório operacional.
+- divergência entre ledger e relatório operacional;
+- adulteração do ledger de cartões do operador;
+- duplicação de cartão operacional no mesmo concurso;
+- colisão com cartão primário já congelado para o mesmo concurso.
 
 ## Estados de eficácia prospectiva
 
