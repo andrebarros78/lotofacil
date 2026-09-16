@@ -16,6 +16,9 @@ on:
     paths:
       - "src/sare_lotofacil/rag/**"
       - "tests/test_rag.py"
+      - "scripts/evaluate_rag.py"
+      - "governance/rag/**"
+      - "governance/agents/**"
       - "docs/RAG.md"
       - "pyproject.toml"
       - ".github/workflows/rag-proof.yml"
@@ -24,6 +27,9 @@ on:
     paths:
       - "src/sare_lotofacil/rag/**"
       - "tests/test_rag.py"
+      - "scripts/evaluate_rag.py"
+      - "governance/rag/**"
+      - "governance/agents/**"
       - "docs/RAG.md"
       - "pyproject.toml"
       - ".github/workflows/rag-proof.yml"
@@ -46,6 +52,8 @@ jobs:
           python-version: "3.13"
       - name: Install locked environment
         run: python -m pip install -c requirements.lock.txt -e '.[dev]'
+      - name: RAG governance gate
+        run: python scripts/validate_agent_ecosystem.py
       - name: RAG unit proof
         run: python -m pytest -q tests/test_rag.py
       - name: Build canonical index and prove grounded answer
@@ -101,6 +109,8 @@ jobs:
           print(f"SOURCE_DIGEST={status['source_digest']}")
           print(f"SOURCES={status['source_count']} CHUNKS={status['chunk_count']}")
           PY
+      - name: Canonical RAG quality benchmark
+        run: python scripts/evaluate_rag.py --root . --cases governance/rag/eval_cases.json --out artifacts/rag-eval.json
       - name: CLI smoke
         run: |
           sare-rag --root . status > /tmp/rag-cli-status.json
