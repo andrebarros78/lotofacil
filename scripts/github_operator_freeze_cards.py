@@ -36,10 +36,11 @@ def run(state_dir: Path, *, card_count: int, target_contest: int = 0) -> dict[st
     latest = _load(state_dir / "latest.json")
     prospective = _load(state_dir / "prospective_ledger.json")
     canonical_target = int(latest["next_prediction_target"])
+    official_latest = int(latest["official_latest_contest"])
     target = canonical_target if target_contest == 0 else int(target_contest)
-    if target != canonical_target:
+    if target <= official_latest:
         raise RuntimeError(
-            f"OPERATOR_CARD_TARGET_NOT_CURRENT: requested={target} current={canonical_target}"
+            f"OPERATOR_CARD_TARGET_ALREADY_OBSERVED: requested={target} official_latest={official_latest}"
         )
 
     ledger_path = state_dir / "operator_card_ledger.json"
@@ -57,6 +58,7 @@ def run(state_dir: Path, *, card_count: int, target_contest: int = 0) -> dict[st
     _write(ledger_path, ledger)
     return {
         **result,
+        "official_latest_contest": official_latest,
         "canonical_next_prediction_target": canonical_target,
         "state_snapshot_id": latest["snapshot_id"],
         "state_snapshot_hash": latest["snapshot_hash"],
