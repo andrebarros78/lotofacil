@@ -73,8 +73,9 @@ jobs:
           assert status['read_only'] is True
           assert status['external_model'] is False
           assert status['external_vector_store'] is False
-          assert status['retriever'] == 'tfidf_cosine_coverage_bigram_authority_bilingual_v4'
+          assert status['retriever'] == 'tfidf_cosine_coverage_bigram_authority_bilingual_v5'
           assert status['query_expansion'] == 'deterministic_domain_aliases_v1'
+          assert status['implementation_source_policy'] == 'rag_code_meta_priority_only_v1'
           assert status['source_count'] > 0
           assert status['chunk_count'] > 0
 
@@ -82,6 +83,7 @@ jobs:
           assert proof.abstained is False
           assert proof.citations
           assert proof.citations[0].path in {'README.md', 'docs/MISSION_PROVEN_1_1_10.md'}
+          assert not proof.citations[0].path.startswith('src/sare_lotofacil/rag/')
           assert 'docs/RAG.md' not in {c.path for c in proof.citations}
           assert all(c.path for c in proof.citations)
 
@@ -120,8 +122,9 @@ jobs:
           import json
           status = json.load(open('/tmp/rag-cli-status.json', encoding='utf-8'))
           answer = json.load(open('/tmp/rag-cli-answer.json', encoding='utf-8'))
-          assert status['retriever'] == 'tfidf_cosine_coverage_bigram_authority_bilingual_v4'
+          assert status['retriever'] == 'tfidf_cosine_coverage_bigram_authority_bilingual_v5'
           assert status['query_expansion'] == 'deterministic_domain_aliases_v1'
+          assert status['implementation_source_policy'] == 'rag_code_meta_priority_only_v1'
           assert status['chunk_count'] > 0
           assert answer['abstained'] is False
           assert answer['citations']
