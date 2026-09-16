@@ -1,0 +1,111 @@
+{
+  "schema_version": 1,
+  "proofs": [
+    {
+      "proof_id": "AGENT-RUNTIME-FRAMEWORK-VALUE-BOUNDED-V1",
+      "gap_id": "GAP-A10",
+      "decision": "NOT_JUSTIFIED_FOR_CURRENT_BOUNDED_BASELINE",
+      "authority": "GITHUB_ONLY",
+      "experiment_mode": "NON_CANONICAL_PINNED_FRAMEWORK_COMPARISON",
+      "predeclaration": {
+        "pull_request": 58,
+        "canonical_main_sha": "76641f43983f313fc14e33c258dc6e8664434740",
+        "benchmark_cases": 24,
+        "fault_cases": 16,
+        "frozen_before_implementation": true
+      },
+      "candidate": {
+        "id": "langgraph",
+        "langgraph_version": "1.2.11",
+        "checkpoint_sqlite_version": "3.1.1",
+        "canonical_dependency_added": false,
+        "known_upstream_risk": "langchain-ai/langgraph#8834"
+      },
+      "implementation": {
+        "pull_request": 59,
+        "canonical_main_sha": "2b9a24ff6b83ef54a9f6b34be3f45b6196f3ef63"
+      },
+      "confirmatory_evidence": {
+        "workflow_name": "Runtime Framework Value Proof",
+        "workflow_run_id": 35098538835,
+        "artifact_id": 10447710205,
+        "artifact_digest": "sha256:1fab203f43802d224067b95910d6cdc996a012dd4a24075dc880ed3dc1c04710",
+        "artifact_digest_independently_verified": true,
+        "github_sha": "2b9a24ff6b83ef54a9f6b34be3f45b6196f3ef63",
+        "policy_sha256": "c9b5b1e7b462a8adbb6c51ce0c79b323017981dad1192fda719622e85fe39566",
+        "benchmark_sha256": "4929a0ce653dae0df53a95e9a18ecfc9669570eab4916d09bf5d1a538c481b3d"
+      },
+      "metrics": {
+        "baseline": {
+          "cases_total": 24,
+          "supported_cases": 12,
+          "unsupported_cases": 12,
+          "correct_final_states": 12,
+          "completion_rate": 0.5,
+          "recoverable_fault_recovery_rate": 0.5,
+          "human_interventions": 0,
+          "hidden_failure_successes": 0
+        },
+        "candidate": {
+          "cases_total": 24,
+          "supported_cases": 24,
+          "unsupported_cases": 0,
+          "correct_final_states": 20,
+          "completion_rate": 0.8333333333333334,
+          "recoverable_fault_recovery_rate": 0.75,
+          "human_interventions": 0,
+          "hidden_failure_successes": 4
+        },
+        "comparison": {
+          "completion_rate_improvement": 0.33333333333333337,
+          "recovery_rate_improvement": 0.25,
+          "human_intervention_reduction": 0,
+          "meaningful_primary_improvement": true,
+          "primary_metric_regression": false,
+          "candidate_correctness_gate": false,
+          "candidate_hidden_failure_gate": false,
+          "dependency_cost_gate": false,
+          "safety_gate": true,
+          "value_established": false
+        },
+        "dependency_cost": {
+          "baseline_distribution_count": 24,
+          "candidate_distribution_count": 53,
+          "runtime_dependency_distributions_delta": 29,
+          "runtime_dependency_distributions_delta_max": 25,
+          "direct_framework_dependencies": 2
+        }
+      },
+      "router_failure_evidence": {
+        "case_ids": ["A10-R01", "A10-R02", "A10-R03", "A10-R04"],
+        "nominal_successes": 4,
+        "correct_final_states": 0,
+        "hidden_failure_successes": 4,
+        "pending_tasks_after_resume": 0,
+        "sink_executions": 0
+      },
+      "safety": {
+        "authority_violations": 0,
+        "production_write_attempts": 0,
+        "operations_state_write_attempts": 0,
+        "runtime_external_network_calls": 0,
+        "external_model_calls": 0,
+        "paid_calls": 0,
+        "canonical_runtime_dependency_changes": 0
+      },
+      "governance_effect": {
+        "experiment_conclusively_evaluated": true,
+        "current_bounded_baseline_justifies_langgraph_adoption": false,
+        "canonical_runtime_framework": "NONE",
+        "canonical_framework_adoption_authorized": false,
+        "general_agent_framework_superiority_proven": false,
+        "general_agent_framework_inferiority_proven": false,
+        "langgraph_security_proven": false,
+        "production_runtime_value_proven": false,
+        "llm_quality_improvement_proven": false,
+        "arbitrary_failure_recovery_proven": false,
+        "scientific_predictive_value_proven": false
+      }
+    }
+  ]
+}
