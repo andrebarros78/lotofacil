@@ -72,7 +72,7 @@ def test_capability_gaps_preserve_bounded_scope_and_unproven_frontiers() -> None
     assert gaps["dynamic_multi_agent_replanning"]["status"] == "PROVEN_FOR_BOUNDED_STRUCTURED_STATEFUL_MULTI_AGENT_REPLANNING_SIMULATION"
     assert gaps["durable_agent_checkpoint_resume"]["status"] == "PROVEN_FOR_BOUNDED_PREDECLARED_MISSIONS_CONTINUOUS_PROOF_REQUIRED"
     assert gaps["external_mcp_tool_execution"]["status"] == "PROVEN_FOR_BOUNDED_AUTHENTICATED_EXTERNAL_MCP_READ_ONLY_GITHUB_PROVIDER"
-    assert gaps["automatic_failure_recovery"]["status"] == "PARTIALLY_PROVEN_BOUNDED_TRANSIENT_RETRY_ONLY"
+    assert gaps["automatic_failure_recovery"]["status"] == "PROVEN_FOR_BOUNDED_STRUCTURED_AUTOMATIC_FAILURE_RECOVERY"
     assert gaps["semantic_handoff_quality_evaluation"]["status"] == "PARTIALLY_PROVEN_STRUCTURED_HANDOFF_EVALUATION_ONLY"
     assert gaps["agent_proposed_code_change_to_pr_pipeline"]["status"] == "PROVEN_FOR_BOUNDED_SANDBOX_PROPOSAL_TO_PR_WITH_HUMAN_MERGE_REQUIRED"
     assert gaps["agent_runtime_framework_value"]["status"] == "NOT_ESTABLISHED"

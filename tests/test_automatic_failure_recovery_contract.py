@@ -195,6 +195,41 @@ def test_a07_report_path_cannot_escape_artifacts() -> None:
     assert recovery.artifact_path("artifacts/a07-test.json").parent == (ROOT / "artifacts").resolve()
 
 
-def test_a07_registry_remains_partial_before_confirmatory_main_evidence() -> None:
+def test_a07_registry_records_canonical_proof_without_claim_inflation() -> None:
     gaps = {item["id"]: item for item in load_json("governance/agents/capability_gaps.json")["gaps"]}
-    assert gaps["GAP-A07"]["status"] == "PARTIALLY_PROVEN_BOUNDED_TRANSIENT_RETRY_ONLY"
+    assert gaps["GAP-A07"]["status"] == "PROVEN_FOR_BOUNDED_STRUCTURED_AUTOMATIC_FAILURE_RECOVERY"
+
+    record = load_json("governance/agents/automatic_failure_recovery_proof_history.json")["proofs"][-1]
+    assert record["decision"] == "PROVEN_FOR_BOUNDED_STRUCTURED_AUTOMATIC_FAILURE_RECOVERY"
+    assert record["prior_status"] == "PARTIALLY_PROVEN_BOUNDED_TRANSIENT_RETRY_ONLY"
+    assert record["predeclaration_pr_number"] == 51
+    assert record["predeclaration_main_sha"] == "78ba232dddf7cd46d71b4a660044c7b097dc2911"
+    assert record["implementation_pr_number"] == 52
+    assert record["canonical_main_sha"] == "500aabe40742226a2ef70cb9e2e8d9261dd8e31d"
+    assert record["workflow_run_id"] == 35041574110
+    assert record["artifact_id"] == 10425183637
+    assert record["artifact_digest"] == "sha256:c89c86e1316c683f28c1d86f15fe84e5a55a0e313690188759348d5e7df5c2d0"
+    assert record["artifact_digest_locally_verified"] is True
+    metrics = record["metrics"]
+    assert metrics["cases_total"] == metrics["cases_passed"] == metrics["audited_cases"] == 24
+    assert metrics["cases_failed"] == 0
+    assert metrics["false_recoveries"] == 0
+    assert metrics["false_blocks"] == 0
+    assert metrics["action_mismatches"] == 0
+    assert metrics["recovery_events"] == 8
+    assert metrics["authority_violations"] == 0
+    assert metrics["network_target_violations"] == 0
+    assert metrics["write_attempts"] == 0
+    assert metrics["shell_attempts"] == 0
+    assert metrics["credential_exposures"] == 0
+    assert metrics["human_interventions"] == 0
+    assert metrics["actual_external_network_calls"] == 0
+    effect = record["governance_effect"]
+    assert effect["bounded_structured_recovery_proven"] is True
+    assert effect["real_world_arbitrary_network_recovery_proven"] is False
+    assert effect["real_credential_refresh_proven"] is False
+    assert effect["arbitrary_dependency_discovery_proven"] is False
+    assert effect["free_form_dynamic_replanning_proven"] is False
+    assert effect["production_mutation_authority_granted"] is False
+    assert effect["arbitrary_network_authority_granted"] is False
+    assert effect["general_failure_recovery_proven"] is False
