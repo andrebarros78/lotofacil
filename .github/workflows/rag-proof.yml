@@ -17,7 +17,7 @@ on:
       - "src/sare_lotofacil/rag/**"
       - "tests/test_rag.py"
       - "scripts/evaluate_rag.py"
-      - "governance/rag/**"
+      - ".github/rag/**"
       - "governance/agents/**"
       - "docs/RAG.md"
       - "pyproject.toml"
@@ -28,7 +28,7 @@ on:
       - "src/sare_lotofacil/rag/**"
       - "tests/test_rag.py"
       - "scripts/evaluate_rag.py"
-      - "governance/rag/**"
+      - ".github/rag/**"
       - "governance/agents/**"
       - "docs/RAG.md"
       - "pyproject.toml"
@@ -73,7 +73,8 @@ jobs:
           assert status['read_only'] is True
           assert status['external_model'] is False
           assert status['external_vector_store'] is False
-          assert status['retriever'] == 'tfidf_cosine_coverage_bigram_authority_v3'
+          assert status['retriever'] == 'tfidf_cosine_coverage_bigram_authority_bilingual_v4'
+          assert status['query_expansion'] == 'deterministic_domain_aliases_v1'
           assert status['source_count'] > 0
           assert status['chunk_count'] > 0
 
@@ -110,7 +111,7 @@ jobs:
           print(f"SOURCES={status['source_count']} CHUNKS={status['chunk_count']}")
           PY
       - name: Canonical RAG quality benchmark
-        run: python scripts/evaluate_rag.py --root . --cases governance/rag/eval_cases.json --out artifacts/rag-eval.json
+        run: python scripts/evaluate_rag.py --root . --cases .github/rag/eval_cases.json --out artifacts/rag-eval.json
       - name: CLI smoke
         run: |
           sare-rag --root . status > /tmp/rag-cli-status.json
@@ -119,7 +120,8 @@ jobs:
           import json
           status = json.load(open('/tmp/rag-cli-status.json', encoding='utf-8'))
           answer = json.load(open('/tmp/rag-cli-answer.json', encoding='utf-8'))
-          assert status['retriever'] == 'tfidf_cosine_coverage_bigram_authority_v3'
+          assert status['retriever'] == 'tfidf_cosine_coverage_bigram_authority_bilingual_v4'
+          assert status['query_expansion'] == 'deterministic_domain_aliases_v1'
           assert status['chunk_count'] > 0
           assert answer['abstained'] is False
           assert answer['citations']
