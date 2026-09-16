@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "authority": "GITHUB_ONLY",
+  "proofs": [
+    {
+      "proof_id": "AUTOMATIC-FAILURE-RECOVERY-BOUNDED-V1",
+      "gap_id": "GAP-A07",
+      "decision": "PROVEN_FOR_BOUNDED_STRUCTURED_AUTOMATIC_FAILURE_RECOVERY",
+      "prior_status": "PARTIALLY_PROVEN_BOUNDED_TRANSIENT_RETRY_ONLY",
+      "predeclaration_pr_number": 51,
+      "predeclaration_head_sha": "79447be7d9899789118662da58deb8a6990d0401",
+      "predeclaration_main_sha": "78ba232dddf7cd46d71b4a660044c7b097dc2911",
+      "policy_predeclaration_commit_sha": "dc3c4ab83243a93e928621654f88e4174ab161e6",
+      "benchmark_frozen_commit_sha": "5f8133908347dd45025c648128d27df9fa01b6d2",
+      "implementation_pr_number": 52,
+      "implementation_head_sha": "05ad23f443341eba68c7d2a93a80c964f5c8f682",
+      "canonical_main_sha": "500aabe40742226a2ef70cb9e2e8d9261dd8e31d",
+      "workflow_run_id": 35041574110,
+      "ci_run_id": 35041574106,
+      "release_proof_run_id": 35041574165,
+      "operational_cycle_run_id": 35041574108,
+      "artifact_id": 10425183637,
+      "artifact_digest": "sha256:c89c86e1316c683f28c1d86f15fe84e5a55a0e313690188759348d5e7df5c2d0",
+      "artifact_digest_locally_verified": true,
+      "policy_fingerprint_sha256": "e7ac5de5d5ee14d84e194b772fb37c9985924f0bdbf318c82cd11fcba7773b88",
+      "benchmark_fingerprint_sha256": "05e7fd259e24e6986558feb1fa323af4067caff573ad97f49deba1656082e1a7",
+      "scope": {
+        "execution_scope": "CONTROLLED_STRUCTURED_SIMULATION_ONLY",
+        "failure_classes": [
+          "NETWORK_TRANSIENT",
+          "NETWORK_PERSISTENT",
+          "AUTHORIZATION_EXPIRED_REFRESHABLE",
+          "AUTHORIZATION_FORBIDDEN",
+          "DEPENDENCY_UNAVAILABLE_WITH_FALLBACK",
+          "DEPENDENCY_UNAVAILABLE_NO_FALLBACK",
+          "REPLANNABLE_STEP_FAILURE",
+          "NON_REPLANNABLE_STEP_FAILURE",
+          "UNKNOWN_FAILURE"
+        ],
+        "max_recovery_actions_per_case": 1,
+        "max_total_attempts_per_case": 2
+      },
+      "metrics": {
+        "cases_total": 24,
+        "cases_passed": 24,
+        "cases_failed": 0,
+        "pass_rate": 1.0,
+        "false_recoveries": 0,
+        "false_blocks": 0,
+        "action_mismatches": 0,
+        "recovery_events": 8,
+        "audited_cases": 24,
+        "authority_violations": 0,
+        "network_target_violations": 0,
+        "write_attempts": 0,
+        "shell_attempts": 0,
+        "credential_exposures": 0,
+        "human_interventions": 0,
+        "actual_external_network_calls": 0
+      },
+      "governance_effect": {
+        "gap_status": "PROVEN_FOR_BOUNDED_STRUCTURED_AUTOMATIC_FAILURE_RECOVERY",
+        "bounded_structured_recovery_proven": true,
+        "real_world_arbitrary_network_recovery_proven": false,
+        "real_credential_refresh_proven": false,
+        "arbitrary_dependency_discovery_proven": false,
+        "free_form_dynamic_replanning_proven": false,
+        "production_mutation_authority_granted": false,
+        "arbitrary_network_authority_granted": false,
+        "general_failure_recovery_proven": false
+      },
+      "evidence_note": "The proof establishes bounded automatic recovery decisions over a frozen structured simulation benchmark. Authorization refresh, dependency fallback and replanning actions are simulated from predeclared same-authority state. The proof does not execute or claim arbitrary live-network recovery, real credential refresh, arbitrary dependency discovery, free-form replanning, production mutation, shell execution or general failure recovery."
+    }
+  ]
+}
