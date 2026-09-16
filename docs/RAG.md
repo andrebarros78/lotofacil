@@ -23,12 +23,15 @@ São aceitos apenas arquivos textuais com extensões `.md`, `.txt`, `.json`, `.y
 1. descoberta determinística das fontes permitidas;
 2. leitura UTF-8 e hash por fonte;
 3. chunking por linhas, preservando `path`, `line_start` e `line_end`;
-4. tokenização normalizada;
+4. tokenização normalizada com remoção limitada de termos interrogativos/fillers;
 5. índice TF-IDF em memória;
-6. recuperação top-k por similaridade cosseno;
-7. geração extrativa determinística a partir dos chunks recuperados;
-8. emissão de citações com caminho, faixa de linhas, `chunk_id` e score;
-9. abstenção quando a consulta não possui suporte no índice.
+6. recuperação por `tfidf_cosine_coverage_bigram_authority_v3`, combinando similaridade, cobertura lexical, adjacência de termos e prioridade de autoridade/frescura documental;
+7. deduplicação de evidência repetida;
+8. geração extrativa determinística a partir dos chunks recuperados;
+9. emissão de citações com caminho, faixa de linhas, `chunk_id` e score;
+10. abstenção quando a consulta não possui suporte no índice.
+
+A prioridade de autoridade impede que exemplos de uso do próprio RAG ou provas históricas obsoletas precedam documentação canônica mais atual quando a consulta pergunta pelo estado vigente.
 
 ## Invariantes
 
@@ -59,17 +62,56 @@ sare-rag --root . answer "qual é a conclusão científica atual?" --top-k 5
 
 `context` produz um pacote de contexto citável para um consumidor externo, sem permitir que esse consumidor adquira autoridade sobre o estado canônico.
 
-`answer` usa `deterministic_extractive_v1`: seleciona trechos das fontes recuperadas e anexa referências `[n]`. Se não houver suporte lexical suficiente, retorna abstenção em vez de inventar conteúdo.
+`answer` usa `deterministic_extractive_v1`: seleciona trechos das fontes recuperadas, deduplica evidência repetida e anexa referências `[n]`. Se não houver suporte lexical suficiente, retorna abstenção em vez de inventar conteúdo.
+
+## Benchmark canônico de qualidade
+
+O corpus de avaliação versionado fica em `governance/rag/eval_cases.json` e é executado por `scripts/evaluate_rag.py`.
+
+O benchmark cobre, no mínimo:
+
+- conclusão científica vigente;
+- autoridade operacional GitHub-only;
+- contrato T30 de carteiras;
+- governança do lockbox;
+- aquisição/segurança MCP;
+- arquitetura do próprio RAG;
+- limites de escrita de agentes;
+- integridade econômica;
+- abstenção para consulta sem suporte;
+- isolamento de pseudo-segredo fora do corpus.
+
+A prova calcula `MRR`, taxa de fonte relevante no rank 1, grounding de todas as citações e conformidade das abstenções. O gate falha se qualquer caso obrigatório falhar ou se as métricas mínimas versionadas não forem atingidas.
+
+## Especialistas agentivos responsáveis
+
+A governança mantém dois especialistas dedicados, sem autoridade para mutar branches canônicas:
+
+- `rag-retrieval-engineer`: recuperação, reranking, autoridade/frescura de fontes, digest e regressão de ranking;
+- `rag-evaluation-redteam`: grounding, abstenção, prompt injection, isolamento de fontes e avaliação adversarial.
+
+As skills correspondentes são registradas em `governance/agents/skills.json`. LlamaIndex Workflows foi adquirido somente como referência/adapter target para padrões de RAG, reranking, citação, corrective RAG, testes e observabilidade. Nenhum pacote LlamaIndex foi adicionado ao runtime.
 
 ## Operação GitHub-only
 
-O workflow `RAG Proof` executa o teste específico do RAG e produz, como artefatos:
+O workflow `RAG Proof` executa:
+
+1. validação da governança agentiva;
+2. testes unitários do RAG;
+3. construção do índice e resposta fundamentada de prova;
+4. benchmark canônico de qualidade;
+5. smoke test da CLI;
+6. publicação das evidências.
+
+Os artefatos incluem:
 
 - `rag-status.json`;
-- `rag-answer.json`.
+- `rag-proof.json`;
+- `rag-eval.json`;
+- `rag-query.json`, quando uma consulta manual é fornecida.
 
 O workflow é read-only e pode ser disparado por Pull Request, por mudança relevante em `main` e manualmente. A prova operacional só é considerada válida quando o workflow correspondente ao commit passa no GitHub Actions.
 
 ## Limites deliberados da versão 1
 
-Esta implementação usa recuperação lexical TF-IDF e geração extrativa. Ela não reivindica recuperação semântica por embeddings nem geração livre por LLM. Uma futura camada semântica exige experimento separado, revisão de dependência/licença/segurança e prova de valor antes de entrar no runtime canônico.
+Esta implementação usa recuperação lexical/reranking determinístico e geração extrativa. Ela não reivindica recuperação semântica por embeddings nem geração livre por LLM. Uma futura camada semântica exige experimento separado, revisão de dependência/licença/segurança e prova de ganho no benchmark canônico antes de entrar no runtime.
