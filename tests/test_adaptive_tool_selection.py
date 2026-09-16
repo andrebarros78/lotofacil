@@ -68,7 +68,9 @@ def test_a03_allowlist_exactly_matches_canonical_tool_bindings() -> None:
     canonical = {tool["id"] for tool in bindings["tools"]}
 
     assert canonical == set(policy["tool_capability_map"])
-    assert len(canonical) == 8
+    assert len(canonical) == 10
+    assert "agent_integration_tests" in canonical
+    assert "rag_tests" in canonical
     assert bindings["policy"]["python_executable_only"] is True
     assert bindings["policy"]["shell_false_required"] is True
     assert bindings["policy"]["write_effects_forbidden"] is True
@@ -164,12 +166,16 @@ def test_a03_frozen_benchmark_passes_with_zero_selection_regressions(tmp_path: P
     assert metrics["non_minimal_selections"] == 0
     assert metrics["authority_violations"] == 0
     assert metrics["execution_attempts"] == 0
+    assert metrics["canonical_tool_count"] == 10
     assert report["claim_boundary"]["dynamic_tool_discovery_proven"] is False
     assert report["claim_boundary"]["tool_execution_authority_granted"] is False
 
 
 def test_a03_registry_records_canonical_bounded_proof_without_claim_inflation() -> None:
-    gaps = {item["id"]: item for item in load_json("governance/agents/capability_gaps.json")["gaps"]}
+    gaps = {
+        item["id"]: item
+        for item in load_json("governance/agents/capability_gaps.json")["gaps"]
+    }
     assert gaps["GAP-A03"]["status"] == "PROVEN_FOR_BOUNDED_STRUCTURED_ADAPTIVE_TOOL_SELECTION"
     assert gaps["GAP-A04"]["status"] == "PROVEN_FOR_BOUNDED_STRUCTURED_STATEFUL_MULTI_AGENT_REPLANNING_SIMULATION"
 
