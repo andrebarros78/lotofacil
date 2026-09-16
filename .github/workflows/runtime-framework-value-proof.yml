@@ -1,0 +1,84 @@
+name: Runtime Framework Value Proof
+
+on:
+  pull_request:
+    paths:
+      - 'governance/agents/runtime_framework_value_policy.json'
+      - 'governance/agents/runtime_framework_value_benchmark.json'
+      - 'governance/agents/acquisitions.json'
+      - 'scripts/run_runtime_framework_value_experiment.py'
+      - 'tests/test_runtime_framework_value.py'
+      - '.github/workflows/runtime-framework-value-proof.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'governance/agents/runtime_framework_value_policy.json'
+      - 'governance/agents/runtime_framework_value_benchmark.json'
+      - 'governance/agents/acquisitions.json'
+      - 'scripts/run_runtime_framework_value_experiment.py'
+      - 'tests/test_runtime_framework_value.py'
+      - '.github/workflows/runtime-framework-value-proof.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  runtime-framework-value-proof:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      LANGGRAPH_STRICT_MSGPACK: 'true'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.12'
+          check-latest: false
+
+      - name: Install locked SARE environment
+        run: python -m pip install -c requirements.lock.txt -e '.[dev]'
+
+      - name: Record framework-independent distribution baseline
+        shell: bash
+        run: |
+          python - <<'PY' >> "$GITHUB_ENV"
+          import importlib.metadata
+          print(f"A10_BASELINE_DISTRIBUTIONS_COUNT={len(list(importlib.metadata.distributions()))}")
+          PY
+
+      - name: Download and verify pinned candidate wheels
+        shell: bash
+        run: |
+          mkdir -p /tmp/a10-wheels
+          python -m pip download --no-deps --only-binary=:all: --dest /tmp/a10-wheels \
+            'langgraph==1.2.11' 'langgraph-checkpoint-sqlite==3.1.1'
+          echo '8bab70de7b2d00b5300fb289bcf38d8b241400f3184c1e95e8ce706fb0e8686b  /tmp/a10-wheels/langgraph-1.2.11-py3-none-any.whl' | sha256sum -c -
+          echo '8505c54c94a658080525d7e6780fdd4e0c078ff2566b30d399c02cc9f9af1c63  /tmp/a10-wheels/langgraph_checkpoint_sqlite-3.1.1-py3-none-any.whl' | sha256sum -c -
+
+      - name: Install pinned non-canonical candidate runtime
+        run: python -m pip install 'langgraph==1.2.11' 'langgraph-checkpoint-sqlite==3.1.1'
+
+      - name: Verify canonical runtime remains framework independent
+        shell: bash
+        run: |
+          ! grep -qi 'langgraph' pyproject.toml
+          python scripts/validate_agent_ecosystem.py
+
+      - name: Test frozen A10 contract and experiment harness
+        run: python -m pytest tests/test_runtime_framework_value.py -q
+
+      - name: Execute bounded A10 comparison
+        run: python scripts/run_runtime_framework_value_experiment.py --report artifacts/runtime_framework_value_experiment.json
+
+      - name: Upload A10 evidence
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: runtime-framework-value-proof
+          path: artifacts/runtime_framework_value_experiment.json
+          if-no-files-found: error
+          retention-days: 30
