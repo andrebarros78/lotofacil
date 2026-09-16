@@ -34,6 +34,19 @@ def _record_identity(record) -> tuple[int, str, tuple[int, ...]]:
     return record.contest_id, record.draw_date.isoformat(), record.numbers
 
 
+def _official_patch_ids(records, official_latest_contest: int) -> tuple[list[int], list[int], list[int]]:
+    if not records:
+        raise RuntimeError("histórico de terceiro vazio")
+    source_last_contest = int(records[-1].contest_id)
+    if source_last_contest > official_latest_contest:
+        raise RuntimeError("third-party source is ahead of official latest contest")
+    by_id = {int(record.contest_id) for record in records}
+    internal_missing = [contest_id for contest_id in range(1, source_last_contest + 1) if contest_id not in by_id]
+    trailing_missing = list(range(source_last_contest + 1, official_latest_contest + 1))
+    all_missing = list(dict.fromkeys((*internal_missing, *trailing_missing)))
+    return internal_missing, trailing_missing, all_missing
+
+
 def main() -> int:
     raw = download_text(SOURCE_URL)
     captured_at = datetime.now(timezone.utc)
@@ -49,37 +62,43 @@ def main() -> int:
 
     official_latest = fetch_caixa_contest()
     source_last_contest = parsed.records[-1].contest_id
-    if source_last_contest != official_latest.record.contest_id:
+    if source_last_contest > official_latest.record.contest_id:
         print(json.dumps({
-            "status": "STALE_SOURCE",
+            "status": "SOURCE_AHEAD_OF_OFFICIAL",
             "candidate_last_contest": source_last_contest,
             "official_last_contest": official_latest.record.contest_id,
         }, ensure_ascii=False, sort_keys=True))
         return 4
 
     by_id = {record.contest_id: record for record in parsed.records}
-    missing_ids = [contest_id for contest_id in range(1, source_last_contest + 1) if contest_id not in by_id]
+    internal_missing_ids, trailing_missing_ids, missing_ids = _official_patch_ids(
+        parsed.records,
+        official_latest.record.contest_id,
+    )
     if len(missing_ids) > MAX_OFFICIAL_PATCHES:
         print(json.dumps({
             "status": "TOO_MANY_SOURCE_GAPS",
             "missing_count": len(missing_ids),
             "missing_contests": missing_ids[:100],
+            "internal_missing_count": len(internal_missing_ids),
+            "trailing_missing_count": len(trailing_missing_ids),
         }, ensure_ascii=False, sort_keys=True))
         return 5
 
     official_cache = {official_latest.record.contest_id: official_latest}
     official_patches = []
     for contest_id in missing_ids:
-        official = fetch_caixa_contest(contest_id)
+        official = official_cache.get(contest_id) or fetch_caixa_contest(contest_id)
         official_cache[contest_id] = official
         by_id[contest_id] = official.record
         official_patches.append({
             "contest_id": contest_id,
             "source_url": official.source_url,
             "draw_date": official.record.draw_date.isoformat(),
+            "patch_reason": "TRAILING_SOURCE_LAG" if contest_id in trailing_missing_ids else "INTERNAL_SOURCE_GAP",
         })
 
-    records = tuple(by_id[contest_id] for contest_id in range(1, source_last_contest + 1))
+    records = tuple(by_id[contest_id] for contest_id in range(1, official_latest.record.contest_id + 1))
     checkpoint_ids = tuple(dict.fromkeys((*CHECKPOINTS, records[-1].contest_id)))
     checks = []
     for contest_id in checkpoint_ids:
@@ -139,10 +158,13 @@ def main() -> int:
         "source_sha256": digest,
         "source_artifact_id": bulk.artifact_id,
         "source_records": len(parsed.records),
+        "third_party_last_contest": source_last_contest,
         "records_after_official_patches": len(records),
         "first_contest": records[0].contest_id,
         "last_contest": records[-1].contest_id,
         "official_latest_contest": official_latest.record.contest_id,
+        "internal_official_patch_count": len(internal_missing_ids),
+        "trailing_official_patch_count": len(trailing_missing_ids),
         "official_patches": official_patches,
         "checkpoints": checks,
         "persistence_verified": True,
@@ -162,7 +184,8 @@ def main() -> int:
         "scientific_conclusion": "EVIDENCIA_PREDITIVA_INSUFICIENTE",
         "limitations": [
             "A maior parte da série histórica vem de terceiro e foi corroborada por checkpoints contra a CAIXA, não reconciliada linha a linha.",
-            "Lacunas do terceiro foram preenchidas individualmente por OFICIAL_DIRETA e permanecem listadas em official_patches.",
+            "Lacunas internas ou atraso de cauda do terceiro são preenchidos individualmente por OFICIAL_DIRETA e permanecem listados em official_patches.",
+            "O histórico reconciliado nunca aceita concursos do terceiro à frente do último concurso oficial.",
             "A análise é retrospectiva e não constitui prova prospectiva.",
             "Monte Carlo temporal usa 999 replicações nesta verificação, com resolução mínima 0,001.",
         ],
