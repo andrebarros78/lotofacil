@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-A sanitização protege o baseline GitHub-only contra resíduos de execução, credenciais, chaves privadas, bancos locais, caches, arquivos gerados e artefatos que não pertencem ao código canônico.
+A sanitização protege o baseline GitHub-only contra resíduos de execução, credenciais, chaves privadas, bancos locais, caches, arquivos gerados, artefatos indevidos e dependências de workflow não pinadas.
 
 Ela não reescreve histórico, não apaga evidência científica histórica válida e não altera `operations/state`. O gate atua sobre o checkout versionado e falha antes da incorporação de conteúdo incompatível.
 
@@ -21,7 +21,11 @@ O gate rejeita:
 - bancos e estados locais (`*.db`, `*.sqlite`, WAL/SHM);
 - caches e ambientes Python;
 - diretórios `build`, `dist` e `artifacts` rastreados;
-- logs, temporários, backups, arquivos de chave/certificado privado e arquivos compactados gerados.
+- logs, temporários, backups, arquivos de chave/certificado privado e arquivos compactados gerados;
+- GitHub Actions externas referenciadas por tag/branch em vez de SHA completo de 40 hex;
+- instalação remota por pipeline `curl/wget | sh/bash` dentro de workflows.
+
+Actions locais (`./...`) e imagens `docker://...` não são tratadas como actions externas para a regra de pinning.
 
 ## Evidência
 
@@ -38,5 +42,7 @@ O workflow `.github/workflows/repository-sanitization.yml` executa em toda pull 
 ## Limites
 
 Este gate é defesa em profundidade e não substitui os mecanismos nativos de secret scanning do provedor Git. Ele usa padrões de alta confiança para reduzir falsos positivos e não tenta interpretar toda possível forma de segredo ofuscado.
+
+O pinning por SHA reduz deriva de supply chain, mas não constitui auditoria completa do código da action externa.
 
 A sanitização não concede autoridade de escrita a agentes, não promove evidência científica, não reabre lockbox e não habilita auto-merge.
