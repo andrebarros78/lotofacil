@@ -1,0 +1,66 @@
+name: Automatic Failure Recovery Proof
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/automatic-failure-recovery-proof.yml"
+      - "governance/agents/automatic_failure_recovery_policy.json"
+      - "governance/agents/automatic_failure_recovery_benchmark.json"
+      - "governance/agents/automatic_failure_recovery_proof_history.json"
+      - "governance/agents/capability_gaps.json"
+      - "scripts/run_automatic_failure_recovery_proof.py"
+      - "scripts/validate_agent_ecosystem.py"
+      - "scripts/verify_github_governance.py"
+      - "tests/test_automatic_failure_recovery_contract.py"
+      - "tests/test_agent_capability_proof.py"
+      - "pyproject.toml"
+      - "requirements.lock.txt"
+  pull_request:
+    paths:
+      - ".github/workflows/automatic-failure-recovery-proof.yml"
+      - "governance/agents/automatic_failure_recovery_policy.json"
+      - "governance/agents/automatic_failure_recovery_benchmark.json"
+      - "governance/agents/automatic_failure_recovery_proof_history.json"
+      - "governance/agents/capability_gaps.json"
+      - "scripts/run_automatic_failure_recovery_proof.py"
+      - "scripts/validate_agent_ecosystem.py"
+      - "scripts/verify_github_governance.py"
+      - "tests/test_automatic_failure_recovery_contract.py"
+      - "tests/test_agent_capability_proof.py"
+      - "pyproject.toml"
+      - "requirements.lock.txt"
+
+permissions:
+  contents: read
+
+jobs:
+  automatic-failure-recovery-proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: "3.13"
+      - name: Install locked environment
+        run: python -m pip install -c requirements.lock.txt -e '.[dev]'
+      - name: Validate GitHub-only governance
+        run: python scripts/verify_github_governance.py
+      - name: Validate agent ecosystem
+        run: python scripts/validate_agent_ecosystem.py
+      - name: Test frozen A07 automatic recovery contract
+        run: python -m pytest -q tests/test_automatic_failure_recovery_contract.py
+      - name: Execute bounded automatic failure recovery proof
+        run: |
+          mkdir -p artifacts
+          python scripts/run_automatic_failure_recovery_proof.py \
+            --report artifacts/automatic_failure_recovery_proof.json
+      - name: Upload A07 automatic failure recovery evidence
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: automatic-failure-recovery-proof
+          path: artifacts/automatic_failure_recovery_proof.json
+          if-no-files-found: error
