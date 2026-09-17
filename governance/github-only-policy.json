@@ -11,6 +11,7 @@
   ],
   "required_workflows": [
     ".github/workflows/ci.yml",
+    ".github/workflows/merge-gates.yml",
     ".github/workflows/github-operations.yml",
     ".github/workflows/max-capacity-audit.yml",
     ".github/workflows/operator-console.yml",
@@ -30,6 +31,13 @@
     "main": {
       "require_pull_request": true,
       "require_ci": true,
+      "required_status_checks_target": [
+        "CI",
+        "Scientific Gate",
+        "Operational Integrity Gate",
+        "Security/Sanitization Gate",
+        "Release Candidate Gate"
+      ],
       "block_force_push": true,
       "block_deletion": true
     },
