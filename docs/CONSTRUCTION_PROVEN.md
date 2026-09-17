@@ -565,3 +565,27 @@ BASELINE_ORIGINAL = main@9c731cfb6206a42b24198256bd16127cd6e39637
 ```
 
 Este bloco reflete as etapas comprovadas por registros canônicos em `docs/evidence/`. A release formal R4 permanece imutavelmente vinculada ao SHA acima; commits documentais posteriores não alteram o alvo da release.
+
+
+---
+
+## 15. Selo pós-construção e fechamento de lacunas
+
+Após a emissão terminal de `CONSTRUCTION_PROVEN = TRUE`, foi executada reconciliação adicional das autoridades canônicas sem alterar o baseline científico ou reclassificar evidência.
+
+Estado reconciliado:
+
+- `construction-proven/v1.1.10` ancora a prova integral em `77d1b6d92edee8c8ed7a0b146441ab6c0ec47e7c`;
+- `construction-seal/v1.1.10` ancora o commit documental terminal em `c5daaa677638328837b6281e877482882601edae`;
+- `hardening-seal/v1.1.10` ancora o mesmo commit terminal após auditoria de fechamento de lacunas;
+- `v1.1.10`, `release/v1.1.10` e `release-seal/v1.1.10` permanecem no SHA formal de release `07fdcf624c275f554caeac31e70dc1a34b8e99d9`;
+- os refs terminais acima estão cobertos pelo ruleset ativo `SARE Terminal Tags Protection`, com update e deletion bloqueados e sem bypass actors;
+- `main` permanece protegido por `SARE Main Protection` com os cinco checks estáveis obrigatórios;
+- `operations/state` permanece protegido contra deletion/non-fast-forward e avançou de forma append-only a partir do snapshot compatível da release;
+- PRs abertos: 0;
+- issues abertas: 0;
+- o auto-hash do manifesto `CONSTRUCTION_MANIFEST_1_1_10.json` foi recalculado independentemente e corresponde a `30deee4a3b38dc12e5c71a601d6eb0663375feeddce0df9e5e3f5ad910eafbd8`.
+
+A existência de commits operacionais posteriores ao snapshot da release não altera a release nem o `CONSTRUCTION_SHA`. O estado operacional é uma autoridade versionada separada e append-only; o snapshot compatível usado pela prova permanece recuperável no histórico Git.
+
+Nenhuma lacuna P0 foi encontrada nesta auditoria. O estado científico permanece `predictive_evidence = NOT_ESTABLISHED`.
