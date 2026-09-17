@@ -543,19 +543,21 @@ Nenhuma alteração pode apagar silenciosamente uma falha, relaxar critério de 
 
 ---
 
-## 14. Estado canônico inicial da missão
+## 14. Estado canônico atual da missão
 
 ```text
 CONSTRUCTION_PROVEN = FALSE
-R0 = IN_PROGRESS
-R1 = NOT_STARTED
-R2 = NOT_STARTED
-R3 = NOT_STARTED
-R4 = NOT_STARTED
+R0 = PROVEN
+R1 = PROVEN
+R2 = PROVEN
+R3 = PROVEN
+R4 = PROVEN
 R5 = NOT_STARTED
 R6 = NOT_STARTED
-NEXT_REQUIRED_STAGE = R0
-BASELINE = main@9c731cfb6206a42b24198256bd16127cd6e39637
+NEXT_REQUIRED_STAGE = R5
+RELEASE = v1.1.10
+RELEASE_SHA = 07fdcf624c275f554caeac31e70dc1a34b8e99d9
+BASELINE_ORIGINAL = main@9c731cfb6206a42b24198256bd16127cd6e39637
 ```
 
-Este bloco deve ser atualizado apenas com evidência canônica correspondente.
+Este bloco reflete as etapas comprovadas por registros canônicos em `docs/evidence/`. A release formal R4 permanece imutavelmente vinculada ao SHA acima; commits documentais posteriores não alteram o alvo da release.
