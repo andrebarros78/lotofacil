@@ -22,7 +22,8 @@
     ".github/workflows/real-history-check.yml",
     ".github/workflows/release-proof.yml",
     ".github/workflows/agent-pr-pipeline-proof.yml",
-    ".github/workflows/disaster-recovery-proof.yml"
+    ".github/workflows/disaster-recovery-proof.yml",
+    ".github/workflows/r6-integrated-construction-proof.yml"
   ],
   "pinned_actions": {
     "actions/checkout": "fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
