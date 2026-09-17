@@ -1,0 +1,117 @@
+name: SARE Stable Merge Gates
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  ci-python-312:
+    name: CI / Python 3.12
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: "3.12"
+      - name: Install locked environment
+        run: python -m pip install -c requirements.lock.txt -e '.[dev]'
+      - name: Full test suite
+        run: python -m pytest -q
+
+  ci-python-313:
+    name: CI / Python 3.13
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: "3.13"
+      - name: Install locked environment
+        run: python -m pip install -c requirements.lock.txt -e '.[dev]'
+      - name: Full test suite
+        run: python -m pytest -q
+      - name: Doctor
+        run: python -m sare_lotofacil doctor
+
+  ci:
+    name: CI
+    needs: [ci-python-312, ci-python-313]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Aggregate compatibility proof
+        run: echo "CI_GATE_PASS"
+
+  scientific:
+    name: Scientific Gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: "3.13"
+      - name: Install locked environment
+        run: python -m pip install -c requirements.lock.txt -e '.[dev]'
+      - name: Temporal science and Challenger tests
+        run: python -m pytest -q tests/test_backtest_integrity.py tests/test_challenger_r2.py tests/test_baseline.py
+
+  operational:
+    name: Operational Integrity Gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: "3.13"
+      - name: Install locked environment
+        run: python -m pip install -c requirements.lock.txt -e '.[dev]'
+      - name: Freeze and post-contest invariants
+        run: python -m pytest -q -k 'post_contest or frozen or operator_card'
+      - name: GitHub operational governance
+        run: python scripts/verify_github_governance.py
+
+  security:
+    name: Security/Sanitization Gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: "3.13"
+      - name: Install locked environment
+        run: python -m pip install -c requirements.lock.txt -e '.[dev]'
+      - name: Sanitization tests
+        run: python -m pytest -q tests/test_repository_sanitization.py
+      - name: Scan tracked repository
+        run: |
+          mkdir -p /tmp/sare-gates
+          python scripts/sanitize_repository.py --root . --out /tmp/sare-gates/repository-sanitization.json
+          grep -q '"status": "REPOSITORY_SANITIZATION_PASS"' /tmp/sare-gates/repository-sanitization.json
+
+  release-candidate:
+    name: Release Candidate Gate
+    needs: [ci, scientific, operational, security]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: "3.13"
+      - name: Install locked environment
+        run: python -m pip install -c requirements.lock.txt -e '.[dev]'
+      - name: Governance readiness
+        run: |
+          python scripts/verify_github_governance.py
+          python scripts/validate_agent_ecosystem.py
+          python -m sare_lotofacil doctor
+          echo "RELEASE_CANDIDATE_GATE_PASS"
