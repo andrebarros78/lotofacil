@@ -29,15 +29,33 @@
     "target": "tag",
     "enforcement": "active",
     "bypass_actors": [],
-    "rules": ["deletion", "update"],
+    "rules": [
+      "deletion",
+      "update"
+    ],
     "protected_tags": [
       "v1.1.10",
       "release/v1.1.10",
       "release-seal/v1.1.10",
       "construction-proven/v1.1.10",
       "construction-seal/v1.1.10",
-      "hardening-seal/v1.1.10"
+      "hardening-seal/v1.1.10",
+      "hardening-seal-v2/v1.1.10"
     ]
   },
-  "predictive_evidence": "NOT_ESTABLISHED"
+  "predictive_evidence": "NOT_ESTABLISHED",
+  "canonical_hardening_seal": {
+    "tag": "hardening-seal-v2/v1.1.10",
+    "sha": "7407a8b3d6f379a5cd2ecaf80e743814554235df",
+    "immutable": true,
+    "attestation_verified": true,
+    "asset_count": 5
+  },
+  "superseded_hardening_seal_attempt": {
+    "tag": "hardening-seal/v1.1.10",
+    "actual_tag_sha": "c5daaa677638328837b6281e877482882601edae",
+    "declared_manifest_sha": "7407a8b3d6f379a5cd2ecaf80e743814554235df",
+    "status": "INVALID_SUPERSEDED_SHA_MISMATCH",
+    "preserved_for_audit": true
+  }
 }
