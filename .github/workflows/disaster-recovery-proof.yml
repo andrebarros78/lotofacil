@@ -52,7 +52,7 @@ jobs:
       - name: Recover formal release assets
         run: |
           mkdir -p recovered-release
-          gh release download "$RELEASE_TAG" --dir recovered-release
+          gh release download "$RELEASE_TAG" -R andrebarros78/lotofacil --dir recovered-release
 
       - name: Pin recovered operational state to release manifest
         run: |
