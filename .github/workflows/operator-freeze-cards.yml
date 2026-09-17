@@ -1,0 +1,106 @@
+name: SARE Operator Card Freeze
+
+on:
+  workflow_dispatch:
+    inputs:
+      card_count:
+        description: "Quantidade de novos cartões distintos a gerar e congelar"
+        required: true
+        default: "1"
+        type: string
+      target_contest:
+        description: "Concurso-alvo; 0 usa o alvo operacional canônico atual"
+        required: false
+        default: "0"
+        type: string
+      idempotency_key:
+        description: "Chave estável para replay idempotente; vazio cria uma chave pela execução"
+        required: false
+        default: ""
+        type: string
+
+permissions: {}
+
+concurrency:
+  group: sare-github-operational-state
+  cancel-in-progress: false
+
+jobs:
+  freeze:
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout canonical engine
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          ref: main
+          path: app
+      - name: Checkout canonical operational state
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          ref: operations/state
+          path: state-store
+      - name: Setup Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: "3.13"
+      - name: Install canonical engine
+        run: python -m pip install ./app
+      - name: Verify GitHub-only governance and state
+        run: |
+          python app/scripts/verify_github_governance.py
+          mkdir -p artifacts
+          python app/scripts/verify_github_operational_state.py \
+            --state-dir state-store/operations \
+            --out artifacts/operator_freeze_audit_before.json
+          grep -q '"status": "GITHUB_OPERATIONAL_AUDIT_PASS"' artifacts/operator_freeze_audit_before.json
+      - name: Generate and freeze requested cards
+        env:
+          CARD_COUNT: ${{ inputs.card_count }}
+          TARGET_CONTEST: ${{ inputs.target_contest }}
+          IDEMPOTENCY_INPUT: ${{ inputs.idempotency_key }}
+          SOURCE_COMMIT: ${{ github.sha }}
+          WORKFLOW_RUN_ID: ${{ github.run_id }}
+        run: |
+          IDEMPOTENCY_KEY="$IDEMPOTENCY_INPUT"
+          if [ -z "$IDEMPOTENCY_KEY" ]; then IDEMPOTENCY_KEY="workflow-$WORKFLOW_RUN_ID"; fi
+          python app/scripts/github_operator_freeze_cards.py \
+            --state-dir state-store/operations \
+            --card-count "$CARD_COUNT" \
+            --target-contest "$TARGET_CONTEST" \
+            --idempotency-key "$IDEMPOTENCY_KEY" \
+            --source-commit "$SOURCE_COMMIT" \
+            --workflow-run-id "$WORKFLOW_RUN_ID" \
+            --out artifacts/operator_freeze_result.json
+          grep -Eq '"status": "GITHUB_OPERATOR_CARD_FREEZE_(PASS|IDEMPOTENT_REPLAY)"' artifacts/operator_freeze_result.json
+      - name: Audit mutated state before persistence
+        run: |
+          python app/scripts/verify_github_operational_state.py \
+            --state-dir state-store/operations \
+            --out artifacts/operator_freeze_audit_after.json
+          grep -q '"status": "GITHUB_OPERATIONAL_AUDIT_PASS"' artifacts/operator_freeze_audit_after.json
+          grep -q '"status": "OPERATOR_CARD_LEDGER_PASS"' artifacts/operator_freeze_audit_after.json
+      - name: Persist additive frozen cards when state changed
+        working-directory: state-store
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add operations/operator_card_ledger.json
+          if git diff --cached --quiet; then
+            echo "Idempotent replay: canonical state unchanged"
+          else
+            git commit -m "ops: freeze operator cards for current Lotofacil target"
+            git push origin HEAD:operations/state
+          fi
+      - name: Upload operator freeze evidence
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: sare-operator-card-freeze-${{ github.run_id }}
+          path: |
+            artifacts/operator_freeze_result.json
+            artifacts/operator_freeze_audit_before.json
+            artifacts/operator_freeze_audit_after.json
+            state-store/operations/operator_card_ledger.json
+          if-no-files-found: error

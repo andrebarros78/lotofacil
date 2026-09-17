@@ -7,6 +7,7 @@ from datetime import date
 from pathlib import Path
 
 from sare_lotofacil.ingestion.validation import validate_contest
+from sare_lotofacil.portfolios.frozen import validate_operator_card_ledger
 from sare_lotofacil.statistics.baseline import brier_score
 
 PRIMARY_MODEL = "M1_frequency_regularized_lambda_100"
@@ -30,11 +31,38 @@ def _prediction_hash_payload(prediction: dict[str, object]) -> dict[str, object]
         "protocol_hash": prediction["protocol_hash"],
         "models": prediction["models"],
     }
-    # Keep the auditor cryptographically compatible with the producer:
-    # legacy predictions did not include PRIMARY_CARD, while current ones do.
     if "primary_card" in prediction:
         payload["primary_card"] = prediction["primary_card"]
     return payload
+
+
+def _verify_operator_cards(state_dir: Path, prospective: dict[str, object]) -> dict[str, object]:
+    path = state_dir / "operator_card_ledger.json"
+    if not path.exists():
+        return {
+            "status": "OPERATOR_CARD_LEDGER_NOT_INITIALIZED",
+            "requests": 0,
+            "operator_frozen_cards": 0,
+            "targets": 0,
+        }
+    operator_ledger = json.loads(path.read_text(encoding="utf-8"))
+    result = validate_operator_card_ledger(operator_ledger)
+
+    reserved_by_target: dict[int, set[tuple[int, ...]]] = {}
+    for prediction in prospective.get("predictions", []):
+        primary = prediction.get("primary_card")
+        if not isinstance(primary, dict) or not isinstance(primary.get("card"), list):
+            continue
+        target = int(prediction["target_contest"])
+        reserved_by_target.setdefault(target, set()).add(tuple(int(number) for number in primary["card"]))
+
+    for request in operator_ledger.get("requests", []):
+        target = int(request["target_contest"])
+        reserved = reserved_by_target.get(target, set())
+        for item in request.get("cards", []):
+            if tuple(int(number) for number in item["card"]) in reserved:
+                raise RuntimeError("OPERATOR_CARD_DUPLICATES_FROZEN_PRIMARY_CARD")
+    return result
 
 
 def verify(state_dir: Path) -> dict[str, object]:
@@ -101,6 +129,7 @@ def verify(state_dir: Path) -> dict[str, object]:
     if latest["prospective"] != ledger["summary"]:
         raise RuntimeError("latest prospective summary diverges from ledger")
 
+    operator_cards = _verify_operator_cards(state_dir, ledger)
     return {
         "status": "GITHUB_OPERATIONAL_AUDIT_PASS",
         "canonical_contests": len(records),
@@ -112,6 +141,7 @@ def verify(state_dir: Path) -> dict[str, object]:
         "ledger_sha256": hashlib.sha256(ledger_path.read_bytes()).hexdigest(),
         "predictive_evidence": ledger["summary"].get("predictive_evidence", "NOT_ESTABLISHED"),
         "prospective_state": ledger["summary"].get("prospective_state"),
+        "operator_cards": operator_cards,
     }
 
 
