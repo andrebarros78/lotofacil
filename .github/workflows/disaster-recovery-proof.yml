@@ -1,0 +1,130 @@
+name: GitHub-Only Disaster Recovery Proof
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Formal release tag to recover"
+        required: true
+        default: "v1.1.10"
+      expected_release_sha:
+        description: "Exact canonical release SHA"
+        required: true
+        default: "07fdcf624c275f554caeac31e70dc1a34b8e99d9"
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  disaster-recovery:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      RELEASE_TAG: ${{ inputs.release_tag }}
+      EXPECTED_RELEASE_SHA: ${{ inputs.expected_release_sha }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Start RTO clock
+        run: echo "DR_STARTED_EPOCH=$(date +%s)" >> "$GITHUB_ENV"
+
+      - name: Checkout current control plane
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+
+      - name: Checkout formal release from canonical Git
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          ref: ${{ inputs.release_tag }}
+          path: recovered-code
+          fetch-depth: 0
+
+      - name: Checkout operational state authority
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          ref: operations/state
+          path: recovered-state
+          fetch-depth: 0
+
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: "3.13"
+
+      - name: Recover formal release assets
+        run: |
+          mkdir -p recovered-release
+          gh release download "$RELEASE_TAG" --dir recovered-release
+
+      - name: Pin recovered operational state to release manifest
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          manifest = json.loads(Path("recovered-release/release-manifest-v1.1.10.json").read_text())
+          with Path(os.environ["GITHUB_ENV"]).open("a", encoding="utf-8") as fh:
+              fh.write("OPERATIONS_STATE_SHA=" + manifest["operations_state_sha"] + "\n")
+          PY
+          git -C recovered-state checkout --detach "$OPERATIONS_STATE_SHA"
+          test "$(git -C recovered-code rev-parse HEAD)" = "$EXPECTED_RELEASE_SHA"
+          test "$(git -C recovered-state rev-parse HEAD)" = "$OPERATIONS_STATE_SHA"
+
+      - name: Validate formal release checksums before execution
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from scripts.prove_disaster_recovery import parse_sha256sums, verify_checksums
+          root = Path("recovered-release")
+          verify_checksums(root, parse_sha256sums(root / "SHA256SUMS.txt"))
+          print("DR_RELEASE_HASH_PREFLIGHT_PASS")
+          PY
+
+      - name: Reconstruct clean runtime from released wheel
+        run: |
+          python -m venv /tmp/sare-dr-runtime-1
+          /tmp/sare-dr-runtime-1/bin/python -m pip install             -c recovered-code/requirements.lock.txt             recovered-release/sare_lotofacil-1.1.10-py3-none-any.whl             pytest==9.1.1 httpx==0.28.1
+
+      - name: Re-run release and operational integrity in recovered runtime
+        run: |
+          /tmp/sare-dr-runtime-1/bin/python -m sare_lotofacil doctor
+          /tmp/sare-dr-runtime-1/bin/python recovered-code/scripts/verify_github_operational_state.py             --state-dir recovered-state/operations             --out artifacts/recovered_operational_audit.json
+          (
+            cd recovered-code
+            /tmp/sare-dr-runtime-1/bin/python -m pytest -q
+          )
+          /tmp/sare-dr-runtime-1/bin/python recovered-code/scripts/verify_github_governance.py
+
+      - name: Rebuild derivable persistence
+        run: |
+          rm -f /tmp/sare-dr.db /tmp/sare-dr.backup.db /tmp/sare-dr.restored.db
+          /tmp/sare-dr-runtime-1/bin/python -m sare_lotofacil init-db --path /tmp/sare-dr.db
+          /tmp/sare-dr-runtime-1/bin/python -m sare_lotofacil backup-db --db /tmp/sare-dr.db --out /tmp/sare-dr.backup.db
+          /tmp/sare-dr-runtime-1/bin/python -m sare_lotofacil restore-db --backup /tmp/sare-dr.backup.db --out /tmp/sare-dr.restored.db
+          test -s /tmp/sare-dr.restored.db
+
+      - name: Simulate execution-environment loss
+        run: |
+          rm -rf /tmp/sare-dr-runtime-1
+          rm -f /tmp/sare-dr.db /tmp/sare-dr.backup.db /tmp/sare-dr.restored.db
+          test ! -e /tmp/sare-dr-runtime-1
+
+      - name: Recreate runtime after simulated loss
+        run: |
+          python -m venv /tmp/sare-dr-runtime-2
+          /tmp/sare-dr-runtime-2/bin/python -m pip install             -c recovered-code/requirements.lock.txt             recovered-release/sare_lotofacil-1.1.10-py3-none-any.whl
+          /tmp/sare-dr-runtime-2/bin/python -m sare_lotofacil doctor
+          /tmp/sare-dr-runtime-2/bin/python recovered-code/scripts/verify_github_operational_state.py             --state-dir recovered-state/operations             --out artifacts/recovered_operational_audit_after_loss.json
+
+      - name: Seal DR report with observed RPO and RTO
+        run: |
+          python scripts/prove_disaster_recovery.py             --release-dir recovered-release             --code-dir recovered-code             --state-dir recovered-state             --expected-release-sha "$EXPECTED_RELEASE_SHA"             --started-at-epoch "$DR_STARTED_EPOCH"             --recreated-runtime             --out artifacts/disaster_recovery_proof.json
+          grep -q '"status": "GITHUB_ONLY_DR_PROOF_PASS"' artifacts/disaster_recovery_proof.json
+
+      - name: Upload disaster recovery proof
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: github-only-disaster-recovery-proof
+          path: |
+            artifacts/disaster_recovery_proof.json
+            artifacts/recovered_operational_audit.json
+            artifacts/recovered_operational_audit_after_loss.json
+          if-no-files-found: error
