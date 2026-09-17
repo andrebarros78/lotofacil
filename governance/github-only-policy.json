@@ -3,7 +3,9 @@
   "authority": "GITHUB_ONLY",
   "canonical_code_branch": "main",
   "canonical_state_branch": "operations/state",
-  "allowed_runners": ["ubuntu-latest"],
+  "allowed_runners": [
+    "ubuntu-latest"
+  ],
   "write_workflows": [
     ".github/workflows/github-operations.yml",
     ".github/workflows/operator-freeze-cards.yml",
@@ -19,7 +21,8 @@
     ".github/workflows/operator-freeze-cards.yml",
     ".github/workflows/real-history-check.yml",
     ".github/workflows/release-proof.yml",
-    ".github/workflows/agent-pr-pipeline-proof.yml"
+    ".github/workflows/agent-pr-pipeline-proof.yml",
+    ".github/workflows/disaster-recovery-proof.yml"
   ],
   "pinned_actions": {
     "actions/checkout": "fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
