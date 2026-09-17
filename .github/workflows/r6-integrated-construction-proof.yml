@@ -1,0 +1,135 @@
+name: R6 Integrated Construction Proof
+
+on:
+  workflow_dispatch:
+    inputs:
+      candidate_sha:
+        description: "Exact main SHA under construction proof"
+        required: true
+      stable_gate_run_id:
+        description: "Successful SARE Stable Merge Gates push run for candidate SHA"
+        required: true
+      release_proof_run_id:
+        description: "Canonical R4 Release Proof run"
+        required: true
+        default: "35278261414"
+      dr_run_id:
+        description: "Canonical successful R5 DR run"
+        required: true
+        default: "35281917468"
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  integrated-construction:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      GH_TOKEN: ${{ github.token }}
+      CANDIDATE_SHA: ${{ inputs.candidate_sha }}
+      STABLE_GATE_RUN_ID: ${{ inputs.stable_gate_run_id }}
+      RELEASE_PROOF_RUN_ID: ${{ inputs.release_proof_run_id }}
+      DR_RUN_ID: ${{ inputs.dr_run_id }}
+    steps:
+      - name: Checkout exact construction candidate
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          ref: ${{ inputs.candidate_sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: "3.13"
+
+      - name: Prove exact clean candidate
+        run: |
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
+          test -z "$(git status --short)"
+
+      - name: Locked install
+        run: python -m pip install -c requirements.lock.txt -e '.[dev]'
+
+      - name: CI full suite
+        run: python -m pytest -q
+
+      - name: Real-history ingestion and validation
+        run: python scripts/verify_third_party_history.py
+
+      - name: Scientific gates
+        run: python -m pytest -q tests/test_baseline.py tests/test_backtest_integrity.py tests/test_challenger_r2.py
+
+      - name: Integrated controlled operational chain
+        run: python scripts/prove_integrated_construction_r6.py
+
+      - name: Verify stable merge gate run belongs to candidate SHA
+        run: |
+          test "$(gh run view "$STABLE_GATE_RUN_ID" -R andrebarros78/lotofacil --json headSha --jq .headSha)" = "$CANDIDATE_SHA"
+          test "$(gh run view "$STABLE_GATE_RUN_ID" -R andrebarros78/lotofacil --json conclusion --jq .conclusion)" = "success"
+
+      - name: Verify prior formal release and DR runs
+        run: |
+          test "$(gh run view "$RELEASE_PROOF_RUN_ID" -R andrebarros78/lotofacil --json conclusion --jq .conclusion)" = "success"
+          test "$(gh run view "$DR_RUN_ID" -R andrebarros78/lotofacil --json conclusion --jq .conclusion)" = "success"
+
+      - name: Recover release and compatible state
+        run: |
+          mkdir -p artifacts/recovered-release
+          gh release download v1.1.10 -R andrebarros78/lotofacil --dir artifacts/recovered-release
+          git clone --quiet --branch operations/state https://github.com/andrebarros78/lotofacil.git recovered-state
+          OPS_SHA="$(python - <<'PY'
+          import json
+          from pathlib import Path
+          m=json.loads(Path("artifacts/recovered-release/release-manifest-v1.1.10.json").read_text())
+          print(m["operations_state_sha"])
+          PY
+          )"
+          git -C recovered-state checkout --detach "$OPS_SHA"
+          python - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          from scripts.prove_disaster_recovery import parse_sha256sums, verify_checksums
+          root=Path("artifacts/recovered-release")
+          verified=verify_checksums(root, parse_sha256sums(root/"SHA256SUMS.txt"))
+          manifest=json.loads((root/"release-manifest-v1.1.10.json").read_text())
+          out={
+            "status":"R6_RELEASE_RECOVERY_PASS",
+            "release_sha":manifest["canonical_sha"],
+            "operations_state_sha":manifest["operations_state_sha"],
+            "release_manifest_sha256":hashlib.sha256((root/"release-manifest-v1.1.10.json").read_bytes()).hexdigest(),
+            "verified_assets":verified,
+          }
+          Path("artifacts/r6_release_recovery.json").write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
+          PY
+          python scripts/verify_github_operational_state.py --state-dir recovered-state/operations --out artifacts/r6_recovered_state_audit.json
+
+      - name: Security and sanitization
+        run: |
+          python scripts/sanitize_repository.py --root . --out artifacts/r6_repository_sanitization.json
+          grep -q '"status": "REPOSITORY_SANITIZATION_PASS"' artifacts/r6_repository_sanitization.json
+
+      - name: Release candidate governance
+        run: |
+          python scripts/verify_github_governance.py
+          python scripts/validate_agent_ecosystem.py
+          python -m sare_lotofacil doctor
+
+      - name: Final construction manifest
+        run: |
+          python scripts/build_construction_manifest.py             --stable-gate-run-id "$STABLE_GATE_RUN_ID"             --release-proof-run-id "$RELEASE_PROOF_RUN_ID"             --dr-run-id "$DR_RUN_ID"
+          grep -q '"p0_open_blockers": \[\]' artifacts/construction_manifest.json
+          grep -q '"R6": "PROVEN"' artifacts/construction_manifest.json
+
+      - name: Upload integrated construction evidence
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: r6-integrated-construction-proof
+          path: |
+            artifacts/construction_manifest.json
+            artifacts/r6_integrated_chain.json
+            artifacts/r6_repository_sanitization.json
+            artifacts/r6_release_recovery.json
+            artifacts/r6_recovered_state_audit.json
+            artifacts/third_party_history_report.json
+          if-no-files-found: error
