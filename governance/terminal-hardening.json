@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "status": "ACTIVE_VERIFIED_2026_09_17",
+  "immutable_releases_required": true,
+  "legacy_release": {
+    "tag": "v1.1.10",
+    "sha": "07fdcf624c275f554caeac31e70dc1a34b8e99d9",
+    "historical_release_immutable": false,
+    "immutable_mirror_required": true
+  },
+  "immutable_release_mirror": {
+    "tag": "release-seal/v1.1.10",
+    "sha": "07fdcf624c275f554caeac31e70dc1a34b8e99d9",
+    "expected_original_asset_matches": 10,
+    "metadata_asset": "RELEASE_SEAL_METADATA.json"
+  },
+  "construction_execution": {
+    "tag": "construction-proven/v1.1.10",
+    "sha": "77d1b6d92edee8c8ed7a0b146441ab6c0ec47e7c"
+  },
+  "construction_immutable_seal": {
+    "tag": "construction-seal/v1.1.10",
+    "sha": "c5daaa677638328837b6281e877482882601edae",
+    "manifest_asset": "construction-seal-manifest-v1.1.10.json"
+  },
+  "terminal_tag_ruleset": {
+    "id": 23629930,
+    "name": "SARE Terminal Tags Protection",
+    "target": "tag",
+    "enforcement": "active",
+    "bypass_actors": [],
+    "rules": ["deletion", "update"],
+    "protected_tags": [
+      "v1.1.10",
+      "release/v1.1.10",
+      "release-seal/v1.1.10",
+      "construction-proven/v1.1.10",
+      "construction-seal/v1.1.10",
+      "hardening-seal/v1.1.10"
+    ]
+  },
+  "predictive_evidence": "NOT_ESTABLISHED"
+}
