@@ -6,6 +6,7 @@
   "allowed_runners": ["ubuntu-latest"],
   "write_workflows": [
     ".github/workflows/github-operations.yml",
+    ".github/workflows/operator-freeze-cards.yml",
     ".github/workflows/agent-pr-pipeline-proof.yml"
   ],
   "required_workflows": [
@@ -14,6 +15,7 @@
     ".github/workflows/max-capacity-audit.yml",
     ".github/workflows/operator-console.yml",
     ".github/workflows/operator-console-proof.yml",
+    ".github/workflows/operator-freeze-cards.yml",
     ".github/workflows/real-history-check.yml",
     ".github/workflows/release-proof.yml",
     ".github/workflows/agent-pr-pipeline-proof.yml"
@@ -24,7 +26,7 @@
     "actions/upload-artifact": "b7c566a772e6b6bfb58ed0dc250532a479d7789f"
   },
   "native_ruleset": {
-    "status": "REQUIRED_EXTERNAL_ADMIN_ACTION",
+    "status": "ACTIVE_VERIFIED_2026_09_17",
     "main": {
       "require_pull_request": true,
       "require_ci": true,
@@ -34,7 +36,10 @@
     "operations/state": {
       "block_force_push": true,
       "block_deletion": true,
-      "expected_writer": "GitHub Operational Cycle"
+      "expected_writers": [
+        "GitHub Operational Cycle",
+        "SARE Operator Card Freeze"
+      ]
     }
   }
 }
