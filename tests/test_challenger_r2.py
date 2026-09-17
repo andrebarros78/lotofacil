@@ -117,3 +117,7 @@ def test_hypothesis_cannot_relax_stop_or_promotion_rule_after_the_fact() -> None
         replace(hypothesis, stop_rule="stop_when_good").validate()
     with pytest.raises(ValueError, match="regra de promoção"):
         replace(hypothesis, promotion_rule="promote_if_we_like_it").validate()
+
+
+def test_r3_negative_required_gate_probe() -> None:
+    assert False, "R3_NEGATIVE_REQUIRED_GATE_PROBE"
