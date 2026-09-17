@@ -98,3 +98,39 @@ No construction regression was introduced.
 `POST_CONSTRUCTION_HARDENING = PROVEN`
 
 `open_p0_blockers = []`
+
+
+## Hardening seal reconciliation
+
+A first immutable hardening-seal publication attempt exposed a fail-closed mismatch:
+
+- tag: `hardening-seal/v1.1.10`
+- actual immutable tag SHA: `c5daaa677638328837b6281e877482882601edae`
+- SHA declared inside `HARDENING_SEAL_MANIFEST.json`: `7407a8b3d6f379a5cd2ecaf80e743814554235df`
+
+Because the immutable tag SHA and declared hardening SHA differed, that release is explicitly classified:
+
+`INVALID_SUPERSEDED_SHA_MISMATCH`
+
+It is preserved for audit history, renamed as invalid/superseded, and must not be used as canonical hardening evidence.
+
+The corrected canonical seal was created only after verifying its tag ref first:
+
+`hardening-seal-v2/v1.1.10 -> 7407a8b3d6f379a5cd2ecaf80e743814554235df`
+
+GitHub release verification then resolved the same SHA and loaded the immutable release attestation successfully.
+
+Corrected seal state:
+
+- immutable: true;
+- prerelease: false;
+- asset count: 5;
+- attestation verified: true;
+- `HARDENING_SEAL_V2_MANIFEST.json` SHA-256:
+  `55f24018a45fa64c436d77f5411d2583e6a2b3fef057f3b21c786adf6ee28221`.
+
+Canonical hardening evidence is therefore only:
+
+`hardening-seal-v2/v1.1.10`
+
+The failed first attempt remains visible and is not rewritten as success.
