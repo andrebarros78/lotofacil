@@ -18,7 +18,7 @@ def verify(root: Path) -> dict[str, object]:
     violations: list[str] = []
     required_checks = tuple(str(item) for item in contract["required_status_checks"])
     for check in required_checks:
-        if f"name: {check}" not in workflow:
+        if not re.search(rf"^    name: {re.escape(check)}\s*$", workflow, re.MULTILINE):
             violations.append(f"MISSING_STABLE_CHECK:{check}")
 
     for job_id in REQUIRED_JOB_IDS:
