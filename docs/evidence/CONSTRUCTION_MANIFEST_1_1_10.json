@@ -1,0 +1,79 @@
+{
+  "artifact_hashes": {
+    "artifacts/r6_integrated_chain.json": "3c381c9ec5b9a95330aed334bfa7d57ef3bb6d664490b617d52d22aade414fb5",
+    "artifacts/r6_release_recovery.json": "6708ddeffe52387a977a71dd3cb3f88049f214a795c88e4fe9fe2b515e4f9eee",
+    "artifacts/r6_repository_sanitization.json": "ecd82d2201ddb7c4a2bead170dd5ce0ed5e42e84b5ee9ec90e1ed69180f9c15a",
+    "artifacts/third_party_history_report.json": "22c4ba160ae60c0b29d0e8769d694fa95100213e8321e035d9f169629f999fac"
+  },
+  "canonical_construction_sha": "77d1b6d92edee8c8ed7a0b146441ab6c0ec47e7c",
+  "claims_allowed": [
+    "the construction pipeline R0-R6 is implemented and reproducibly proven",
+    "freeze immutability, controlled learning, protected merge gates, formal release and GitHub-only DR are proven engineering properties",
+    "RPO observed for committed canonical Git states in R5 was zero commits"
+  ],
+  "claims_prohibited": [
+    "proven predictive advantage over chance",
+    "historical prospective status for controlled integration fixtures",
+    "automatic Champion promotion from RAG or retrospective episodes",
+    "lockbox retuning using observed targets",
+    "guaranteed availability independent of GitHub and external package infrastructure"
+  ],
+  "construction_id": "SARE-LOTOFACIL-CONSTRUCTION-PROVEN-1.1.10",
+  "created_at_utc": "2026-09-17T22:59:27.998315+00:00",
+  "gates": [
+    {
+      "name": "R6 stable merge gates",
+      "run_id": 35284527776
+    },
+    {
+      "name": "R4 release proof",
+      "run_id": 35278261414
+    },
+    {
+      "name": "R5 disaster recovery",
+      "run_id": 35281917468
+    },
+    {
+      "name": "R6 integrated construction",
+      "run_id": 35284608955
+    }
+  ],
+  "known_exceptions": [
+    "predictive advantage remains NOT_ESTABLISHED",
+    "R6 operational contest fixture is controlled integration evidence, not a historical prospective claim",
+    "GitHub availability and account credential recovery remain external dependencies documented by R5"
+  ],
+  "manifest_hash": "30deee4a3b38dc12e5c71a601d6eb0663375feeddce0df9e5e3f5ad910eafbd8",
+  "manifest_hash_algorithm": "sha256(canonical-json-without-manifest_hash)",
+  "p0_open_blockers": [],
+  "predictive_evidence": "NOT_ESTABLISHED",
+  "schema_version": "construction-manifest-v1",
+  "stage_evidence_hashes": {
+    "docs/evidence/R0_BASELINE_RECONCILED_2026-09-17.md": "f0abf3266a4acc98c34607abd474e00b9f5216bc9fe8fbabae485fb778465b67",
+    "docs/evidence/R1_FREEZE_INTEGRITY_PROVEN_2026-09-17.md": "50776b59c4fc1ba3f38633e5f10f75762fb0416b5f39647753922885eecf8c56",
+    "docs/evidence/R2_POST_CONTEST_CHALLENGER_PROVEN_2026-09-17.md": "9442ff69e46bc2c4c6f3a0be5d9b63376bf3042723c5db1d240354dce3b0fabf",
+    "docs/evidence/R3_MERGE_GATES_PROVEN_2026-09-17.md": "6bdc55bde9d6341d00457d9e41d315de57fae3d383903ee1657a842bf2c28f5f",
+    "docs/evidence/R4_FORMAL_RELEASE_PROVEN_2026-09-17.md": "baad66390df886b7b2c7ab068539f15693a5b9aaf3251d5a822bde41b886231e",
+    "docs/evidence/R5_GITHUB_ONLY_DISASTER_RECOVERY_PROVEN_2026-09-17.md": "3fc173fbdc5001f420c4e312148770377ac9e0ff8a53f12939e67366aed4df0a"
+  },
+  "stages": {
+    "R0": "PROVEN",
+    "R1": "PROVEN",
+    "R2": "PROVEN",
+    "R3": "PROVEN",
+    "R4": "PROVEN",
+    "R5": "PROVEN",
+    "R6": "PROVEN"
+  },
+  "test_inventory": [
+    "full pytest suite under locked Python 3.13 environment",
+    "real-history third-party/CAIXA checkpoint verification",
+    "scientific gate tests for baseline, backtest integrity and Challenger",
+    "controlled integrated generation/freeze/recovery/post-contest/RAG/Challenger chain",
+    "idempotent replay and restart recovery",
+    "release/state reconstruction verification",
+    "repository sanitization",
+    "governance + agent ecosystem + doctor"
+  ],
+  "version": "1.1.10"
+}
