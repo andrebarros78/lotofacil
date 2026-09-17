@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "workflow": ".github/workflows/merge-gates.yml",
+  "required_status_checks": [
+    "CI",
+    "Scientific Gate",
+    "Operational Integrity Gate",
+    "Security/Sanitization Gate",
+    "Release Candidate Gate"
+  ],
+  "release_candidate_depends_on": [
+    "ci",
+    "scientific",
+    "operational",
+    "security"
+  ],
+  "ruleset_target": "refs/heads/main",
+  "enforcement_required": true
+}
