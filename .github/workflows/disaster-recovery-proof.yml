@@ -56,14 +56,15 @@ jobs:
 
       - name: Pin recovered operational state to release manifest
         run: |
-          python - <<'PY'
+          OPERATIONS_STATE_SHA="$(python - <<'PY'
           import json
-          import os
           from pathlib import Path
           manifest = json.loads(Path("recovered-release/release-manifest-v1.1.10.json").read_text())
-          with Path(os.environ["GITHUB_ENV"]).open("a", encoding="utf-8") as fh:
-              fh.write("OPERATIONS_STATE_SHA=" + manifest["operations_state_sha"] + "\n")
+          print(manifest["operations_state_sha"])
           PY
+          )"
+          test -n "$OPERATIONS_STATE_SHA"
+          echo "OPERATIONS_STATE_SHA=$OPERATIONS_STATE_SHA" >> "$GITHUB_ENV"
           git -C recovered-state checkout --detach "$OPERATIONS_STATE_SHA"
           test "$(git -C recovered-code rev-parse HEAD)" = "$EXPECTED_RELEASE_SHA"
           test "$(git -C recovered-state rev-parse HEAD)" = "$OPERATIONS_STATE_SHA"
