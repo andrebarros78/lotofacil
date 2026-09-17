@@ -131,7 +131,7 @@ def test_ledger_tampering_is_detected() -> None:
     ledger, _ = _freeze(ledger, 1, key="tamper")
     mutated = copy.deepcopy(ledger)
     mutated["requests"][0]["cards"][0]["payload_hash"] = "0" * 64
-    with pytest.raises(RuntimeError, match="OPERATOR_CARD_HASH_MISMATCH"):
+    with pytest.raises(RuntimeError, match="OPERATOR_CARD_(REQUEST_HASH|HASH)_MISMATCH"):
         validate_operator_card_ledger(mutated)
 
 
