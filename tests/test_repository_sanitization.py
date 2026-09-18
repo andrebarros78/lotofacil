@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import subprocess
 import sys
 from pathlib import Path
 
@@ -116,3 +117,19 @@ def test_manifest_is_deterministic_for_same_content(tmp_path: Path) -> None:
     (tmp_path / "b.json").write_text('{"value": 2}\n', encoding="utf-8")
     changed = scan_repository(tmp_path)
     assert changed["manifest_sha256"] != first["manifest_sha256"]
+
+
+def test_nested_git_directory_does_not_silently_skip_files(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    nested = repo / "nested"
+    nested.mkdir(parents=True)
+    subprocess.run(["git", "init", "-q", str(repo)], check=True)
+    token = "ghp_" + ("A" * 36)
+    (nested / "config.txt").write_text(f"token={token}\n", encoding="utf-8")
+    subprocess.run(["git", "-C", str(repo), "add", "nested/config.txt"], check=True)
+
+    report = scan_repository(nested)
+
+    assert report["status"] == "REPOSITORY_SANITIZATION_FAIL"
+    assert report["metrics"]["files_scanned"] == 1
+    assert "GITHUB_TOKEN" in _codes(report)

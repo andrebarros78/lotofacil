@@ -1,0 +1,33 @@
+name: CodeQL Security Scan
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  analyze:
+    name: CodeQL Python
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+      - uses: github/codeql-action/init@faaca9a8f6edddba5725ffe5adefdab6669a2eca
+        with:
+          languages: python
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: "3.13"
+      - name: Install locked runtime
+        run: python -m pip install -c requirements.lock.txt -e '.[dev]'
+      - name: Compile
+        run: python -m compileall -q src scripts
+      - uses: github/codeql-action/analyze@faaca9a8f6edddba5725ffe5adefdab6669a2eca
+        with:
+          category: "/language:python"

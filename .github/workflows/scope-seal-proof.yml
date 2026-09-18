@@ -1,0 +1,214 @@
+name: Scope Seal Proof
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  scope-seal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: "3.13"
+
+      - name: Baseline identity and cleanliness
+        run: |
+          set -euo pipefail
+          test -z "$(git status --porcelain)"
+          echo "HEAD=$(git rev-parse HEAD)"
+          echo "TREE=$(git rev-parse HEAD^{tree})"
+          git fsck --no-dangling
+
+      - name: Install locked development environment
+        run: |
+          python -m pip install -c requirements.lock.txt -e '.[dev]'
+          python -m pip check
+
+      - name: Compile source and tests
+        run: python -m compileall -q src scripts tests
+
+      - name: Full test suite
+        run: |
+          mkdir -p artifacts
+          python -m pytest --junitxml=artifacts/pytest.xml
+
+      - name: Repository sanitization and secret policy
+        run: |
+          python scripts/sanitize_repository.py --root . --out artifacts/repository_sanitization.json
+
+      - name: Dependency vulnerability audit and SBOM
+        run: |
+          python -m pip install pip-audit==2.10.1
+          pip-audit -r requirements.lock.txt --strict
+          pip-audit -r requirements.lock.txt --format cyclonedx-json --output artifacts/sbom.cdx.json
+
+      - name: Build wheel
+        run: |
+          mkdir -p dist
+          python -m pip wheel . --no-deps -w dist
+          sha256sum dist/sare_lotofacil-*.whl | tee artifacts/wheel.sha256
+
+      - name: Clean install and release identity
+        run: |
+          python -m venv /tmp/sare-scope-runtime
+          /tmp/sare-scope-runtime/bin/python -m pip install -c requirements.lock.txt dist/sare_lotofacil-*.whl
+          /tmp/sare-scope-runtime/bin/python -m pip check
+          /tmp/sare-scope-runtime/bin/python - <<'PY'
+          from importlib.metadata import version
+          import sare_lotofacil
+          assert version("sare-lotofacil") == "1.1.10"
+          assert sare_lotofacil.__version__ == "1.1.10"
+          print("CLEAN_INSTALL_PASS")
+          PY
+          /tmp/sare-scope-runtime/bin/python -m sare_lotofacil doctor
+
+      - name: Persistence backup restore integrity
+        run: |
+          set -euo pipefail
+          rm -f /tmp/scope.db /tmp/scope.backup.db /tmp/scope.restored.db
+          /tmp/sare-scope-runtime/bin/python -m sare_lotofacil init-db --path /tmp/scope.db
+          /tmp/sare-scope-runtime/bin/python -m sare_lotofacil backup-db --db /tmp/scope.db --out /tmp/scope.backup.db
+          sha256sum /tmp/scope.backup.db | tee artifacts/backup.sha256
+          /tmp/sare-scope-runtime/bin/python -m sare_lotofacil restore-db --backup /tmp/scope.backup.db --out /tmp/scope.restored.db
+          /tmp/sare-scope-runtime/bin/python - <<'PY'
+          import sqlite3
+          for path in ("/tmp/scope.db", "/tmp/scope.restored.db"):
+              con = sqlite3.connect(path)
+              try:
+                  assert con.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
+              finally:
+                  con.close()
+          print("BACKUP_RESTORE_INTEGRITY_PASS")
+          PY
+
+      - name: Live readiness restart and bounded endurance
+        run: |
+          set -euo pipefail
+          cat >/tmp/scope_runtime.py <<'PY'
+          from sare_lotofacil.api.app import create_app
+          app = create_app("/tmp/scope.restored.db", write_token="scope-seal-token")
+          PY
+          start_api() {
+            /tmp/sare-scope-runtime/bin/python -m uvicorn scope_runtime:app --app-dir /tmp --host 127.0.0.1 --port 8765 >/tmp/scope-uvicorn.log 2>&1 &
+            echo $! >/tmp/scope-uvicorn.pid
+            for i in $(seq 1 40); do
+              if curl --fail --silent http://127.0.0.1:8765/health/live >/dev/null; then return 0; fi
+              sleep 0.25
+            done
+            cat /tmp/scope-uvicorn.log
+            return 1
+          }
+          stop_api() {
+            kill "$(cat /tmp/scope-uvicorn.pid)"
+            wait "$(cat /tmp/scope-uvicorn.pid)" || true
+          }
+          start_api
+          curl --fail --silent http://127.0.0.1:8765/health/live | tee artifacts/health-live.json
+          curl --fail --silent http://127.0.0.1:8765/health/ready | tee artifacts/health-ready.json
+          test "$(curl -s -o /dev/null -w '%{http_code}' -X POST http://127.0.0.1:8765/v1/snapshots -H 'Idempotency-Key: no-auth')" = "401"
+          test "$(curl -s -o /dev/null -w '%{http_code}' -X POST http://127.0.0.1:8765/v1/snapshots -H 'Idempotency-Key: bad-auth' -H 'X-SARE-Token: wrong')" = "403"
+          stop_api
+          start_api
+          curl --fail --silent http://127.0.0.1:8765/health/ready >/dev/null
+          for i in $(seq 1 60); do
+            curl --fail --silent http://127.0.0.1:8765/health/live >/dev/null
+            curl --fail --silent http://127.0.0.1:8765/health/ready >/dev/null
+            sleep 0.25
+          done
+          kill -0 "$(cat /tmp/scope-uvicorn.pid)"
+          stop_api
+          echo "RESTART_ENDURANCE_PASS" | tee artifacts/endurance.txt
+
+      - name: Rollback baseline reconstruction
+        run: |
+          set -euo pipefail
+          test "$(git rev-list -n 1 v1.1.10)" = "07fdcf624c275f554caeac31e70dc1a34b8e99d9"
+          rm -rf /tmp/sare-rollback /tmp/sare-rollback-runtime /tmp/rollback-dist
+          git worktree add --detach /tmp/sare-rollback v1.1.10
+          python -m pip wheel /tmp/sare-rollback --no-deps -w /tmp/rollback-dist
+          python -m venv /tmp/sare-rollback-runtime
+          /tmp/sare-rollback-runtime/bin/python -m pip install -c /tmp/sare-rollback/requirements.lock.txt /tmp/rollback-dist/sare_lotofacil-*.whl
+          /tmp/sare-rollback-runtime/bin/python -m sare_lotofacil doctor
+          echo "ROLLBACK_RECONSTRUCTION_PASS" | tee artifacts/rollback.txt
+
+      - name: Build runtime evidence manifest
+        env:
+          GITHUB_SHA_VALUE: ${{ github.sha }}
+          GITHUB_RUN_ID_VALUE: ${{ github.run_id }}
+        run: |
+          python - <<'PY'
+          import hashlib, json, os, pathlib, subprocess, xml.etree.ElementTree as ET
+          root = pathlib.Path(".")
+          pytest_root = ET.parse("artifacts/pytest.xml").getroot()
+          tests = int(pytest_root.attrib.get("tests", "0"))
+          sanitizer = json.loads(pathlib.Path("artifacts/repository_sanitization.json").read_text())
+          wheel = next(pathlib.Path("dist").glob("sare_lotofacil-*.whl"))
+          evidence = {
+              "schema_version": "scope-seal-runtime-evidence-v1",
+              "scope_name": "SARE Lotofacil 1.1.10",
+              "scope_type": "github-only scientific-operational software",
+              "version": "1.1.10",
+              "git_branch": os.getenv("GITHUB_REF_NAME"),
+              "git_commit": os.environ["GITHUB_SHA_VALUE"],
+              "git_tree": subprocess.check_output(["git","rev-parse","HEAD^{tree}"], text=True).strip(),
+              "source_manifest_sha256": sanitizer["manifest_sha256"],
+              "artifact_name": wheel.name,
+              "artifact_sha256": hashlib.sha256(wheel.read_bytes()).hexdigest(),
+              "test_count": tests,
+              "build_status": "PASS",
+              "test_status": "PASS",
+              "unit_status": "PASS",
+              "integration_status": "PASS",
+              "e2e_status": "PASS",
+              "regression_status": "PASS",
+              "repository_sanitization_status": sanitizer["status"],
+              "dependency_scan_status": "PASS",
+              "sbom_status": "PASS",
+              "persistence_status": "PASS",
+              "restart_status": "PASS",
+              "backup_status": "PASS",
+              "restore_status": "PASS",
+              "recovery_status": "PASS",
+              "endurance_status": "PASS_BOUNDED",
+              "health_status": "PASS",
+              "readiness_status": "PASS",
+              "rollback_status": "PASS",
+              "predictive_evidence": "NOT_ESTABLISHED",
+              "run_id": int(os.environ["GITHUB_RUN_ID_VALUE"]),
+          }
+          raw = json.dumps(evidence, sort_keys=True, separators=(",",":")).encode()
+          evidence["manifest_hash"] = hashlib.sha256(raw).hexdigest()
+          pathlib.Path("artifacts/scope_seal_runtime_evidence.json").write_text(
+              json.dumps(evidence, indent=2, sort_keys=True) + "\n"
+          )
+          print(json.dumps(evidence, sort_keys=True))
+          PY
+
+      - name: Upload scope seal evidence
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: scope-seal-runtime-evidence
+          path: |
+            artifacts/scope_seal_runtime_evidence.json
+            artifacts/repository_sanitization.json
+            artifacts/sbom.cdx.json
+            artifacts/pytest.xml
+            artifacts/wheel.sha256
+            artifacts/backup.sha256
+            artifacts/health-live.json
+            artifacts/health-ready.json
+            artifacts/endurance.txt
+            artifacts/rollback.txt
+          if-no-files-found: error
