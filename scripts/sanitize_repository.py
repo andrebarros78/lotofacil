@@ -128,6 +128,34 @@ PLACEHOLDER_MARKERS = {
 
 
 def _git_tracked_files(root: Path) -> list[Path] | None:
+    """Return tracked files only when root is the Git worktree root.
+
+    Git ls-files resolves paths relative to the repository top-level even when
+    invoked from a nested directory. Treating those paths as relative to an
+    arbitrary nested scan root can silently produce an empty scan. For
+    non-root directories we intentionally fall back to recursive discovery
+    scoped to the requested directory.
+    """
+
+    try:
+        top_level = subprocess.run(
+            ["git", "rev-parse", "--show-toplevel"],
+            cwd=root,
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+    except (FileNotFoundError, subprocess.CalledProcessError):
+        return None
+
+    try:
+        git_root = Path(top_level).resolve()
+    except (OSError, RuntimeError):
+        return None
+
+    if git_root != root.resolve():
+        return None
+
     try:
         completed = subprocess.run(
             ["git", "ls-files", "-z"],
