@@ -361,8 +361,13 @@ def main() -> int:
             encoding="utf-8",
         )
 
-    print(json.dumps(report, sort_keys=True))
-    return 0 if report["status"] == "REPOSITORY_SANITIZATION_PASS" else 1
+    # Never emit the detailed scan report to stdout. The report is derived
+    # from files that may contain secrets; even though violation records are
+    # designed to contain metadata only, keeping stdout to a constant status
+    # string prevents accidental clear-text secret propagation in CI logs.
+    passed = report["status"] == "REPOSITORY_SANITIZATION_PASS"
+    print("REPOSITORY_SANITIZATION_PASS" if passed else "REPOSITORY_SANITIZATION_FAIL")
+    return 0 if passed else 1
 
 
 if __name__ == "__main__":

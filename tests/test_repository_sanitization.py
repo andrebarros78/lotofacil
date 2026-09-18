@@ -133,3 +133,24 @@ def test_nested_git_directory_does_not_silently_skip_files(tmp_path: Path) -> No
     assert report["status"] == "REPOSITORY_SANITIZATION_FAIL"
     assert report["metrics"]["files_scanned"] == 1
     assert "GITHUB_TOKEN" in _codes(report)
+
+
+def test_cli_never_emits_scanned_secret_material(tmp_path: Path) -> None:
+    token = "ghp_" + ("B" * 36)
+    (tmp_path / "config.txt").write_text(f"token={token}\n", encoding="utf-8")
+    completed = subprocess.run(
+        [
+            sys.executable,
+            str(SCRIPTS / "sanitize_repository.py"),
+            "--root",
+            str(tmp_path),
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert completed.returncode == 1
+    assert completed.stdout.strip() == "REPOSITORY_SANITIZATION_FAIL"
+    assert token not in completed.stdout
+    assert token not in completed.stderr
