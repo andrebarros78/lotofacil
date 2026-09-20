@@ -134,3 +134,27 @@ def test_resolve_official_latest_fails_closed_on_unexpected_probe_result(monkeyp
 
     with pytest.raises(RuntimeError, match="unexpected contest"):
         cycle._resolve_official_latest(3783)
+
+
+def test_cycle_persists_constructive_post_contest_report(tmp_path):
+    records = _records(6)
+    prediction = cycle._build_prediction(6, "snapshot-hash", records[:5], "2026-09-13T12:00:00+00:00")
+    cycle._evaluate_prediction(prediction, records[5])
+    ledger = cycle._empty_ledger()
+    ledger["predictions"] = [prediction]
+    ledger["summary"] = cycle.summarize_ledger(ledger)
+
+    state_dir = tmp_path / "operations"
+    state_dir.mkdir()
+    report_state = cycle._write_post_contest_report_state(state_dir, ledger)
+
+    assert report_state["report_count"] == 1
+    assert report_state["latest_contest"] == 6
+    assert (state_dir / "post_contest_reports.json").is_file()
+    assert (state_dir / "latest_post_contest_report.json").is_file()
+    markdown = (state_dir / "latest_post_contest_report.md").read_text(encoding="utf-8")
+    assert "Concurso Número: 6" in markdown
+    assert "Resultado:" in markdown
+    assert "Cartão gerado:" in markdown
+    assert "Número de acertos:" in markdown
+    assert "Autoanálise do processo" in markdown

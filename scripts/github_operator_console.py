@@ -7,6 +7,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from sare_lotofacil.analysis.core_report import analyze_core
+from sare_lotofacil.analysis.post_contest_report import (
+    build_post_contest_reports,
+    render_post_contest_report_markdown,
+)
 from sare_lotofacil.analysis.ris import build_categorical_ris_from_draws
 from sare_lotofacil.portfolios.core import UNPROVEN_LABEL, generate_uniform_portfolio
 from sare_lotofacil.portfolios.primary import (
@@ -50,14 +54,17 @@ def _state_summary(state_dir: Path) -> dict:
 
 def _analyze(state_dir: Path) -> dict:
     history = _load(state_dir / "canonical_history.json")
+    ledger = _load(state_dir / "prospective_ledger.json")
     draws = tuple(tuple(record["numbers"]) for record in history["records"])
     report = analyze_core(draws)
+    post_contest = build_post_contest_reports(ledger)
     return {
         "status": "GITHUB_OPERATOR_ANALYSIS_PASS",
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
         "contest_count": len(draws),
         "history_last_contest": history["records"][-1]["contest_id"],
         "canonical_history_sha256": _sha256(state_dir / "canonical_history.json"),
+        "latest_post_contest_report": post_contest["latest_report"],
         "report": report.to_dict(),
     }
 
@@ -191,8 +198,14 @@ def _export(state_dir: Path) -> tuple[dict, str]:
     latest = _load(state_dir / "latest.json")
     ledger = _load(state_dir / "prospective_ledger.json")
     state_names = ["bootstrap_manifest.json", "canonical_history.json", "prospective_ledger.json", "latest.json"]
-    if (state_dir / "canonical_prizes.json").exists():
-        state_names.append("canonical_prizes.json")
+    for optional_name in (
+        "canonical_prizes.json",
+        "post_contest_reports.json",
+        "latest_post_contest_report.json",
+    ):
+        if (state_dir / optional_name).exists():
+            state_names.append(optional_name)
+    post_contest = build_post_contest_reports(ledger)
     payload = {
         "status": "GITHUB_OPERATOR_EXPORT_PASS",
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
@@ -200,6 +213,7 @@ def _export(state_dir: Path) -> tuple[dict, str]:
         "retrospective_core": latest["retrospective_core"],
         "prospective": latest["prospective"],
         "protocol": ledger["protocol"],
+        "latest_post_contest_report": post_contest["latest_report"],
         "state_files": {name: _sha256(state_dir / name) for name in state_names},
     }
     md = "\n".join([
@@ -216,6 +230,8 @@ def _export(state_dir: Path) -> tuple[dict, str]:
         "**Não há promoção automática de vantagem preditiva.**",
         "",
     ])
+    if post_contest["latest_report"] is not None:
+        md += "\n" + render_post_contest_report_markdown(post_contest["latest_report"])
     return payload, md
 
 

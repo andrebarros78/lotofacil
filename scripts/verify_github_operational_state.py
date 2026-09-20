@@ -6,6 +6,10 @@ import json
 from datetime import date
 from pathlib import Path
 
+from sare_lotofacil.analysis.post_contest_report import (
+    build_post_contest_reports,
+    render_post_contest_report_markdown,
+)
 from sare_lotofacil.ingestion.validation import validate_contest
 from sare_lotofacil.portfolios.frozen import validate_operator_card_ledger
 from sare_lotofacil.statistics.baseline import brier_score
@@ -129,6 +133,36 @@ def verify(state_dir: Path) -> dict[str, object]:
     if latest["prospective"] != ledger["summary"]:
         raise RuntimeError("latest prospective summary diverges from ledger")
 
+    expected_reports = build_post_contest_reports(ledger)
+    report_summary = latest.get("post_contest_report")
+    if report_summary is None:
+        post_contest_reports = {"status": "POST_CONTEST_REPORT_STATE_NOT_INITIALIZED"}
+    else:
+        reports_path = state_dir / "post_contest_reports.json"
+        latest_report_path = state_dir / "latest_post_contest_report.json"
+        latest_report_md_path = state_dir / "latest_post_contest_report.md"
+        for path in (reports_path, latest_report_path, latest_report_md_path):
+            if not path.exists():
+                raise RuntimeError(f"missing post-contest report state file: {path.name}")
+        stored_reports = json.loads(reports_path.read_text(encoding="utf-8"))
+        stored_latest = json.loads(latest_report_path.read_text(encoding="utf-8"))
+        if stored_reports != expected_reports:
+            raise RuntimeError("post-contest report ledger diverges from prospective ledger")
+        if stored_latest != expected_reports["latest_report"]:
+            raise RuntimeError("latest post-contest report diverges from report ledger")
+        expected_markdown = render_post_contest_report_markdown(stored_latest) + "\n"
+        if latest_report_md_path.read_text(encoding="utf-8") != expected_markdown:
+            raise RuntimeError("latest post-contest markdown diverges from canonical report")
+        if int(report_summary["report_count"]) != int(expected_reports["report_count"]):
+            raise RuntimeError("latest post-contest report count mismatch")
+        if report_summary["latest_contest"] != expected_reports["latest_contest"]:
+            raise RuntimeError("latest post-contest contest mismatch")
+        post_contest_reports = {
+            "status": "POST_CONTEST_REPORT_STATE_PASS",
+            "report_count": expected_reports["report_count"],
+            "latest_contest": expected_reports["latest_contest"],
+        }
+
     operator_cards = _verify_operator_cards(state_dir, ledger)
     return {
         "status": "GITHUB_OPERATIONAL_AUDIT_PASS",
@@ -142,6 +176,7 @@ def verify(state_dir: Path) -> dict[str, object]:
         "predictive_evidence": ledger["summary"].get("predictive_evidence", "NOT_ESTABLISHED"),
         "prospective_state": ledger["summary"].get("prospective_state"),
         "operator_cards": operator_cards,
+        "post_contest_reports": post_contest_reports,
     }
 
 
