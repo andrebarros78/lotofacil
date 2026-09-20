@@ -1,4 +1,6 @@
 from datetime import date, timedelta
+from types import SimpleNamespace
+from urllib.error import HTTPError
 
 import pytest
 
@@ -79,3 +81,56 @@ def test_protocol_is_frozen_by_hash(tmp_path):
     path.write_text(__import__("json").dumps(ledger), encoding="utf-8")
     with pytest.raises(RuntimeError, match="protocol changed"):
         cycle._load_ledger(path)
+
+
+def _contest_ref(contest_id: int):
+    return SimpleNamespace(record=SimpleNamespace(contest_id=contest_id))
+
+
+def test_resolve_official_latest_probes_next_when_latest_endpoint_lags(monkeypatch):
+    calls = []
+
+    def fake_fetch(contest_id=None):
+        calls.append(contest_id)
+        if contest_id is None:
+            return _contest_ref(3783)
+        assert contest_id == 3784
+        return _contest_ref(3784)
+
+    monkeypatch.setattr(cycle, "fetch_caixa_contest", fake_fetch)
+
+    resolved = cycle._resolve_official_latest(3783)
+
+    assert resolved.record.contest_id == 3784
+    assert calls == [None, 3784]
+
+
+def test_resolve_official_latest_keeps_current_when_next_is_not_published(monkeypatch):
+    def fake_fetch(contest_id=None):
+        if contest_id is None:
+            return _contest_ref(3783)
+        raise HTTPError(
+            url=f"https://servicebus2.caixa.gov.br/portaldeloterias/api/lotofacil/{contest_id}",
+            code=404,
+            msg="Not Found",
+            hdrs=None,
+            fp=None,
+        )
+
+    monkeypatch.setattr(cycle, "fetch_caixa_contest", fake_fetch)
+
+    resolved = cycle._resolve_official_latest(3783)
+
+    assert resolved.record.contest_id == 3783
+
+
+def test_resolve_official_latest_fails_closed_on_unexpected_probe_result(monkeypatch):
+    def fake_fetch(contest_id=None):
+        if contest_id is None:
+            return _contest_ref(3783)
+        return _contest_ref(3785)
+
+    monkeypatch.setattr(cycle, "fetch_caixa_contest", fake_fetch)
+
+    with pytest.raises(RuntimeError, match="unexpected contest"):
+        cycle._resolve_official_latest(3783)
