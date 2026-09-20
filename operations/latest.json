@@ -1,13 +1,16 @@
 {
   "bootstrap_manifest_sha256": "716feea67b3b5a2ee712a498adcd9975578b9bc6837431584578ba1e7b7aefe5",
   "bootstrap_official_patches": [],
-  "canonical_history_sha256": "2ea42ab09d372e3977181513f99e6ec8360710ea78673306a983dd3ae97dc34c",
+  "canonical_history_sha256": "76295f807c6e2145400ebcf830fe9f2b31a19c8f5b32f8bb41cf43da77b911e4",
   "database_integrity": "ok",
-  "inserted_official_contests": [
-    3784
-  ],
+  "inserted_official_contests": [],
   "next_prediction_target": 3785,
   "official_latest_contest": 3784,
+  "post_contest_report": {
+    "emitted_for_contests": [],
+    "latest_contest": 3784,
+    "report_count": 5
+  },
   "prospective": {
     "cohort_a": {
       "n": 5,
@@ -83,9 +86,9 @@
     "predictive_evidence": "NOT_ESTABLISHED",
     "scientific_conclusion": "EVIDENCIA_PREDITIVA_INSUFICIENTE"
   },
-  "run_at_utc": "2026-09-20T18:26:36.311368+00:00",
+  "run_at_utc": "2026-09-20T21:21:37.019009+00:00",
   "snapshot_contests": 3784,
-  "snapshot_hash": "e6598926af3d0ed82b61dd1bb34c2a3db783d52c01ce8607bd85ed99b982ae78",
-  "snapshot_id": "snap-e6598926af3d0ed82b61",
+  "snapshot_hash": "e7acbeef78371c7db8746ac4456ae02c29d54b38c5ad7d003f9197a72f097f10",
+  "snapshot_id": "snap-e7acbeef78371c7db874",
   "status": "GITHUB_OPERATIONAL_CYCLE_PASS"
 }
