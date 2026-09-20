@@ -98,6 +98,7 @@ jobs:
             artifacts/canonical_prize_audit_precommit.json
             artifacts/github-runtime/sare.db
             state-store/operations/*.json
+            state-store/operations/*.md
           if-no-files-found: error
 
   committed-state-audit:

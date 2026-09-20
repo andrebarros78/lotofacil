@@ -11,6 +11,10 @@ from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
 from sare_lotofacil.analysis.core_report import analyze_core
+from sare_lotofacil.analysis.post_contest_report import (
+    build_post_contest_reports,
+    render_post_contest_report_markdown,
+)
 from sare_lotofacil.experiments.models import exponential_update, frequency_regularized
 from sare_lotofacil.ingestion.caixa import fetch_caixa_contest
 from sare_lotofacil.ingestion.csv_history import parse_history_csv
@@ -376,6 +380,28 @@ def _prepare_database_from_state(state_dir: Path, runtime_dir: Path):
     return db_path, canonical_path, manifest_path, records, bootstrap_patches
 
 
+def _write_post_contest_report_state(
+    state_dir: Path,
+    ledger: dict[str, object],
+) -> dict[str, object]:
+    report_state = build_post_contest_reports(ledger)
+    (state_dir / "post_contest_reports.json").write_text(
+        json.dumps(report_state, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    latest_report = report_state["latest_report"]
+    if latest_report is not None:
+        (state_dir / "latest_post_contest_report.json").write_text(
+            json.dumps(latest_report, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+        (state_dir / "latest_post_contest_report.md").write_text(
+            render_post_contest_report_markdown(latest_report) + "\n",
+            encoding="utf-8",
+        )
+    return report_state
+
+
 def run_cycle(state_dir: Path, runtime_dir: Path) -> dict[str, object]:
     state_dir.mkdir(parents=True, exist_ok=True)
     runtime_dir.mkdir(parents=True, exist_ok=True)
@@ -414,16 +440,20 @@ def run_cycle(state_dir: Path, runtime_dir: Path) -> dict[str, object]:
     canonical_path.write_text(json.dumps(canonical_payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
     ledger = _load_ledger(ledger_path)
+    evaluated_this_cycle: list[int] = []
     for prediction in ledger["predictions"]:
         target = int(prediction["target_contest"])
         if target in by_id and prediction.get("evaluation") is None:
             _evaluate_prediction(prediction, by_id[target])
+            evaluated_this_cycle.append(target)
 
     next_target = records[-1].contest_id + 1
     if not any(int(item["target_contest"]) == next_target for item in ledger["predictions"]):
         ledger["predictions"].append(_build_prediction(next_target, snapshot.snapshot_hash, records))
     verify_prediction_hashes(ledger)
     ledger["summary"] = summarize_ledger(ledger)
+
+    report_state = _write_post_contest_report_state(state_dir, ledger)
 
     core = analyze_core(tuple(record.numbers for record in records)).to_dict()
     result = {
@@ -441,6 +471,11 @@ def run_cycle(state_dir: Path, runtime_dir: Path) -> dict[str, object]:
         "next_prediction_target": next_target,
         "prospective": ledger["summary"],
         "retrospective_core": core,
+        "post_contest_report": {
+            "report_count": report_state["report_count"],
+            "latest_contest": report_state["latest_contest"],
+            "emitted_for_contests": evaluated_this_cycle,
+        },
     }
     ledger_path.write_text(json.dumps(ledger, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     latest_path.write_text(json.dumps(result, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")

@@ -65,6 +65,10 @@ jobs:
           grep -q '"status": "GITHUB_OPERATOR_STATE_PASS"' artifacts/operator-proof/status/status.json
           grep -q '"status": "GITHUB_OPERATOR_STATE_PASS"' artifacts/operator-proof/audit/audit.json
           grep -q '"status": "GITHUB_OPERATOR_ANALYSIS_PASS"' artifacts/operator-proof/analyze/analysis.json
+          grep -q '"latest_post_contest_report": {' artifacts/operator-proof/analyze/analysis.json
+          grep -q '"contest_number":' artifacts/operator-proof/analyze/analysis.json
+          grep -q '"hits":' artifacts/operator-proof/analyze/analysis.json
+          grep -q 'Autoanálise do processo' artifacts/operator-proof/export/operational_report.md
           grep -q '"status": "GITHUB_OPERATOR_RIS_PASS"' artifacts/operator-proof/ris/ris.json
           grep -q '"numeric_ris_enabled": false' artifacts/operator-proof/ris/ris.json
           grep -q '"score": null' artifacts/operator-proof/ris/ris.json
