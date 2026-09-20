@@ -158,3 +158,75 @@ def test_cycle_persists_constructive_post_contest_report(tmp_path):
     assert "Cartão gerado:" in markdown
     assert "Número de acertos:" in markdown
     assert "Autoanálise do processo" in markdown
+
+
+def test_resolve_official_latest_recovers_when_latest_endpoint_is_behind_state(monkeypatch):
+    calls = []
+
+    def fake_fetch(contest_id=None):
+        calls.append(contest_id)
+        if contest_id is None:
+            return _contest_ref(3783)
+        if contest_id == 3784:
+            return _contest_ref(3784)
+        if contest_id == 3785:
+            raise HTTPError(
+                url="https://servicebus2.caixa.gov.br/portaldeloterias/api/lotofacil/3785",
+                code=404,
+                msg="Not Found",
+                hdrs=None,
+                fp=None,
+            )
+        raise AssertionError(contest_id)
+
+    monkeypatch.setattr(cycle, "fetch_caixa_contest", fake_fetch)
+
+    resolved = cycle._resolve_official_latest(3784)
+
+    assert resolved.record.contest_id == 3784
+    assert calls == [None, 3784, 3785]
+
+
+def test_resolve_official_latest_still_fails_closed_when_state_cannot_be_verified(monkeypatch):
+    def fake_fetch(contest_id=None):
+        if contest_id is None:
+            return _contest_ref(3783)
+        raise HTTPError(
+            url=f"https://servicebus2.caixa.gov.br/portaldeloterias/api/lotofacil/{contest_id}",
+            code=404,
+            msg="Not Found",
+            hdrs=None,
+            fp=None,
+        )
+
+    monkeypatch.setattr(cycle, "fetch_caixa_contest", fake_fetch)
+
+    with pytest.raises(RuntimeError, match="behind operational state"):
+        cycle._resolve_official_latest(3784)
+
+
+def test_resolve_official_latest_preserves_verified_current_on_next_probe_500(monkeypatch):
+    calls = []
+
+    def fake_fetch(contest_id=None):
+        calls.append(contest_id)
+        if contest_id is None:
+            return _contest_ref(3783)
+        if contest_id == 3784:
+            return _contest_ref(3784)
+        if contest_id == 3785:
+            raise HTTPError(
+                url="https://servicebus2.caixa.gov.br/portaldeloterias/api/lotofacil/3785",
+                code=500,
+                msg="Internal Server Error",
+                hdrs=None,
+                fp=None,
+            )
+        raise AssertionError(contest_id)
+
+    monkeypatch.setattr(cycle, "fetch_caixa_contest", fake_fetch)
+
+    resolved = cycle._resolve_official_latest(3784)
+
+    assert resolved.record.contest_id == 3784
+    assert calls == [None, 3784, 3785]

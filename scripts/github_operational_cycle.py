@@ -63,16 +63,26 @@ def _download(url: str) -> bytes:
 def _resolve_official_latest(current_last: int):
     official_latest = fetch_caixa_contest()
     official_id = official_latest.record.contest_id
-    if official_id < current_last:
-        raise RuntimeError("official latest contest is behind operational state")
+
     if official_id > current_last:
         return official_latest
+
+    if official_id < current_last:
+        try:
+            current_official = fetch_caixa_contest(current_last)
+        except HTTPError as exc:
+            if exc.code in {400, 404}:
+                raise RuntimeError("official latest contest is behind operational state") from exc
+            raise
+        if current_official.record.contest_id != current_last:
+            raise RuntimeError("official current-contest verification returned an unexpected contest")
+        official_latest = current_official
 
     next_contest = current_last + 1
     try:
         candidate = fetch_caixa_contest(next_contest)
     except HTTPError as exc:
-        if exc.code in {400, 404}:
+        if exc.code in {400, 404, 500}:
             return official_latest
         raise
 
