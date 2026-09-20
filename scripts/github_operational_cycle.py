@@ -7,6 +7,7 @@ import math
 from datetime import date, datetime, timezone
 from pathlib import Path
 from statistics import stdev
+from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
 from sare_lotofacil.analysis.core_report import analyze_core
@@ -53,6 +54,27 @@ def _download(url: str) -> bytes:
     request = Request(url, headers={"Accept": "text/csv", "User-Agent": "SARE-Lotofacil/1.1.0"})
     with urlopen(request, timeout=30) as response:
         return response.read()
+
+
+def _resolve_official_latest(current_last: int):
+    official_latest = fetch_caixa_contest()
+    official_id = official_latest.record.contest_id
+    if official_id < current_last:
+        raise RuntimeError("official latest contest is behind operational state")
+    if official_id > current_last:
+        return official_latest
+
+    next_contest = current_last + 1
+    try:
+        candidate = fetch_caixa_contest(next_contest)
+    except HTTPError as exc:
+        if exc.code in {400, 404}:
+            return official_latest
+        raise
+
+    if candidate.record.contest_id != next_contest:
+        raise RuntimeError("official next-contest probe returned an unexpected contest")
+    return candidate
 
 
 def _paired_interval(values: list[float]) -> tuple[float | None, float | None, float | None]:
@@ -367,9 +389,7 @@ def run_cycle(state_dir: Path, runtime_dir: Path) -> dict[str, object]:
     snapshot = create_latest_snapshot(db_path)
     records = load_snapshot_records(db_path, snapshot.snapshot_id)
     current_last = records[-1].contest_id
-    official_latest = fetch_caixa_contest()
-    if official_latest.record.contest_id < current_last:
-        raise RuntimeError("official latest contest is behind operational state")
+    official_latest = _resolve_official_latest(current_last)
     inserted = []
     if official_latest.record.contest_id == current_last:
         persist_caixa_contest(db_path, official_latest, source_class="OFICIAL_DIRETA")
