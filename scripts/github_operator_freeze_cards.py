@@ -72,6 +72,7 @@ def run(
         raise RuntimeError("OPERATOR_CARD_PRIMARY_CARD_NOT_FROZEN")
 
     ledger_path = state_dir / "operator_card_ledger.json"
+    original_ledger_bytes = ledger_path.read_bytes() if ledger_path.exists() else None
     ledger = _load(ledger_path) if ledger_path.exists() else empty_operator_card_ledger()
     validate_operator_card_ledger(ledger)
     reserved = _reserved_primary_cards(prospective, target)
@@ -95,23 +96,25 @@ def run(
     ledger_bytes = (
         json.dumps(ledger, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
     ).encode("utf-8")
-    generation_id = (
-        f"operator-{target}-"
-        f"{result['request_sha256'][:16] if isinstance(result.get('request_sha256'), str) else idempotency_key[:16]}"
-    )
-    commit = publish_state_transaction(
-        state_dir,
-        {"operator_card_ledger.json": ledger_bytes},
-        generation_id=generation_id,
-        metadata={
-            "source": "operator_card_freeze",
-            "target_contest": target,
-            "idempotency_key": idempotency_key,
-            "source_commit": source_commit,
-            "workflow_run_id": workflow_run_id,
-        },
-    )
-    state_commit_after = verify_state_commit(state_dir, allow_legacy=False)
+    if original_ledger_bytes == ledger_bytes:
+        commit_generation = state_commit_before.get("generation_id")
+        state_commit_after = state_commit_before
+    else:
+        generation_id = f"operator-{target}-{result['request_sha256'][:16]}"
+        commit = publish_state_transaction(
+            state_dir,
+            {"operator_card_ledger.json": ledger_bytes},
+            generation_id=generation_id,
+            metadata={
+                "source": "operator_card_freeze",
+                "target_contest": target,
+                "idempotency_key": idempotency_key,
+                "source_commit": source_commit,
+                "workflow_run_id": workflow_run_id,
+            },
+        )
+        commit_generation = commit["generation_id"]
+        state_commit_after = verify_state_commit(state_dir, allow_legacy=False)
     return {
         **result,
         "official_latest_contest": official_latest,
@@ -124,7 +127,7 @@ def run(
         "predictive_evidence": latest["prospective"]["predictive_evidence"],
         "operator_card_ledger": "operations/operator_card_ledger.json",
         "state_transaction": {
-            "generation_id": commit["generation_id"],
+            "generation_id": commit_generation,
             "previous_commit_status": state_commit_before["status"],
             "commit_status": state_commit_after["status"],
             "verified_files": state_commit_after["verified_files"],
