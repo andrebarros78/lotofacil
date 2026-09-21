@@ -338,7 +338,9 @@ def _migrate_snapshots_to_v8(connection: sqlite3.Connection) -> None:
 
     snapshot_ids = [
         row[0]
-        for row in connection.execute("SELECT snapshot_id FROM snapshots").fetchall()
+        for row in connection.execute(
+            "SELECT snapshot_id FROM snapshots WHERE data_snapshot_hash IS NULL"
+        ).fetchall()
     ]
     for snapshot_id in snapshot_ids:
         rows = connection.execute(
