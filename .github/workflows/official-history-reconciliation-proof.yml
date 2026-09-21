@@ -1,0 +1,135 @@
+name: Official History Reconciliation Proof
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/official-history-reconciliation-proof.yml"
+      - "scripts/reconcile_official_history.py"
+      - "src/sare_lotofacil/reconciliation/**"
+      - "src/sare_lotofacil/ingestion/caixa.py"
+      - "src/sare_lotofacil/ingestion/validation.py"
+      - "tests/test_official_history_reconciliation.py"
+
+permissions:
+  contents: read
+
+jobs:
+  full-official-reconciliation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout candidate engine
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          path: app
+
+      - name: Checkout canonical operational state
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          ref: operations/state
+          fetch-depth: 0
+          path: state-store
+
+      - name: Setup Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: "3.13"
+
+      - name: Install candidate engine
+        run: python -m pip install ./app
+
+      - name: Determine canonical range
+        id: range
+        run: |
+          END_CONTEST="$(python - <<'PY'
+          import json
+          from pathlib import Path
+          payload = json.loads(Path("state-store/operations/canonical_history.json").read_text(encoding="utf-8"))
+          records = payload["records"]
+          if not records:
+              raise SystemExit("canonical history is empty")
+          if int(records[-1]["contest_id"]) != len(records):
+              raise SystemExit("canonical history is not contiguous from contest 1")
+          print(len(records))
+          PY
+          )"
+          echo "end_contest=$END_CONTEST" >> "$GITHUB_OUTPUT"
+          echo "Canonical reconciliation range: 1..$END_CONTEST"
+
+      - name: Reconcile every canonical contest against official CAIXA
+        run: |
+          mkdir -p artifacts/official-reconciliation/raw
+          python app/scripts/reconcile_official_history.py run \
+            --canonical state-store/operations/canonical_history.json \
+            --start 1 \
+            --end "${{ steps.range.outputs.end_contest }}" \
+            --out artifacts/official-reconciliation/official_reconciliation.json \
+            --raw-dir artifacts/official-reconciliation/raw \
+            --checkpoint-every 25 \
+            --delay-seconds 0.05 \
+            --timeout 20 \
+            --retries 4 \
+            --backoff-seconds 0.5 \
+            --strict
+
+      - name: Assert terminal F1 proof
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          path = Path("artifacts/official-reconciliation/official_reconciliation.json")
+          payload = json.loads(path.read_text(encoding="utf-8"))
+          if payload["status"] != "OFFICIAL_HISTORY_RECONCILIATION_PASS":
+              raise SystemExit(payload["status"])
+          expected = int(payload["canonical_contests"])
+          counts = payload["counts"]
+          if counts["OFFICIAL_MATCH"] != expected:
+              raise SystemExit(f"official matches {counts['OFFICIAL_MATCH']} != {expected}")
+          if any(counts[key] for key in (
+              "OFFICIAL_DIVERGENCE",
+              "OFFICIAL_UNAVAILABLE",
+              "OFFICIAL_INVALID_RESPONSE",
+          )):
+              raise SystemExit(f"non-match states present: {counts}")
+          if not payload["raw_evidence_complete"]:
+              raise SystemExit("raw evidence is incomplete")
+          print(json.dumps({
+              "status": payload["status"],
+              "canonical_contests": expected,
+              "counts": counts,
+              "canonical_file_sha256": payload["canonical_file_sha256"],
+              "manifest_sha256": payload["manifest_sha256"],
+              "raw_evidence_complete": payload["raw_evidence_complete"],
+          }, sort_keys=True))
+          PY
+
+      - name: Record provenance
+        run: |
+          git -C app rev-parse HEAD | tee artifacts/official-reconciliation/candidate_code_commit.txt
+          git -C state-store rev-parse HEAD | tee artifacts/official-reconciliation/operations_state_commit.txt
+          python - <<'PY'
+          import hashlib
+          from pathlib import Path
+
+          root = Path("artifacts/official-reconciliation/raw")
+          rows = []
+          for path in sorted(root.glob("*.json")):
+              rows.append(f"{path.name} {hashlib.sha256(path.read_bytes()).hexdigest()}")
+          Path("artifacts/official-reconciliation/raw_payload_sha256.txt").write_text(
+              "\n".join(rows) + "\n",
+              encoding="utf-8",
+          )
+          PY
+          test -s artifacts/official-reconciliation/raw_payload_sha256.txt
+
+      - name: Upload F1 official reconciliation evidence
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: official-history-reconciliation-proof
+          path: artifacts/official-reconciliation/
+          if-no-files-found: error
+          retention-days: 90
