@@ -10,6 +10,7 @@ from sare_lotofacil.persistence.jobs import (
     enqueue_job,
     get_job,
     request_cancel,
+    renew_lease,
     run_worker_once,
     save_checkpoint,
 )
@@ -95,3 +96,71 @@ def test_disk_full_like_failure_never_publishes_completion(monkeypatch, tmp_path
     assert failed.error is not None
     assert failed.error["type"] == "OperationalError"
     assert "disk is full" in failed.error["message"]
+
+
+def test_expired_lease_cannot_checkpoint_complete_or_fail(tmp_path):
+    db = tmp_path / "sare.db"
+    job = enqueue_job(db, "PORTFOLIO", {"card_count": 3, "seed": 808})
+    t0 = datetime(2026, 9, 21, 12, 0, tzinfo=timezone.utc)
+    claimed = claim_next_job(db, "worker-a", lease_seconds=5, now=t0)
+    assert claimed is not None
+
+    expired = t0 + timedelta(seconds=6)
+    with pytest.raises(StaleLeaseError):
+        save_checkpoint(db, job.job_id, "worker-a", claimed.lease_token, {"phase": "LATE"}, now=expired)
+    with pytest.raises(StaleLeaseError):
+        complete_job(db, job.job_id, "worker-a", claimed.lease_token, {"late": True}, now=expired)
+
+
+def test_heartbeat_extends_same_fencing_token_and_blocks_reclaim(tmp_path):
+    db = tmp_path / "sare.db"
+    job = enqueue_job(db, "PORTFOLIO", {"card_count": 3, "seed": 909})
+    t0 = datetime(2026, 9, 21, 12, 0, tzinfo=timezone.utc)
+    claimed = claim_next_job(db, "worker-a", lease_seconds=5, now=t0)
+    assert claimed is not None and claimed.lease_token == 1
+
+    renewed = renew_lease(
+        db,
+        job.job_id,
+        "worker-a",
+        claimed.lease_token,
+        lease_seconds=10,
+        now=t0 + timedelta(seconds=4),
+    )
+    assert renewed.lease_token == claimed.lease_token
+    assert renewed.lease_owner == "worker-a"
+
+    assert claim_next_job(
+        db,
+        "worker-b",
+        lease_seconds=30,
+        now=t0 + timedelta(seconds=6),
+    ) is None
+
+    completed = complete_job(
+        db,
+        job.job_id,
+        "worker-a",
+        claimed.lease_token,
+        {"ok": True},
+        now=t0 + timedelta(seconds=7),
+    )
+    assert completed.state == "COMPLETED"
+
+
+def test_heartbeat_rejects_already_expired_lease(tmp_path):
+    db = tmp_path / "sare.db"
+    job = enqueue_job(db, "PORTFOLIO", {"card_count": 3, "seed": 1001})
+    t0 = datetime(2026, 9, 21, 12, 0, tzinfo=timezone.utc)
+    claimed = claim_next_job(db, "worker-a", lease_seconds=5, now=t0)
+    assert claimed is not None
+
+    with pytest.raises(StaleLeaseError):
+        renew_lease(
+            db,
+            job.job_id,
+            "worker-a",
+            claimed.lease_token,
+            lease_seconds=30,
+            now=t0 + timedelta(seconds=6),
+        )
