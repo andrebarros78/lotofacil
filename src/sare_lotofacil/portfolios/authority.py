@@ -10,7 +10,7 @@ from sare_lotofacil.domain.masks import normalize_numbers
 from sare_lotofacil.domain.rules import DEFAULT_RULES
 from sare_lotofacil.portfolios.core import UNPROVEN_LABEL, generate_uniform_portfolio
 from sare_lotofacil.resource_limits import (
-    MAX_CARDS_PER_REQUEST,
+    MAX_CARD_ARTIFACT_CARDS,
     require_artifact_size,
 )
 
@@ -182,9 +182,9 @@ def build_card_artifact(
     metadata: Mapping[str, object] | None = None,
 ) -> CardArtifact:
     normalized = _normalize_cards(cards)
-    if len(normalized) > MAX_CARDS_PER_REQUEST:
+    if len(normalized) > MAX_CARD_ARTIFACT_CARDS:
         raise ValueError(
-            f"CARD_ARTIFACT_CARD_COUNT_LIMIT_EXCEEDED limit={MAX_CARDS_PER_REQUEST}"
+            f"CARD_ARTIFACT_CARD_COUNT_LIMIT_EXCEEDED limit={MAX_CARD_ARTIFACT_CARDS}"
         )
     payload = _artifact_payload(
         status=status,
