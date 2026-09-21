@@ -90,6 +90,22 @@ def _load_json(path: Path) -> dict[str, object]:
     return payload
 
 
+
+def _current_state_hashes(state_dir: Path) -> dict[str, str]:
+    hashes: dict[str, str] = {}
+    for path in sorted(state_dir.rglob("*")):
+        if not path.is_file():
+            continue
+        relative = path.relative_to(state_dir).as_posix()
+        if relative in {STATE_COMMIT_FILE, TXN_POINTER_FILE}:
+            continue
+        if relative.startswith(f"{TXN_DIR}/"):
+            continue
+        if path.name.startswith(".") and path.name.endswith(".tmp"):
+            continue
+        hashes[relative] = _sha256_bytes(path.read_bytes())
+    return hashes
+
 def _transaction_pointer_path(state_dir: Path) -> Path:
     return state_dir / TXN_POINTER_FILE
 
@@ -298,6 +314,13 @@ def verify_state_commit(state_dir: Path, *, allow_legacy: bool = True) -> dict[s
     files = commit.get("files")
     if not isinstance(files, dict) or not files:
         raise StateTransactionError("state commit file map missing")
+    current_files = _current_state_hashes(state_dir)
+    if set(current_files) != set(files):
+        missing = sorted(set(files) - set(current_files))
+        extra = sorted(set(current_files) - set(files))
+        raise StateTransactionError(
+            f"state commit file set mismatch missing={missing} extra={extra}"
+        )
     for relative, expected in files.items():
         path = state_dir / str(relative)
         if not path.exists():
@@ -343,11 +366,7 @@ def publish_state_transaction(
                 f"INJECTED_CRASH_AFTER_REPLACE_{crash_after_replace}"
             )
 
-    hashes = {
-        relative: str(entry["new_sha256"])
-        for relative, entry in sorted(entries.items())
-        if isinstance(entry, dict)
-    }
+    hashes = _current_state_hashes(state_dir)
     commit_metadata = {
         "committed_at_utc": datetime.now(timezone.utc).isoformat(),
         **dict(metadata or {}),
