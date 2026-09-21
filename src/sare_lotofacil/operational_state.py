@@ -347,6 +347,7 @@ def publish_state_transaction(
 ) -> dict[str, object]:
     state_dir.mkdir(parents=True, exist_ok=True)
     recover_state_transaction(state_dir)
+    previous_commit = _read_commit(state_dir)
     normalized = _normalize_files(files)
     generation = generation_id or f"state-{uuid.uuid4().hex}"
     manifest = _stage_transaction(state_dir, generation, normalized)
@@ -371,6 +372,23 @@ def publish_state_transaction(
         "committed_at_utc": datetime.now(timezone.utc).isoformat(),
         **dict(metadata or {}),
     }
+    previous_generation = None
+    previous_cycle_generation = None
+    if isinstance(previous_commit, dict):
+        raw_generation = previous_commit.get("generation_id")
+        if isinstance(raw_generation, str):
+            previous_generation = raw_generation
+        previous_metadata = previous_commit.get("metadata")
+        if isinstance(previous_metadata, dict):
+            raw_cycle = previous_metadata.get("cycle_generation_id")
+            if isinstance(raw_cycle, str):
+                previous_cycle_generation = raw_cycle
+    if previous_generation is not None:
+        commit_metadata.setdefault("parent_generation_id", previous_generation)
+    if commit_metadata.get("source") == "github_operational_cycle":
+        commit_metadata["cycle_generation_id"] = generation
+    elif previous_cycle_generation is not None:
+        commit_metadata.setdefault("cycle_generation_id", previous_cycle_generation)
     commit = StateCommit(generation, hashes, commit_metadata)
     atomic_write_json(state_dir / STATE_COMMIT_FILE, commit.to_dict())
 
