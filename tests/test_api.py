@@ -165,3 +165,66 @@ def test_api_body_limit_and_read_only_mode(tmp_path) -> None:
         headers={"content-type": "application/json", "content-length": str(len(oversized))},
     )
     assert response.status_code == 413
+
+
+
+def test_api_canonical_evaluation_is_target_bound_and_manual_channel_stays_non_evidence(tmp_path) -> None:
+    db, snapshot, _ = _database_with_snapshot(tmp_path)
+    target_numbers = tuple(range(1, 16))
+    target_record = validate_contest(106, date(2026, 9, 21), target_numbers)
+    target = CaixaContest(
+        record=target_record,
+        prize_tiers=(),
+        source_url="fixture://canonical/106",
+        captured_at=datetime(2026, 9, 21, tzinfo=timezone.utc),
+        raw_payload={"numero": 106, "listaDezenas": list(target_numbers)},
+    )
+    persisted = persist_caixa_contest(db, target, source_class="CAIXA_F6_TEST")
+
+    client = TestClient(create_app(db, write_token="secret"))
+    portfolio = client.post(
+        "/v1/portfolios",
+        json={
+            "card_count": 2,
+            "seed": 6106,
+            "snapshot_id": snapshot.snapshot_id,
+            "target_contest": 106,
+        },
+        headers={"Idempotency-Key": "f6-portfolio", "X-SARE-Token": "secret"},
+    )
+    assert portfolio.status_code == 201
+    portfolio_id = portfolio.json()["portfolio_id"]
+
+    manual = client.post(
+        "/v1/evaluations",
+        json={"portfolio_id": portfolio_id, "result": list(target_numbers)},
+        headers={"Idempotency-Key": "f6-manual", "X-SARE-Token": "secret"},
+    )
+    assert manual.status_code == 201
+    assert manual.json()["evaluation_class"] == "MANUAL_EVALUATION"
+    assert manual.json()["evidence_eligible"] is False
+    assert manual.json()["source_class"] == "USER_SUPPLIED"
+
+    canonical = client.post(
+        "/v1/evaluations/revisions",
+        json={
+            "portfolio_id": portfolio_id,
+            "contest_id": 106,
+            "revision": persisted.revision,
+        },
+        headers={"Idempotency-Key": "f6-canonical", "X-SARE-Token": "secret"},
+    )
+    assert canonical.status_code == 201
+    assert canonical.json()["evaluation_class"] == "CANONICAL_EVALUATION"
+    assert canonical.json()["evidence_eligible"] is True
+    assert canonical.json()["source_class"] == "CAIXA_F6_TEST"
+    assert canonical.json()["contest_id"] == 106
+    assert canonical.json()["revision"] == persisted.revision
+
+    wrong_target = client.post(
+        "/v1/evaluations/revisions",
+        json={"portfolio_id": portfolio_id, "contest_id": 105, "revision": 1},
+        headers={"Idempotency-Key": "f6-wrong-target", "X-SARE-Token": "secret"},
+    )
+    assert wrong_target.status_code == 409
+    assert wrong_target.json()["detail"] == "CANONICAL_EVALUATION_TARGET_MISMATCH"
