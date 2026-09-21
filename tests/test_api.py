@@ -124,9 +124,12 @@ def test_api_evaluation_and_ris_are_categorical(tmp_path) -> None:
     assert evaluation.status_code == 201
     assert len(evaluation.json()["hits"]) == 4
     assert 5 <= evaluation.json()["max_hits"] <= 15
+    assert evaluation.json()["evaluation_class"] == "MANUAL_EVALUATION"
+    assert evaluation.json()["evidence_eligible"] is False
+    assert evaluation.json()["source_class"] == "USER_SUPPLIED"
 
     audit = client.get("/v1/audit").json()["items"]
-    assert any(item["action"] == "PORTFOLIO_EVALUATED" for item in audit)
+    assert any(item["action"] == "PORTFOLIO_MANUAL_EVALUATED" for item in audit)
 
     ris = client.get("/v1/ris").json()
     assert ris["schema_version"] == "ris-categorical-v1"
