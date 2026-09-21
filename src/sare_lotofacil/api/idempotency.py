@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import time
 from pathlib import Path
 from typing import Any, Callable
 
@@ -9,6 +10,7 @@ from fastapi.responses import JSONResponse
 
 from sare_lotofacil.persistence.operations import (
     complete_idempotency,
+    get_idempotency,
     payload_hash,
     reserve_idempotency,
 )
@@ -31,6 +33,18 @@ def execute_idempotent(
     if reservation.outcome == "CONFLICT":
         raise HTTPException(status_code=409, detail="IDEMPOTENCY_KEY_CONFLICT")
     if reservation.outcome == "IN_PROGRESS":
+        deadline = time.monotonic() + 2.0
+        while time.monotonic() < deadline:
+            record = get_idempotency(path, operation, key)
+            if record is not None and record.state == "COMPLETED":
+                if record.response_json is None or record.status_code is None:
+                    raise RuntimeError("IDEMPOTENCY_REPLAY_MISSING_RESPONSE")
+                return JSONResponse(
+                    json.loads(record.response_json),
+                    status_code=record.status_code,
+                    headers={"Idempotency-Replayed": "true"},
+                )
+            time.sleep(0.01)
         return JSONResponse(
             {"detail": "IDEMPOTENCY_IN_PROGRESS"},
             status_code=409,
