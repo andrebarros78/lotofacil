@@ -242,6 +242,9 @@ def create_app(
             return {
                 "evaluation_id": record.evaluation_id,
                 "portfolio_id": record.portfolio_id,
+                "evaluation_class": record.evaluation_class,
+                "evidence_eligible": record.evidence_eligible,
+                "source_class": record.source_class,
                 "result": list(record.result),
                 "hits": list(record.hits),
                 "max_hits": record.max_hits,
@@ -265,9 +268,20 @@ def create_app(
                 if isinstance(exc.args[0] if exc.args else None, tuple):
                     raise HTTPException(status_code=404, detail="CONTEST_REVISION_NOT_FOUND")
                 raise HTTPException(status_code=404, detail="PORTFOLIO_NOT_FOUND")
+            except ValueError as exc:
+                if str(exc) in {
+                    "CANONICAL_EVALUATION_REQUIRES_TARGET",
+                    "CANONICAL_EVALUATION_TARGET_MISMATCH",
+                }:
+                    raise HTTPException(status_code=409, detail=str(exc))
+                raise HTTPException(status_code=422, detail=str(exc))
             return {
                 "evaluation_id": record.evaluation_id,
                 "portfolio_id": record.portfolio_id,
+                "evaluation_class": record.evaluation_class,
+                "evidence_eligible": record.evidence_eligible,
+                "source_class": record.source_class,
+                "source_artifact_id": record.source_artifact_id,
                 "contest_id": record.contest_id,
                 "revision": record.revision,
                 "result": list(record.result),
