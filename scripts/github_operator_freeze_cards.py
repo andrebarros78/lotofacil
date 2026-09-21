@@ -5,6 +5,10 @@ import json
 from datetime import datetime, timezone
 from pathlib import Path
 
+from sare_lotofacil.operational_state import (
+    publish_state_transaction,
+    verify_state_commit,
+)
 from sare_lotofacil.portfolios.frozen import (
     empty_operator_card_ledger,
     freeze_operator_cards,
@@ -41,6 +45,7 @@ def run(
     workflow_run_id: str,
     target_contest: int = 0,
 ) -> dict[str, object]:
+    state_commit_before = verify_state_commit(state_dir, allow_legacy=True)
     latest = _load(state_dir / "latest.json")
     prospective = _load(state_dir / "prospective_ledger.json")
     canonical_target = int(latest["next_prediction_target"])
@@ -87,7 +92,26 @@ def run(
         workflow_run_id=workflow_run_id,
         reserved_cards=reserved,
     )
-    _write(ledger_path, ledger)
+    ledger_bytes = (
+        json.dumps(ledger, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
+    ).encode("utf-8")
+    generation_id = (
+        f"operator-{target}-"
+        f"{result['request_sha256'][:16] if isinstance(result.get('request_sha256'), str) else idempotency_key[:16]}"
+    )
+    commit = publish_state_transaction(
+        state_dir,
+        {"operator_card_ledger.json": ledger_bytes},
+        generation_id=generation_id,
+        metadata={
+            "source": "operator_card_freeze",
+            "target_contest": target,
+            "idempotency_key": idempotency_key,
+            "source_commit": source_commit,
+            "workflow_run_id": workflow_run_id,
+        },
+    )
+    state_commit_after = verify_state_commit(state_dir, allow_legacy=False)
     return {
         **result,
         "official_latest_contest": official_latest,
@@ -99,6 +123,12 @@ def run(
         "data_snapshot_hash": latest.get("data_snapshot_hash"),
         "predictive_evidence": latest["prospective"]["predictive_evidence"],
         "operator_card_ledger": "operations/operator_card_ledger.json",
+        "state_transaction": {
+            "generation_id": commit["generation_id"],
+            "previous_commit_status": state_commit_before["status"],
+            "commit_status": state_commit_after["status"],
+            "verified_files": state_commit_after["verified_files"],
+        },
     }
 
 
