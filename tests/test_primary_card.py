@@ -4,6 +4,7 @@ from sare_lotofacil.portfolios.primary import (
     SELECTION_METHOD,
     build_primary_card,
     select_primary_card,
+    validate_primary_card_payload,
 )
 
 
@@ -52,3 +53,48 @@ def test_primary_card_rejects_non_next_target() -> None:
         assert str(exc) == "PRIMARY_CARD_TARGET_MUST_EQUAL_TRAINING_LAST_PLUS_ONE"
     else:  # pragma: no cover
         raise AssertionError("target não adjacente deveria falhar")
+
+
+def test_primary_card_payload_semantics_are_recomputed() -> None:
+    primary = [index / 100.0 for index in range(1, 26)]
+    secondary = [0.5] * 25
+    decision = select_primary_card(
+        primary,
+        secondary,
+        target_contest=101,
+        training_last_contest=100,
+    )
+    verified = validate_primary_card_payload(
+        decision.to_dict(),
+        primary,
+        secondary,
+        target_contest=101,
+        training_last_contest=100,
+    )
+    assert verified == decision
+
+
+def test_primary_card_payload_rejects_coherently_rehashed_wrong_decision() -> None:
+    primary = [index / 100.0 for index in range(1, 26)]
+    secondary = [0.5] * 25
+    payload = select_primary_card(
+        primary,
+        secondary,
+        target_contest=101,
+        training_last_contest=100,
+    ).to_dict()
+    payload["card"] = list(range(1, 16))
+    payload["decision_sha256"] = "0" * 64
+
+    try:
+        validate_primary_card_payload(
+            payload,
+            primary,
+            secondary,
+            target_contest=101,
+            training_last_contest=100,
+        )
+    except RuntimeError as exc:
+        assert str(exc) == "PRIMARY_CARD_FROZEN_DECISION_MISMATCH"
+    else:  # pragma: no cover
+        raise AssertionError("decisão semântica adulterada deveria falhar")
