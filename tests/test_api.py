@@ -60,6 +60,10 @@ def test_api_idempotency_conflict_and_restart_persistence(tmp_path) -> None:
     assert first.json() == second.json()
     portfolio_id = first.json()["portfolio_id"]
     assert "SEM VANTAGEM PREDITIVA COMPROVADA" in first.json()["evidence_label"]
+    assert first.json()["artifact_status"] == "FROZEN"
+    assert first.json()["operational_use_allowed"] is True
+    assert first.json()["artifact_id"].startswith("card-")
+    assert first.json()["policy_id"] == "UNIFORM_RANDOM_PORTFOLIO_V1"
 
     conflict = client.post(
         "/v1/portfolios",
@@ -72,6 +76,11 @@ def test_api_idempotency_conflict_and_restart_persistence(tmp_path) -> None:
     loaded = restarted.get(f"/v1/portfolios/{portfolio_id}")
     assert loaded.status_code == 200
     assert loaded.json() == first.json()
+
+    exported = restarted.get(f"/v1/portfolios/{portfolio_id}/export")
+    assert exported.status_code == 200
+    assert "# artifact_status=FROZEN" in exported.text
+    assert f"# card_artifact_id={first.json()['artifact_id']}" in exported.text
 
 
 def test_api_analysis_exposes_baseline_delta_interval_and_inconclusive_status(tmp_path) -> None:

@@ -17,6 +17,7 @@ from sare_lotofacil.analysis.post_contest_report import (
 from sare_lotofacil.ingestion.validation import validate_contest
 from sare_lotofacil.persistence.snapshot_identity import semantic_data_snapshot_hash
 from sare_lotofacil.portfolios import frozen as frozen_mod
+from sare_lotofacil.portfolios.authority import CardGenerationService
 from sare_lotofacil.portfolios.frozen import (
     card_for_generation_index,
     card_sha256,
@@ -228,6 +229,18 @@ def test_verifier_rejects_prediction_semantic_snapshot_drift_even_when_rehashed(
         verify(state)
 
 
+def test_verifier_rejects_primary_card_artifact_tampering_even_when_prediction_rehashed(tmp_path: Path) -> None:
+    state = _state_fixture(tmp_path)
+    ledger = _ledger(state)
+    pending = ledger["predictions"][-1]
+    pending["primary_card_artifact"]["cards"][0] = list(range(11, 26))
+    pending["prediction_sha256"] = cycle._sha256(cycle._prediction_hash_payload(pending))
+    _save_ledger(state, ledger)
+
+    with pytest.raises(RuntimeError, match="CARD_ARTIFACT_HASH_OR_PAYLOAD_MISMATCH"):
+        verify(state)
+
+
 def _prospective_for_operator(state: Path) -> dict:
     return json.loads((state / "prospective_ledger.json").read_text(encoding="utf-8"))
 
@@ -270,6 +283,14 @@ def test_operator_verifier_rejects_unjustified_generation_skip(tmp_path: Path) -
         }
     )[:32]
     request["generation_index_next"] = index + 1
+    request["card_artifact"] = CardGenerationService.freeze_operator_batch(
+        cards=[item["card"]],
+        target_contest=7,
+        data_snapshot_hash=None,
+        storage_snapshot_id=None,
+        storage_snapshot_hash="snapshot-current",
+        request_fingerprint=request["request_fingerprint"],
+    ).to_dict()
     request["request_sha256"] = frozen_mod._sha256(
         frozen_mod._request_hash_payload(request)
     )

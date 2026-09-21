@@ -11,7 +11,8 @@ from sare_lotofacil.analysis.core_report import analyze_core
 from sare_lotofacil.domain.masks import mask_to_numbers, numbers_to_mask, normalize_numbers
 from sare_lotofacil.persistence.db import connect, initialize_database
 from sare_lotofacil.persistence.repository import load_snapshot_draws
-from sare_lotofacil.portfolios.core import Portfolio, audit_portfolio, generate_uniform_portfolio
+from sare_lotofacil.portfolios.authority import CardGenerationService, STATUS_FROZEN
+from sare_lotofacil.portfolios.core import Portfolio, audit_portfolio
 
 
 def canonical_json(payload: Any) -> str:
@@ -52,6 +53,12 @@ class PortfolioRecord:
     cost_cents: int
     predictive_evidence: str
     evidence_label: str
+    artifact_id: str
+    artifact_sha256: str
+    artifact_status: str
+    artifact_schema_version: str
+    policy_id: str
+    data_snapshot_hash: str | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -135,45 +142,82 @@ def persist_uniform_portfolio(
     target_contest: int | None = None,
 ) -> PortfolioRecord:
     initialize_database(path)
-    portfolio = generate_uniform_portfolio(card_count, seed=seed)
-    identity = {
-        "snapshot_id": snapshot_id,
-        "target_contest": target_contest,
-        "seed": seed,
-        "cards": portfolio.cards,
-        "predictive_evidence": "NOT_ESTABLISHED",
-    }
-    portfolio_id = f"portfolio-{payload_hash(identity)[:24]}"
+    storage_snapshot_hash = None
+    data_snapshot_hash = None
     with connect(path) as connection:
         if snapshot_id is not None:
-            exists = connection.execute("SELECT 1 FROM snapshots WHERE snapshot_id=?", (snapshot_id,)).fetchone()
-            if not exists:
+            snapshot = connection.execute(
+                "SELECT snapshot_hash, data_snapshot_hash FROM snapshots WHERE snapshot_id=?",
+                (snapshot_id,),
+            ).fetchone()
+            if snapshot is None:
                 raise KeyError(f"snapshot inexistente: {snapshot_id}")
+            storage_snapshot_hash, data_snapshot_hash = snapshot
+
+    artifact = CardGenerationService.freeze_uniform(
+        card_count=card_count,
+        seed=seed,
+        target_contest=target_contest,
+        data_snapshot_hash=data_snapshot_hash,
+        storage_snapshot_id=snapshot_id,
+        storage_snapshot_hash=storage_snapshot_hash,
+    )
+    if artifact.status != STATUS_FROZEN or not artifact.operational_use_allowed:
+        raise RuntimeError("PERSISTED_PORTFOLIO_MUST_BE_FROZEN")
+    portfolio_id = f"portfolio-{artifact.artifact_sha256[:24]}"
+    with connect(path) as connection:
         existing = connection.execute("SELECT 1 FROM portfolios WHERE portfolio_id=?", (portfolio_id,)).fetchone()
         if not existing:
             connection.execute(
-                "INSERT INTO portfolios(portfolio_id, snapshot_id, target_contest, seed, card_count, cost_cents, predictive_evidence, evidence_label) "
-                "VALUES (?, ?, ?, ?, ?, ?, 'NOT_ESTABLISHED', ?)",
-                (portfolio_id, snapshot_id, target_contest, seed, len(portfolio.cards), portfolio.cost_cents, portfolio.evidence_label),
+                "INSERT INTO portfolios("
+                "portfolio_id, snapshot_id, target_contest, seed, card_count, cost_cents, "
+                "predictive_evidence, evidence_label, artifact_id, artifact_sha256, artifact_status, "
+                "artifact_schema_version, policy_id, data_snapshot_hash"
+                ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (
+                    portfolio_id,
+                    snapshot_id,
+                    target_contest,
+                    seed,
+                    artifact.card_count,
+                    artifact.cost_cents,
+                    artifact.predictive_evidence,
+                    artifact.evidence_label,
+                    artifact.artifact_id,
+                    artifact.artifact_sha256,
+                    artifact.status,
+                    artifact.schema_version,
+                    artifact.policy_id,
+                    artifact.data_snapshot_hash,
+                ),
             )
             connection.executemany(
                 "INSERT INTO portfolio_cards(portfolio_id, position, result_mask) VALUES (?, ?, ?)",
-                [(portfolio_id, index, numbers_to_mask(card)) for index, card in enumerate(portfolio.cards, start=1)],
+                [(portfolio_id, index, numbers_to_mask(card)) for index, card in enumerate(artifact.cards, start=1)],
             )
             _audit(
                 connection,
                 "PORTFOLIO_FROZEN",
-                "portfolio",
-                portfolio_id,
-                {"card_count": card_count, "seed": seed, "target_contest": target_contest},
+                "card_artifact",
+                artifact.artifact_id,
+                {
+                    "portfolio_id": portfolio_id,
+                    "card_count": artifact.card_count,
+                    "seed": seed,
+                    "target_contest": target_contest,
+                    "artifact_sha256": artifact.artifact_sha256,
+                    "policy_id": artifact.policy_id,
+                },
             )
     return get_portfolio(path, portfolio_id)
 
 
 def get_portfolio(path: str | Path, portfolio_id: str) -> PortfolioRecord:
+    initialize_database(path)
     with connect(path) as connection:
         row = connection.execute(
-            "SELECT snapshot_id, target_contest, seed, cost_cents, predictive_evidence, evidence_label "
+            "SELECT snapshot_id, target_contest, seed, cost_cents, predictive_evidence, evidence_label, "
+            "artifact_id, artifact_sha256, artifact_status, artifact_schema_version, policy_id, data_snapshot_hash "
             "FROM portfolios WHERE portfolio_id=?",
             (portfolio_id,),
         ).fetchone()
@@ -186,7 +230,50 @@ def get_portfolio(path: str | Path, portfolio_id: str) -> PortfolioRecord:
                 (portfolio_id,),
             ).fetchall()
         )
-    return PortfolioRecord(portfolio_id, row[0], row[1], row[2], cards, row[3], row[4], row[5])
+        storage_snapshot_hash = None
+        if row[0] is not None:
+            snapshot = connection.execute(
+                "SELECT snapshot_hash FROM snapshots WHERE snapshot_id=?",
+                (row[0],),
+            ).fetchone()
+            if snapshot is None:
+                raise RuntimeError("PORTFOLIO_STORAGE_SNAPSHOT_MISSING")
+            storage_snapshot_hash = snapshot[0]
+    if not row[6] or not row[7]:
+        raise RuntimeError("PORTFOLIO_CARD_ARTIFACT_MISSING")
+    expected_artifact = CardGenerationService.freeze_uniform(
+        card_count=len(cards),
+        seed=int(row[2]),
+        target_contest=(int(row[1]) if row[1] is not None else None),
+        data_snapshot_hash=row[11],
+        storage_snapshot_id=row[0],
+        storage_snapshot_hash=storage_snapshot_hash,
+    )
+    if (
+        expected_artifact.cards != cards
+        or row[6] != expected_artifact.artifact_id
+        or row[7] != expected_artifact.artifact_sha256
+        or row[8] != expected_artifact.status
+        or row[9] != expected_artifact.schema_version
+        or row[10] != expected_artifact.policy_id
+    ):
+        raise RuntimeError("PORTFOLIO_CARD_ARTIFACT_MISMATCH")
+    return PortfolioRecord(
+        portfolio_id,
+        row[0],
+        row[1],
+        row[2],
+        cards,
+        row[3],
+        row[4],
+        row[5],
+        row[6],
+        row[7],
+        row[8],
+        row[9],
+        row[10],
+        row[11],
+    )
 
 
 def evaluate_portfolio(path: str | Path, portfolio_id: str, draw: Iterable[int]) -> EvaluationRecord:

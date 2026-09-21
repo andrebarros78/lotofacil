@@ -63,6 +63,13 @@ def _portfolio_payload(record) -> dict[str, Any]:
         "cost_cents": record.cost_cents,
         "predictive_evidence": record.predictive_evidence,
         "evidence_label": record.evidence_label,
+        "artifact_id": record.artifact_id,
+        "artifact_sha256": record.artifact_sha256,
+        "artifact_status": record.artifact_status,
+        "artifact_schema_version": record.artifact_schema_version,
+        "policy_id": record.policy_id,
+        "data_snapshot_hash": record.data_snapshot_hash,
+        "operational_use_allowed": record.artifact_status in {"FROZEN", "EXPORTED", "EVALUATED"},
     }
 
 

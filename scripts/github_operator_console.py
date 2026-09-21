@@ -12,7 +12,14 @@ from sare_lotofacil.analysis.post_contest_report import (
     render_post_contest_report_markdown,
 )
 from sare_lotofacil.analysis.ris import build_categorical_ris_from_draws
-from sare_lotofacil.portfolios.core import UNPROVEN_LABEL, generate_uniform_portfolio
+from sare_lotofacil.portfolios.authority import (
+    POLICY_PRIMARY,
+    STATUS_FROZEN,
+    STATUS_PREVIEW,
+    CardGenerationService,
+    validate_card_artifact,
+)
+from sare_lotofacil.portfolios.core import UNPROVEN_LABEL
 from sare_lotofacil.portfolios.primary import (
     PRIMARY_MODEL_NAME,
     SECONDARY_MODEL_NAME,
@@ -149,6 +156,31 @@ def _primary_card(state_dir: Path) -> dict:
     else:
         decision_source = "DERIVED_FROM_FROZEN_LEGACY_MODEL_SCORES"
 
+    artifact_payload = prediction.get("primary_card_artifact")
+    if isinstance(artifact_payload, dict):
+        validated_artifact = validate_card_artifact(
+            artifact_payload,
+            expected_status=STATUS_FROZEN,
+            expected_cards=(decision.card,),
+            require_operational=True,
+        )
+        if validated_artifact.policy_id != POLICY_PRIMARY:
+            raise RuntimeError("PRIMARY_CARD_ARTIFACT_POLICY_MISMATCH")
+        card_artifact = validated_artifact.to_dict()
+    else:
+        card_artifact = CardGenerationService.freeze_primary(
+            card=decision.card,
+            target_contest=target,
+            training_last_contest=decision.training_last_contest,
+            decision_sha256=decision.decision_sha256,
+            primary_model=decision.primary_model,
+            secondary_model=decision.secondary_model,
+            selection_method=decision.selection_method,
+            data_snapshot_hash=latest.get("data_snapshot_hash"),
+            storage_snapshot_id=latest.get("storage_snapshot_id", latest.get("snapshot_id")),
+            storage_snapshot_hash=latest.get("storage_snapshot_hash", latest.get("snapshot_hash")),
+        ).to_dict()
+
     return {
         "status": "GITHUB_OPERATOR_PRIMARY_CARD_PASS",
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
@@ -170,6 +202,8 @@ def _primary_card(state_dir: Path) -> dict:
         "secondary_model_score_sum": decision.secondary_model_score_sum,
         "decision_sha256": decision.decision_sha256,
         "decision_source": decision_source,
+        "artifact_status": card_artifact["status"],
+        "card_artifact": card_artifact,
         "card": list(decision.card),
         "card_display": " ".join(f"{number:02d}" for number in decision.card),
         "ranking": list(decision.ranking),
@@ -180,25 +214,35 @@ def _portfolio(state_dir: Path, card_count: int, seed: int) -> dict:
     latest = _load(state_dir / "latest.json")
     target = int(latest["next_prediction_target"])
     effective_seed = target if seed == 0 else seed
-    portfolio = generate_uniform_portfolio(card_count, seed=effective_seed)
-    if portfolio.evidence_label != UNPROVEN_LABEL:
-        raise RuntimeError("portfolio evidence label invariant violated")
+    artifact = CardGenerationService.preview_uniform(
+        card_count=card_count,
+        seed=effective_seed,
+        target_contest=target,
+        data_snapshot_hash=latest.get("data_snapshot_hash"),
+        storage_snapshot_id=latest.get("storage_snapshot_id", latest["snapshot_id"]),
+        storage_snapshot_hash=latest.get("storage_snapshot_hash", latest["snapshot_hash"]),
+    )
+    if artifact.evidence_label != UNPROVEN_LABEL or artifact.status != STATUS_PREVIEW:
+        raise RuntimeError("portfolio preview authority invariant violated")
     return {
-        "status": "GITHUB_OPERATOR_PORTFOLIO_PASS",
+        "status": "GITHUB_OPERATOR_PORTFOLIO_PREVIEW_PASS",
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
+        "artifact_status": artifact.status,
+        "operational_use_allowed": artifact.operational_use_allowed,
+        "card_artifact": artifact.to_dict(),
         "target_contest": target,
-        "seed": portfolio.seed,
-        "card_count": len(portfolio.cards),
-        "cost_cents": portfolio.cost_cents,
-        "predictive_evidence": latest["prospective"]["predictive_evidence"],
-        "evidence_label": portfolio.evidence_label,
+        "seed": artifact.seed,
+        "card_count": artifact.card_count,
+        "cost_cents": artifact.cost_cents,
+        "predictive_evidence": artifact.predictive_evidence,
+        "evidence_label": artifact.evidence_label,
         "state_snapshot_id": latest["snapshot_id"],
         "state_snapshot_hash": latest["snapshot_hash"],
         "storage_snapshot_id": latest.get("storage_snapshot_id", latest["snapshot_id"]),
         "storage_snapshot_hash": latest.get("storage_snapshot_hash", latest["snapshot_hash"]),
         "data_snapshot_hash": latest.get("data_snapshot_hash"),
-        "cards": [list(card) for card in portfolio.cards],
-        "cards_display": [" ".join(f"{number:02d}" for number in card) for card in portfolio.cards],
+        "cards": [list(card) for card in artifact.cards],
+        "cards_display": [" ".join(f"{number:02d}" for number in card) for card in artifact.cards],
     }
 
 
@@ -248,7 +292,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Read-only operator console for the canonical GitHub state")
     parser.add_argument(
         "--action",
-        choices=("status", "audit", "analyze", "ris", "primary-card", "portfolio", "export"),
+        choices=("status", "audit", "analyze", "ris", "primary-card", "portfolio-preview", "portfolio", "export"),
         required=True,
     )
     parser.add_argument("--state-dir", type=Path, required=True)
@@ -275,9 +319,12 @@ def main() -> int:
     elif args.action == "primary-card":
         payload = _primary_card(args.state_dir)
         _write_json(args.out_dir / "primary_card.json", payload)
-    elif args.action == "portfolio":
+    elif args.action in {"portfolio-preview", "portfolio"}:
         payload = _portfolio(args.state_dir, args.card_count, args.seed)
-        _write_json(args.out_dir / "portfolio.json", payload)
+        payload["action"] = "portfolio-preview"
+        if args.action == "portfolio":
+            payload["legacy_action_alias"] = "portfolio"
+        _write_json(args.out_dir / "portfolio_preview.json", payload)
     elif args.action == "export":
         payload, md = _export(args.state_dir)
         _write_json(args.out_dir / "operational_report.json", payload)

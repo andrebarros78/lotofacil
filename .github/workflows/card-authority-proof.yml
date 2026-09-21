@@ -1,0 +1,211 @@
+name: Card Authority Proof
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/card-authority-proof.yml"
+      - "scripts/github_operational_cycle.py"
+      - "scripts/github_operator_console.py"
+      - "scripts/github_operator_freeze_cards.py"
+      - "scripts/verify_github_operational_state.py"
+      - "src/sare_lotofacil/portfolios/**"
+      - "src/sare_lotofacil/persistence/**"
+      - "src/sare_lotofacil/api/**"
+      - "tests/**"
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/card-authority-proof.yml"
+      - "scripts/github_operational_cycle.py"
+      - "scripts/github_operator_console.py"
+      - "scripts/github_operator_freeze_cards.py"
+      - "scripts/verify_github_operational_state.py"
+      - "src/sare_lotofacil/portfolios/**"
+      - "src/sare_lotofacil/persistence/**"
+      - "src/sare_lotofacil/api/**"
+
+permissions:
+  contents: read
+
+jobs:
+  card-authority-proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout candidate engine
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          path: app
+
+      - name: Checkout canonical operational state
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          ref: operations/state
+          fetch-depth: 0
+          path: state-store
+
+      - name: Setup Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: "3.13"
+
+      - name: Install candidate engine
+        run: python -m pip install ./app
+
+      - name: Verify canonical operational state
+        run: |
+          mkdir -p artifacts
+          python app/scripts/verify_github_operational_state.py \
+            --state-dir state-store/operations \
+            --out artifacts/operational_state_integrity.json
+          grep -q '"status": "GITHUB_OPERATIONAL_AUDIT_PASS"' artifacts/operational_state_integrity.json
+
+      - name: Prove primary card authority
+        run: |
+          python app/scripts/github_operator_console.py \
+            --action primary-card \
+            --state-dir state-store/operations \
+            --out-dir artifacts/primary
+          grep -q '"artifact_status": "FROZEN"' artifacts/primary/primary_card.json
+          grep -q '"authority_id": "CARD_GENERATION_SERVICE_V1"' artifacts/primary/primary_card.json
+
+      - name: Prove preview is non-operational
+        run: |
+          python app/scripts/github_operator_console.py \
+            --action portfolio-preview \
+            --state-dir state-store/operations \
+            --out-dir artifacts/preview \
+            --card-count 3 \
+            --seed 0
+          grep -q '"artifact_status": "PREVIEW"' artifacts/preview/portfolio_preview.json
+          grep -q '"operational_use_allowed": false' artifacts/preview/portfolio_preview.json
+          grep -q '"authority_id": "CARD_GENERATION_SERVICE_V1"' artifacts/preview/portfolio_preview.json
+
+      - name: Prove operator freeze authority
+        run: |
+          python app/scripts/github_operator_freeze_cards.py \
+            --state-dir state-store/operations \
+            --card-count 2 \
+            --idempotency-key "f3-proof-${GITHUB_SHA}" \
+            --source-commit "${GITHUB_SHA}" \
+            --workflow-run-id "${GITHUB_RUN_ID}" \
+            --out artifacts/operator_freeze.json
+          grep -q '"artifact_status": "FROZEN"' artifacts/operator_freeze.json
+          grep -q '"authority_id": "CARD_GENERATION_SERVICE_V1"' artifacts/operator_freeze.json
+
+      - name: Prove persisted API portfolio authority
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          from sare_lotofacil.persistence.operations import get_portfolio, persist_uniform_portfolio
+          from sare_lotofacil.portfolios.authority import (
+              AUTHORITY_ID,
+              CardGenerationService,
+              STATUS_FROZEN,
+          )
+
+          db = Path("artifacts/f3-api.db")
+          record = persist_uniform_portfolio(
+              db,
+              card_count=3,
+              seed=3785,
+              target_contest=3785,
+          )
+          loaded = get_portfolio(db, record.portfolio_id)
+          expected = CardGenerationService.freeze_uniform(
+              card_count=3,
+              seed=3785,
+              target_contest=3785,
+          )
+          if loaded.artifact_status != STATUS_FROZEN:
+              raise SystemExit("persisted portfolio is not FROZEN")
+          if loaded.artifact_id != expected.artifact_id:
+              raise SystemExit("persisted portfolio artifact identity mismatch")
+          if loaded.artifact_sha256 != expected.artifact_sha256:
+              raise SystemExit("persisted portfolio artifact hash mismatch")
+          payload = {
+              "status": "PERSISTED_PORTFOLIO_AUTHORITY_PASS",
+              "authority_id": AUTHORITY_ID,
+              "artifact_id": loaded.artifact_id,
+              "artifact_status": loaded.artifact_status,
+              "artifact_sha256": loaded.artifact_sha256,
+              "policy_id": loaded.policy_id,
+          }
+          Path("artifacts/persisted_portfolio_authority.json").write_text(
+              json.dumps(payload, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+          print(json.dumps(payload, sort_keys=True))
+          PY
+
+      - name: Cross-check all four surfaces
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          primary = json.loads(Path("artifacts/primary/primary_card.json").read_text(encoding="utf-8"))
+          preview = json.loads(Path("artifacts/preview/portfolio_preview.json").read_text(encoding="utf-8"))
+          operator = json.loads(Path("artifacts/operator_freeze.json").read_text(encoding="utf-8"))
+          persisted = json.loads(Path("artifacts/persisted_portfolio_authority.json").read_text(encoding="utf-8"))
+
+          authority = "CARD_GENERATION_SERVICE_V1"
+          observed = {
+              primary["card_artifact"]["authority_id"],
+              preview["card_artifact"]["authority_id"],
+              operator["card_artifact"]["authority_id"],
+              persisted["authority_id"],
+          }
+          if observed != {authority}:
+              raise SystemExit(f"multiple card authorities observed: {observed}")
+          if preview["artifact_status"] != "PREVIEW" or preview["operational_use_allowed"] is not False:
+              raise SystemExit("preview operational boundary violated")
+          if primary["artifact_status"] != "FROZEN":
+              raise SystemExit("primary card is not frozen")
+          if operator["artifact_status"] != "FROZEN":
+              raise SystemExit("operator cards are not frozen")
+          if persisted["artifact_status"] != "FROZEN":
+              raise SystemExit("persisted portfolio is not frozen")
+
+          proof = {
+              "status": "CARD_AUTHORITY_UNIFICATION_PASS",
+              "authority_id": authority,
+              "surfaces": {
+                  "primary_card": "FROZEN",
+                  "operator_cards": "FROZEN",
+                  "operator_preview": "PREVIEW",
+                  "persisted_api_portfolio": "FROZEN",
+              },
+              "preview_operational_use_allowed": False,
+          }
+          Path("artifacts/card_authority_terminal.json").write_text(
+              json.dumps(proof, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+          print(json.dumps(proof, sort_keys=True))
+          PY
+
+      - name: Record provenance
+        run: |
+          git -C app rev-parse HEAD | tee artifacts/candidate_code_commit.txt
+          git -C state-store rev-parse HEAD | tee artifacts/operations_state_commit.txt
+
+      - name: Upload F3 card authority evidence
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: card-authority-proof
+          path: |
+            artifacts/card_authority_terminal.json
+            artifacts/operational_state_integrity.json
+            artifacts/primary/primary_card.json
+            artifacts/preview/portfolio_preview.json
+            artifacts/operator_freeze.json
+            artifacts/persisted_portfolio_authority.json
+            artifacts/candidate_code_commit.txt
+            artifacts/operations_state_commit.txt
+          if-no-files-found: error
+          retention-days: 90

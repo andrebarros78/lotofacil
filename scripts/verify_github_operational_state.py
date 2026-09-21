@@ -12,6 +12,11 @@ from sare_lotofacil.analysis.post_contest_report import (
 )
 from sare_lotofacil.experiments.models import exponential_update, frequency_regularized
 from sare_lotofacil.ingestion.validation import validate_contest
+from sare_lotofacil.portfolios.authority import (
+    POLICY_PRIMARY,
+    STATUS_FROZEN,
+    validate_card_artifact,
+)
 from sare_lotofacil.portfolios.frozen import (
     card_for_generation_index,
     validate_operator_card_ledger,
@@ -45,6 +50,8 @@ def _prediction_hash_payload(prediction: dict[str, object]) -> dict[str, object]
         payload["training_data_snapshot_hash"] = prediction["training_data_snapshot_hash"]
     if "primary_card" in prediction:
         payload["primary_card"] = prediction["primary_card"]
+    if "primary_card_artifact" in prediction:
+        payload["primary_card_artifact"] = prediction["primary_card_artifact"]
     return payload
 
 
@@ -188,7 +195,7 @@ def verify(state_dir: Path) -> dict[str, object]:
         primary_card = prediction.get("primary_card")
         if primary_card is not None:
             try:
-                validate_primary_card_payload(
+                decision = validate_primary_card_payload(
                     primary_card,
                     models[PRIMARY_MODEL],
                     models[SECONDARY_MODEL],
@@ -197,6 +204,24 @@ def verify(state_dir: Path) -> dict[str, object]:
                 )
             except (KeyError, RuntimeError, ValueError) as exc:
                 raise RuntimeError(f"primary card semantic mismatch: {target}") from exc
+            artifact_payload = prediction.get("primary_card_artifact")
+            if artifact_payload is not None:
+                artifact = validate_card_artifact(
+                    artifact_payload,
+                    expected_status=STATUS_FROZEN,
+                    expected_cards=(decision.card,),
+                    require_operational=True,
+                )
+                if artifact.policy_id != POLICY_PRIMARY:
+                    raise RuntimeError(f"primary card artifact policy mismatch: {target}")
+                if artifact.target_contest != target or artifact.training_last_contest != training_last:
+                    raise RuntimeError(f"primary card artifact target mismatch: {target}")
+                if artifact.storage_snapshot_hash != str(prediction["training_snapshot_hash"]):
+                    raise RuntimeError(f"primary card artifact storage snapshot mismatch: {target}")
+                if stored_training_data_hash is not None and artifact.data_snapshot_hash != expected_training_data_hash:
+                    raise RuntimeError(f"primary card artifact semantic snapshot mismatch: {target}")
+                if artifact.metadata.get("decision_sha256") != decision.decision_sha256:
+                    raise RuntimeError(f"primary card artifact decision mismatch: {target}")
 
         evaluation = prediction.get("evaluation")
         if evaluation is None:

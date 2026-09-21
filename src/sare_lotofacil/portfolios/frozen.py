@@ -7,6 +7,13 @@ from typing import Iterable, Sequence
 
 from sare_lotofacil.domain.masks import normalize_numbers
 from sare_lotofacil.domain.rules import DEFAULT_RULES
+from sare_lotofacil.portfolios.authority import (
+    POLICY_OPERATOR,
+    STATUS_FROZEN,
+    CardGenerationService,
+    operator_card_for_generation_index,
+    validate_card_artifact,
+)
 from sare_lotofacil.portfolios.core import UNPROVEN_LABEL
 
 POLICY_NAME = "operator-multi-freeze-v2"
@@ -76,13 +83,7 @@ def _permutation_parameters(target_contest: int) -> tuple[int, int]:
 
 
 def card_for_generation_index(target_contest: int, generation_index: int) -> tuple[int, ...]:
-    if target_contest <= 0:
-        raise ValueError("target_contest deve ser positivo")
-    if not 0 <= generation_index < COMBINATION_SPACE:
-        raise ValueError("generation_index fora do espaço combinatório")
-    offset, step = _permutation_parameters(target_contest)
-    rank = (offset + generation_index * step) % COMBINATION_SPACE
-    return _unrank_combination(rank)
+    return operator_card_for_generation_index(target_contest, generation_index)
 
 
 def card_sha256(card: Iterable[int]) -> str:
@@ -197,6 +198,22 @@ def validate_operator_card_ledger(ledger: dict[str, object]) -> dict[str, object
             raise RuntimeError("OPERATOR_CARD_REQUEST_COUNT_MISMATCH")
         if int(request["requested_card_count"]) != len(items):
             raise RuntimeError("OPERATOR_CARD_REQUEST_NOT_FULFILLED")
+        artifact_payload = request.get("card_artifact")
+        if artifact_payload is not None:
+            artifact = validate_card_artifact(
+                artifact_payload,
+                expected_status=STATUS_FROZEN,
+                expected_cards=[item["card"] for item in items],
+                require_operational=True,
+            )
+            if artifact.policy_id != POLICY_OPERATOR or artifact.target_contest != target:
+                raise RuntimeError("OPERATOR_CARD_ARTIFACT_POLICY_MISMATCH")
+            if request.get("state_data_snapshot_hash") is not None and (
+                artifact.data_snapshot_hash != str(request["state_data_snapshot_hash"])
+            ):
+                raise RuntimeError("OPERATOR_CARD_ARTIFACT_DATA_SNAPSHOT_MISMATCH")
+            if artifact.storage_snapshot_hash != str(request["state_snapshot_hash"]):
+                raise RuntimeError("OPERATOR_CARD_ARTIFACT_STORAGE_SNAPSHOT_MISMATCH")
         seen = seen_by_target.setdefault(target, set())
         for item in items:
             index = int(item["generation_index"])
@@ -273,6 +290,12 @@ def _result_for_request(
         "request_fingerprint": request["request_fingerprint"],
         "idempotency_key": request["idempotency_key"],
         "freeze_ids": [item["freeze_id"] for item in request["cards"]],
+        "artifact_status": (
+            request["card_artifact"]["status"]
+            if isinstance(request.get("card_artifact"), dict)
+            else "LEGACY_FROZEN"
+        ),
+        "card_artifact": request.get("card_artifact"),
         "cards": cards,
         "cards_display": [" ".join(f"{number:02d}" for number in card) for card in cards],
     }
@@ -289,6 +312,7 @@ def freeze_operator_cards(
     source_commit: str,
     workflow_run_id: str,
     state_data_snapshot_hash: str | None = None,
+    state_snapshot_id: str | None = None,
     state_ref: str = "operations/state",
     model_identity: str = "COMBINATORIAL_UNIFORM_DETERMINISTIC",
     config_identity: str = POLICY_NAME,
@@ -384,6 +408,15 @@ def freeze_operator_cards(
     }
     if state_data_snapshot_hash is not None:
         request["state_data_snapshot_hash"] = state_data_snapshot_hash
+    artifact = CardGenerationService.freeze_operator_batch(
+        cards=[item["card"] for item in generated],
+        target_contest=target_contest,
+        data_snapshot_hash=state_data_snapshot_hash,
+        storage_snapshot_id=state_snapshot_id,
+        storage_snapshot_hash=state_snapshot_hash,
+        request_fingerprint=fingerprint,
+    )
+    request["card_artifact"] = artifact.to_dict()
     request["request_sha256"] = _sha256(_request_hash_payload(request))
     requests.append(request)
     ledger["summary"] = _recompute_summary(ledger)

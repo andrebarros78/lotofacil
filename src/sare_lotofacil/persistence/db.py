@@ -8,8 +8,9 @@ from pathlib import Path
 from sare_lotofacil.domain.masks import mask_to_numbers
 from sare_lotofacil.ingestion.validation import validate_contest
 from sare_lotofacil.persistence.snapshot_identity import semantic_data_snapshot_hash
+from sare_lotofacil.portfolios.authority import CardGenerationService
 
-SCHEMA_VERSION = 8
+SCHEMA_VERSION = 9
 
 SCHEMA_SQL = """
 PRAGMA foreign_keys = ON;
@@ -108,6 +109,12 @@ CREATE TABLE IF NOT EXISTS portfolios (
     cost_cents INTEGER NOT NULL CHECK (cost_cents > 0),
     predictive_evidence TEXT NOT NULL DEFAULT 'NOT_ESTABLISHED',
     evidence_label TEXT NOT NULL,
+    artifact_id TEXT,
+    artifact_sha256 TEXT,
+    artifact_status TEXT NOT NULL DEFAULT 'FROZEN',
+    artifact_schema_version TEXT NOT NULL DEFAULT 'card-artifact-v1',
+    policy_id TEXT NOT NULL DEFAULT 'UNIFORM_RANDOM_PORTFOLIO_V1',
+    data_snapshot_hash TEXT,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -367,12 +374,89 @@ def _migrate_snapshots_to_v8(connection: sqlite3.Connection) -> None:
     )
 
 
+def _migrate_portfolios_to_v9(connection: sqlite3.Connection) -> None:
+    columns = {row[1] for row in connection.execute("PRAGMA table_info(portfolios)").fetchall()}
+    additions = (
+        ("artifact_id", "TEXT"),
+        ("artifact_sha256", "TEXT"),
+        ("artifact_status", "TEXT NOT NULL DEFAULT 'FROZEN'"),
+        ("artifact_schema_version", "TEXT NOT NULL DEFAULT 'card-artifact-v1'"),
+        ("policy_id", "TEXT NOT NULL DEFAULT 'UNIFORM_RANDOM_PORTFOLIO_V1'"),
+        ("data_snapshot_hash", "TEXT"),
+    )
+    for name, ddl in additions:
+        if name not in columns:
+            connection.execute(f"ALTER TABLE portfolios ADD COLUMN {name} {ddl}")
+
+    rows = connection.execute(
+        "SELECT portfolio_id, snapshot_id, target_contest, seed, card_count "
+        "FROM portfolios WHERE artifact_id IS NULL OR artifact_sha256 IS NULL"
+    ).fetchall()
+    for portfolio_id, snapshot_id, target_contest, seed, card_count in rows:
+        cards = tuple(
+            mask_to_numbers(mask)
+            for (mask,) in connection.execute(
+                "SELECT result_mask FROM portfolio_cards WHERE portfolio_id=? ORDER BY position",
+                (portfolio_id,),
+            ).fetchall()
+        )
+        if len(cards) != int(card_count):
+            connection.execute(
+                "UPDATE portfolios SET artifact_status='INVALIDATED', "
+                "artifact_schema_version='card-artifact-v1', policy_id='LEGACY_UNVERIFIED_PORTFOLIO' "
+                "WHERE portfolio_id=?",
+                (portfolio_id,),
+            )
+            continue
+
+        storage_snapshot_hash = None
+        data_snapshot_hash = None
+        if snapshot_id is not None:
+            snapshot = connection.execute(
+                "SELECT snapshot_hash, data_snapshot_hash FROM snapshots WHERE snapshot_id=?",
+                (snapshot_id,),
+            ).fetchone()
+            if snapshot is None:
+                raise RuntimeError(f"portfolio snapshot missing while migrating v9: {portfolio_id}")
+            storage_snapshot_hash, data_snapshot_hash = snapshot
+
+        artifact = CardGenerationService.freeze_uniform(
+            card_count=int(card_count),
+            seed=int(seed),
+            target_contest=(int(target_contest) if target_contest is not None else None),
+            data_snapshot_hash=data_snapshot_hash,
+            storage_snapshot_id=snapshot_id,
+            storage_snapshot_hash=storage_snapshot_hash,
+        )
+        if artifact.cards != cards:
+            raise RuntimeError(f"portfolio generator drift while migrating v9: {portfolio_id}")
+        connection.execute(
+            "UPDATE portfolios SET artifact_id=?, artifact_sha256=?, artifact_status=?, "
+            "artifact_schema_version=?, policy_id=?, data_snapshot_hash=? WHERE portfolio_id=?",
+            (
+                artifact.artifact_id,
+                artifact.artifact_sha256,
+                artifact.status,
+                artifact.schema_version,
+                artifact.policy_id,
+                artifact.data_snapshot_hash,
+                portfolio_id,
+            ),
+        )
+
+    connection.execute(
+        "CREATE UNIQUE INDEX IF NOT EXISTS idx_portfolios_artifact_id "
+        "ON portfolios(artifact_id) WHERE artifact_id IS NOT NULL"
+    )
+
+
 def initialize_database(path: str | Path) -> Path:
     db_path = Path(path)
     with connect(db_path) as connection:
         connection.executescript(SCHEMA_SQL)
         _migrate_portfolios_to_v7(connection)
         _migrate_snapshots_to_v8(connection)
+        _migrate_portfolios_to_v9(connection)
         connection.execute(
             "INSERT INTO schema_meta(key, value) VALUES('schema_version', ?) "
             "ON CONFLICT(key) DO UPDATE SET value = excluded.value",

@@ -48,13 +48,14 @@ def test_schema_v6_migrates_portfolios_to_allow_single_card_without_data_loss(tm
             "SELECT sql FROM sqlite_master WHERE type='table' AND name='portfolios'"
         ).fetchone()[0]
         legacy = connection.execute(
-            "SELECT portfolio_id, card_count, cost_cents FROM portfolios WHERE portfolio_id='legacy-portfolio'"
+            "SELECT portfolio_id, card_count, cost_cents, artifact_status, policy_id "
+            "FROM portfolios WHERE portfolio_id='legacy-portfolio'"
         ).fetchone()
         foreign_key_violations = connection.execute("PRAGMA foreign_key_check").fetchall()
 
     assert schema_version == SCHEMA_VERSION
     assert "BETWEEN 1 AND 100" in " ".join(table_sql.upper().split())
-    assert legacy == ("legacy-portfolio", 3, 1050)
+    assert legacy == ("legacy-portfolio", 3, 1050, "INVALIDATED", "LEGACY_UNVERIFIED_PORTFOLIO")
     assert foreign_key_violations == []
 
     single = persist_uniform_portfolio(db, card_count=1, seed=3780, target_contest=3780)

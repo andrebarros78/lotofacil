@@ -26,6 +26,7 @@ from sare_lotofacil.persistence.repository import (
     persist_caixa_contest,
     persist_history_records,
 )
+from sare_lotofacil.portfolios.authority import CardGenerationService
 from sare_lotofacil.portfolios.primary import (
     PRIMARY_MODEL_NAME,
     SECONDARY_MODEL_NAME,
@@ -162,6 +163,8 @@ def _prediction_hash_payload(prediction: dict[str, object]) -> dict[str, object]
         payload["training_data_snapshot_hash"] = prediction["training_data_snapshot_hash"]
     if "primary_card" in prediction:
         payload["primary_card"] = prediction["primary_card"]
+    if "primary_card_artifact" in prediction:
+        payload["primary_card_artifact"] = prediction["primary_card_artifact"]
     return payload
 
 
@@ -180,6 +183,7 @@ def _build_prediction(
     created_at_utc: str | None = None,
     *,
     data_snapshot_hash: str | None = None,
+    storage_snapshot_id: str | None = None,
 ) -> dict[str, object]:
     draws = tuple(record.numbers for record in records)
     primary_scores = tuple(frequency_regularized(draws, lam=100.0))
@@ -189,6 +193,18 @@ def _build_prediction(
         secondary_scores,
         target_contest=int(target_contest),
         training_last_contest=int(records[-1].contest_id),
+    )
+    primary_artifact = CardGenerationService.freeze_primary(
+        card=primary_card.card,
+        target_contest=int(target_contest),
+        training_last_contest=int(records[-1].contest_id),
+        decision_sha256=primary_card.decision_sha256,
+        primary_model=primary_card.primary_model,
+        secondary_model=primary_card.secondary_model,
+        selection_method=primary_card.selection_method,
+        data_snapshot_hash=data_snapshot_hash,
+        storage_snapshot_id=storage_snapshot_id,
+        storage_snapshot_hash=snapshot_hash,
     )
     prediction = {
         "target_contest": int(target_contest),
@@ -202,6 +218,7 @@ def _build_prediction(
             SECONDARY_MODEL: list(secondary_scores),
         },
         "primary_card": primary_card.to_dict(),
+        "primary_card_artifact": primary_artifact.to_dict(),
         "evaluation": None,
         "primary_card_evaluation": None,
     }
@@ -477,6 +494,7 @@ def run_cycle(state_dir: Path, runtime_dir: Path) -> dict[str, object]:
                 snapshot.snapshot_hash,
                 records,
                 data_snapshot_hash=snapshot.data_snapshot_hash,
+                storage_snapshot_id=snapshot.snapshot_id,
             )
         )
     verify_prediction_hashes(ledger)
