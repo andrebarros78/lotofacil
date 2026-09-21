@@ -290,6 +290,12 @@ def _result_for_request(
         "request_fingerprint": request["request_fingerprint"],
         "idempotency_key": request["idempotency_key"],
         "freeze_ids": [item["freeze_id"] for item in request["cards"]],
+        "artifact_status": (
+            request["card_artifact"]["status"]
+            if isinstance(request.get("card_artifact"), dict)
+            else "LEGACY_FROZEN"
+        ),
+        "card_artifact": request.get("card_artifact"),
         "cards": cards,
         "cards_display": [" ".join(f"{number:02d}" for number in card) for card in cards],
     }
