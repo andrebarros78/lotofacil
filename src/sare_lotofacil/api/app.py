@@ -3,6 +3,7 @@ from __future__ import annotations
 import hmac
 import json
 import sqlite3
+import uuid
 from pathlib import Path
 from typing import Annotated, Any, Callable, Literal
 
@@ -16,7 +17,15 @@ from sare_lotofacil.experiments.protocol import ExperimentProtocol
 from sare_lotofacil.ingestion.caixa import fetch_caixa_contest
 from sare_lotofacil.persistence.evidence import verify_source_artifacts
 from sare_lotofacil.persistence.jobs import enqueue_job, get_job, request_cancel
-from sare_lotofacil.persistence.operations import get_idempotency, get_portfolio, get_run, payload_hash, save_idempotency
+from sare_lotofacil.persistence.operations import (
+    complete_idempotency,
+    get_idempotency,
+    get_portfolio,
+    get_run,
+    payload_hash,
+    release_idempotency,
+    reserve_idempotency,
+)
 from sare_lotofacil.persistence.repository import create_latest_snapshot
 from sare_lotofacil.portfolios.authority import OPERATIONAL_STATUSES
 from sare_lotofacil.persistence.workflows import (
@@ -123,19 +132,22 @@ def create_app(db_path: str | Path, *, write_token: str | None = None, max_body_
         if len(key) > 128:
             raise HTTPException(400, "IDEMPOTENCY_KEY_TOO_LONG")
         digest = payload_hash(request_payload)
-        existing = get_idempotency(path, operation, key)
-        if existing:
-            if existing.request_hash != digest:
-                raise HTTPException(409, "IDEMPOTENCY_KEY_CONFLICT")
-            return JSONResponse(json.loads(existing.response_json), status_code=existing.status_code)
-        payload, status = callback()
+        owner_token = uuid.uuid4().hex
+        reservation = reserve_idempotency(path, operation, key, digest, owner_token)
+        if reservation.request_hash != digest:
+            raise HTTPException(409, "IDEMPOTENCY_KEY_CONFLICT")
+        if reservation.state == "COMPLETED":
+            if reservation.response_json is None or reservation.status_code is None:
+                raise RuntimeError("IDEMPOTENCY_COMPLETED_RECORD_INVALID")
+            return JSONResponse(json.loads(reservation.response_json), status_code=reservation.status_code)
+        if reservation.owner_token != owner_token:
+            raise HTTPException(409, "IDEMPOTENCY_REQUEST_IN_PROGRESS")
         try:
-            save_idempotency(path, operation, key, digest, payload, status)
-        except sqlite3.IntegrityError:
-            existing = get_idempotency(path, operation, key)
-            if not existing or existing.request_hash != digest:
-                raise HTTPException(409, "IDEMPOTENCY_KEY_CONFLICT")
-            return JSONResponse(json.loads(existing.response_json), status_code=existing.status_code)
+            payload, status = callback()
+        except Exception:
+            release_idempotency(path, operation, key, digest, owner_token)
+            raise
+        complete_idempotency(path, operation, key, digest, owner_token, payload, status)
         return JSONResponse(payload, status_code=status)
 
     @app.get("/v1/contests")
