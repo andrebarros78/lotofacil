@@ -78,11 +78,14 @@ def _verify_operator_cards(state_dir: Path, prospective: dict[str, object]) -> d
         if prediction is None:
             raise RuntimeError("OPERATOR_CARD_TARGET_HAS_NO_FROZEN_PREDICTION")
         latest = json.loads((state_dir / "latest.json").read_text(encoding="utf-8"))
-        if (
-            target == int(latest["next_prediction_target"])
-            and str(request["state_snapshot_hash"]) != str(latest["snapshot_hash"])
-        ):
-            raise RuntimeError("OPERATOR_CARD_STATE_SNAPSHOT_MISMATCH")
+        if target == int(latest["next_prediction_target"]):
+            request_data_hash = request.get("state_data_snapshot_hash")
+            if request_data_hash is not None:
+                latest_data_hash = latest.get("data_snapshot_hash")
+                if latest_data_hash is None or str(request_data_hash) != str(latest_data_hash):
+                    raise RuntimeError("OPERATOR_CARD_STATE_DATA_SNAPSHOT_MISMATCH")
+            elif str(request["state_snapshot_hash"]) != str(latest["snapshot_hash"]):
+                raise RuntimeError("OPERATOR_CARD_STATE_SNAPSHOT_MISMATCH")
 
         expected_start = cursor_by_target.get(target, 0)
         if int(request["generation_index_start"]) != expected_start:
