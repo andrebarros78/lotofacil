@@ -10,7 +10,7 @@ from sare_lotofacil.ingestion.validation import validate_contest
 from sare_lotofacil.persistence.snapshot_identity import semantic_data_snapshot_hash
 from sare_lotofacil.portfolios.authority import CardGenerationService
 
-SCHEMA_VERSION = 9
+SCHEMA_VERSION = 10
 
 SCHEMA_SQL = """
 PRAGMA foreign_keys = ON;
@@ -153,10 +153,18 @@ CREATE TABLE IF NOT EXISTS idempotency_keys (
     operation TEXT NOT NULL,
     idempotency_key TEXT NOT NULL,
     request_hash TEXT NOT NULL,
-    response_json TEXT NOT NULL,
-    status_code INTEGER NOT NULL,
+    state TEXT NOT NULL DEFAULT 'COMPLETED' CHECK (state IN ('RESERVED', 'COMPLETED')),
+    owner_token TEXT,
+    response_json TEXT,
+    status_code INTEGER,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (operation, idempotency_key)
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (operation, idempotency_key),
+    CHECK (
+        (state='RESERVED' AND owner_token IS NOT NULL AND response_json IS NULL AND status_code IS NULL)
+        OR
+        (state='COMPLETED' AND owner_token IS NULL AND response_json IS NOT NULL AND status_code IS NOT NULL)
+    )
 );
 
 CREATE TABLE IF NOT EXISTS audit_events (
@@ -450,6 +458,46 @@ def _migrate_portfolios_to_v9(connection: sqlite3.Connection) -> None:
     )
 
 
+def _migrate_idempotency_to_v10(connection: sqlite3.Connection) -> None:
+    row = connection.execute(
+        "SELECT sql FROM sqlite_master WHERE type='table' AND name='idempotency_keys'"
+    ).fetchone()
+    if not row or not row[0]:
+        return
+    columns = {item[1] for item in connection.execute("PRAGMA table_info(idempotency_keys)").fetchall()}
+    if {"state", "owner_token", "updated_at"}.issubset(columns):
+        return
+
+    connection.commit()
+    connection.execute("PRAGMA foreign_keys = OFF")
+    try:
+        connection.executescript(
+            "BEGIN;\n"
+            "ALTER TABLE idempotency_keys RENAME TO idempotency_keys_v9;\n"
+            "CREATE TABLE idempotency_keys ("
+            "operation TEXT NOT NULL, idempotency_key TEXT NOT NULL, request_hash TEXT NOT NULL, "
+            "state TEXT NOT NULL DEFAULT 'COMPLETED' CHECK (state IN ('RESERVED','COMPLETED')), "
+            "owner_token TEXT, response_json TEXT, status_code INTEGER, "
+            "created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, "
+            "updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, "
+            "PRIMARY KEY (operation,idempotency_key), "
+            "CHECK ((state='RESERVED' AND owner_token IS NOT NULL AND response_json IS NULL AND status_code IS NULL) "
+            "OR (state='COMPLETED' AND owner_token IS NULL AND response_json IS NOT NULL AND status_code IS NOT NULL))"
+            ");\n"
+            "INSERT INTO idempotency_keys(operation,idempotency_key,request_hash,state,owner_token,response_json,status_code,created_at,updated_at) "
+            "SELECT operation,idempotency_key,request_hash,'COMPLETED',NULL,response_json,status_code,created_at,created_at "
+            "FROM idempotency_keys_v9;\n"
+            "DROP TABLE idempotency_keys_v9;\n"
+            "COMMIT;"
+        )
+    except Exception:
+        if connection.in_transaction:
+            connection.rollback()
+        raise
+    finally:
+        connection.execute("PRAGMA foreign_keys = ON")
+
+
 def initialize_database(path: str | Path) -> Path:
     db_path = Path(path)
     with connect(db_path) as connection:
@@ -457,6 +505,7 @@ def initialize_database(path: str | Path) -> Path:
         _migrate_portfolios_to_v7(connection)
         _migrate_snapshots_to_v8(connection)
         _migrate_portfolios_to_v9(connection)
+        _migrate_idempotency_to_v10(connection)
         connection.execute(
             "INSERT INTO schema_meta(key, value) VALUES('schema_version', ?) "
             "ON CONFLICT(key) DO UPDATE SET value = excluded.value",
