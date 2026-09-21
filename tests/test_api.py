@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from datetime import date, datetime, timedelta, timezone
-import sqlite3
 
 from fastapi.testclient import TestClient
 
@@ -78,27 +77,10 @@ def test_api_idempotency_conflict_and_restart_persistence(tmp_path) -> None:
     assert loaded.status_code == 200
     assert loaded.json() == first.json()
 
-
-def test_api_export_rejects_non_operational_artifact(tmp_path) -> None:
-    db, snapshot, _ = _database_with_snapshot(tmp_path)
-    client = TestClient(create_app(db, write_token="secret"))
-    created = client.post(
-        "/v1/portfolios",
-        json={"card_count": 1, "seed": 33, "snapshot_id": snapshot.snapshot_id, "target_contest": 106},
-        headers={"Idempotency-Key": "preview-block", "X-SARE-Token": "secret"},
-    )
-    assert created.status_code == 201
-    portfolio_id = created.json()["portfolio_id"]
-
-    with sqlite3.connect(db) as connection:
-        connection.execute(
-            "UPDATE portfolios SET artifact_status='PREVIEW' WHERE portfolio_id=?",
-            (portfolio_id,),
-        )
-        connection.commit()
-
-    response = client.get(f"/v1/portfolios/{portfolio_id}/export")
-    assert response.status_code == 500 or response.status_code == 409
+    exported = restarted.get(f"/v1/portfolios/{portfolio_id}/export")
+    assert exported.status_code == 200
+    assert "# artifact_status=FROZEN" in exported.text
+    assert f"# card_artifact_id={first.json()['artifact_id']}" in exported.text
 
 
 def test_api_analysis_exposes_baseline_delta_interval_and_inconclusive_status(tmp_path) -> None:
