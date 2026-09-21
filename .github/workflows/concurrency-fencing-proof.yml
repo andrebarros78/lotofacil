@@ -48,8 +48,10 @@ jobs:
         with:
           python-version: "3.13"
 
-      - name: Install candidate engine
-        run: python -m pip install ./app
+      - name: Install locked candidate test environment
+        run: |
+          cd app
+          python -m pip install -c requirements.lock.txt -e '.[dev]'
 
       - name: Run focused concurrency tests
         run: |
