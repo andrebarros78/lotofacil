@@ -230,8 +230,34 @@ def get_portfolio(path: str | Path, portfolio_id: str) -> PortfolioRecord:
                 (portfolio_id,),
             ).fetchall()
         )
+        storage_snapshot_hash = None
+        if row[0] is not None:
+            snapshot = connection.execute(
+                "SELECT snapshot_hash FROM snapshots WHERE snapshot_id=?",
+                (row[0],),
+            ).fetchone()
+            if snapshot is None:
+                raise RuntimeError("PORTFOLIO_STORAGE_SNAPSHOT_MISSING")
+            storage_snapshot_hash = snapshot[0]
     if not row[6] or not row[7]:
         raise RuntimeError("PORTFOLIO_CARD_ARTIFACT_MISSING")
+    expected_artifact = CardGenerationService.freeze_uniform(
+        card_count=len(cards),
+        seed=int(row[2]),
+        target_contest=(int(row[1]) if row[1] is not None else None),
+        data_snapshot_hash=row[11],
+        storage_snapshot_id=row[0],
+        storage_snapshot_hash=storage_snapshot_hash,
+    )
+    if (
+        expected_artifact.cards != cards
+        or row[6] != expected_artifact.artifact_id
+        or row[7] != expected_artifact.artifact_sha256
+        or row[8] != expected_artifact.status
+        or row[9] != expected_artifact.schema_version
+        or row[10] != expected_artifact.policy_id
+    ):
+        raise RuntimeError("PORTFOLIO_CARD_ARTIFACT_MISMATCH")
     return PortfolioRecord(
         portfolio_id,
         row[0],
