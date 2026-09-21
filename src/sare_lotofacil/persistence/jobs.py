@@ -292,10 +292,18 @@ def run_worker_once(
     if job is None:
         return None
     try:
-        save_checkpoint(path, job.job_id, worker_id, job.lease_token, {"phase": "CLAIMED", "attempt": job.attempts})
+        save_checkpoint(
+            path, job.job_id, worker_id, job.lease_token,
+            {"phase": "CLAIMED", "attempt": job.attempts},
+            now=now,
+        )
         result = _execute_payload(path, job)
-        save_checkpoint(path, job.job_id, worker_id, job.lease_token, {"phase": "COMPUTED", "attempt": job.attempts})
-        return complete_job(path, job.job_id, worker_id, job.lease_token, result)
+        save_checkpoint(
+            path, job.job_id, worker_id, job.lease_token,
+            {"phase": "COMPUTED", "attempt": job.attempts},
+            now=now,
+        )
+        return complete_job(path, job.job_id, worker_id, job.lease_token, result, now=now)
     except StaleLeaseError:
         raise
     except Exception as exc:
@@ -305,4 +313,5 @@ def run_worker_once(
             worker_id,
             job.lease_token,
             {"type": type(exc).__name__, "message": str(exc)},
+            now=now,
         )
