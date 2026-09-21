@@ -18,6 +18,7 @@ from sare_lotofacil.persistence.evidence import verify_source_artifacts
 from sare_lotofacil.persistence.jobs import enqueue_job, get_job, request_cancel
 from sare_lotofacil.persistence.operations import get_idempotency, get_portfolio, get_run, payload_hash, save_idempotency
 from sare_lotofacil.persistence.repository import create_latest_snapshot
+from sare_lotofacil.portfolios.authority import OPERATIONAL_STATUSES
 from sare_lotofacil.persistence.workflows import (
     execute_experiment, get_experiment, get_hypothesis, get_ingestion, get_latest_contest,
     list_contests, list_hypotheses, list_ingestions, promote_model, record_caixa_ingestion,
@@ -298,7 +299,17 @@ def create_app(db_path: str | Path, *, write_token: str | None = None, max_body_
             r = get_portfolio(path, portfolio_id)
         except KeyError:
             raise HTTPException(404, "PORTFOLIO_NOT_FOUND")
-        lines = [f"# {r.evidence_label}", f"# portfolio_id={r.portfolio_id}", f"# predictive_evidence={r.predictive_evidence}", "position,numbers"]
+        if r.artifact_status not in OPERATIONAL_STATUSES:
+            raise HTTPException(409, "PORTFOLIO_ARTIFACT_NOT_OPERATIONAL")
+        lines = [
+            f"# {r.evidence_label}",
+            f"# portfolio_id={r.portfolio_id}",
+            f"# card_artifact_id={r.artifact_id}",
+            f"# artifact_status={r.artifact_status}",
+            f"# policy_id={r.policy_id}",
+            f"# predictive_evidence={r.predictive_evidence}",
+            "position,numbers",
+        ]
         lines.extend(f'{i},"{" ".join(f"{n:02d}" for n in card)}"' for i, card in enumerate(r.cards, 1))
         return "\n".join(lines) + "\n"
 
