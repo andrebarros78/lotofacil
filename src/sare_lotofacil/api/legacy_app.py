@@ -13,6 +13,11 @@ from sare_lotofacil.analysis.ris import build_categorical_ris
 from sare_lotofacil.persistence.backup import database_integrity
 from sare_lotofacil.persistence.db import SCHEMA_VERSION, connect, initialize_database
 from sare_lotofacil.api.idempotency import execute_idempotent
+from sare_lotofacil.resource_limits import (
+    MAX_CARDS_PER_REQUEST,
+    MAX_REQUEST_BODY_BYTES,
+    ResourceLimitError,
+)
 from sare_lotofacil.persistence.operations import (
     evaluate_portfolio,
     evaluate_portfolio_revision,
@@ -32,7 +37,7 @@ class AnalysisRequest(BaseModel):
 
 
 class PortfolioRequest(BaseModel):
-    card_count: int = Field(ge=1, le=100)
+    card_count: int = Field(ge=1, le=MAX_CARDS_PER_REQUEST)
     seed: int
     snapshot_id: str | None = Field(default=None, max_length=128)
     target_contest: int | None = Field(default=None, ge=1)
@@ -84,10 +89,12 @@ def create_app(
     db_path: str | Path,
     *,
     write_token: str | None = None,
-    max_body_bytes: int = 65_536,
+    max_body_bytes: int = MAX_REQUEST_BODY_BYTES,
 ) -> FastAPI:
-    if max_body_bytes < 1024:
-        raise ValueError("max_body_bytes deve ser >= 1024")
+    if not 1024 <= max_body_bytes <= MAX_REQUEST_BODY_BYTES:
+        raise ValueError(
+            f"max_body_bytes deve estar entre 1024 e {MAX_REQUEST_BODY_BYTES}"
+        )
     path = Path(db_path)
     initialize_database(path)
 
@@ -108,6 +115,9 @@ def create_app(
                 return JSONResponse({"detail": "Content-Length inválido"}, status_code=400)
             if content_length > max_body_bytes:
                 return JSONResponse({"detail": "request body excede o limite"}, status_code=413)
+        body = await request.body()
+        if len(body) > max_body_bytes:
+            return JSONResponse({"detail": "request body excede o limite"}, status_code=413)
         return await call_next(request)
 
     def require_write_auth(x_sare_token: Annotated[str | None, Header(alias="X-SARE-Token")] = None) -> None:
@@ -200,6 +210,8 @@ def create_app(
                 )
             except KeyError:
                 raise HTTPException(status_code=404, detail="SNAPSHOT_NOT_FOUND")
+            except ResourceLimitError as exc:
+                raise HTTPException(status_code=429, detail=str(exc))
             return _portfolio_payload(record), 201
 
         return idempotent("CREATE_PORTFOLIO", idempotency_key, payload, execute)
