@@ -10,13 +10,14 @@ from sare_lotofacil.analysis.post_contest_report import (
     build_post_contest_reports,
     render_post_contest_report_markdown,
 )
+from sare_lotofacil.experiments.models import exponential_update, frequency_regularized
 from sare_lotofacil.ingestion.validation import validate_contest
 from sare_lotofacil.portfolios.frozen import (
     card_for_generation_index,
     validate_operator_card_ledger,
 )
 from sare_lotofacil.portfolios.primary import validate_primary_card_payload
-from sare_lotofacil.statistics.baseline import brier_score
+from sare_lotofacil.statistics.baseline import brier_score, uniform_baseline
 
 PRIMARY_MODEL = "M1_frequency_regularized_lambda_100"
 SECONDARY_MODEL = "M2_exponential_alpha_0.05"
@@ -73,7 +74,11 @@ def _verify_operator_cards(state_dir: Path, prospective: dict[str, object]) -> d
         prediction = predictions_by_target.get(target)
         if prediction is None:
             raise RuntimeError("OPERATOR_CARD_TARGET_HAS_NO_FROZEN_PREDICTION")
-        if str(request["state_snapshot_hash"]) != str(prediction["training_snapshot_hash"]):
+        latest = json.loads((state_dir / "latest.json").read_text(encoding="utf-8"))
+        if (
+            target == int(latest["next_prediction_target"])
+            and str(request["state_snapshot_hash"]) != str(latest["snapshot_hash"])
+        ):
             raise RuntimeError("OPERATOR_CARD_STATE_SNAPSHOT_MISMATCH")
 
         expected_start = cursor_by_target.get(target, 0)
@@ -148,6 +153,25 @@ def verify(state_dir: Path) -> dict[str, object]:
         models = prediction.get("models")
         if not isinstance(models, dict):
             raise RuntimeError(f"prediction models missing: {target}")
+        training_records = tuple(record for record in records if record.contest_id <= training_last)
+        if len(training_records) != training_last:
+            raise RuntimeError(f"training history is incomplete for prediction: {target}")
+        training_draws = tuple(record.numbers for record in training_records)
+        expected_models = {
+            "M0_uniform": tuple(uniform_baseline()),
+            PRIMARY_MODEL: tuple(frequency_regularized(training_draws, lam=100.0)),
+        }
+        m2 = uniform_baseline()
+        for draw in training_draws:
+            m2 = exponential_update(m2, draw, alpha=0.05)
+        expected_models[SECONDARY_MODEL] = tuple(m2)
+        for model_name, expected_scores in expected_models.items():
+            observed_scores = models.get(model_name)
+            if not isinstance(observed_scores, list) or len(observed_scores) != 25:
+                raise RuntimeError(f"prediction model payload invalid: {target} {model_name}")
+            if any(abs(float(observed) - float(expected)) > 1e-12 for observed, expected in zip(observed_scores, expected_scores)):
+                raise RuntimeError(f"prediction model drift from canonical training data: {target} {model_name}")
+
         primary_card = prediction.get("primary_card")
         if primary_card is not None:
             try:
@@ -225,9 +249,6 @@ def verify(state_dir: Path) -> dict[str, object]:
         raise RuntimeError(
             f"pending prediction set mismatch: expected={[expected_next_target]} observed={pending_targets}"
         )
-    pending_prediction = predictions_by_target[expected_next_target]
-    if str(pending_prediction["training_snapshot_hash"]) != str(latest["snapshot_hash"]):
-        raise RuntimeError("pending prediction snapshot diverges from latest snapshot")
     if latest["prospective"] != ledger["summary"]:
         raise RuntimeError("latest prospective summary diverges from ledger")
 

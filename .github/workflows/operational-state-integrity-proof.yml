@@ -1,0 +1,80 @@
+name: Operational State Integrity Proof
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/operational-state-integrity-proof.yml"
+      - "scripts/github_operational_cycle.py"
+      - "scripts/github_operator_freeze_cards.py"
+      - "scripts/verify_github_operational_state.py"
+      - "scripts/github_operator_console.py"
+      - "src/sare_lotofacil/portfolios/**"
+      - "src/sare_lotofacil/persistence/**"
+      - "src/sare_lotofacil/analysis/post_contest_report.py"
+      - "tests/**"
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/operational-state-integrity-proof.yml"
+      - "scripts/github_operational_cycle.py"
+      - "scripts/github_operator_freeze_cards.py"
+      - "scripts/verify_github_operational_state.py"
+      - "scripts/github_operator_console.py"
+      - "src/sare_lotofacil/portfolios/**"
+      - "src/sare_lotofacil/persistence/**"
+      - "src/sare_lotofacil/analysis/post_contest_report.py"
+
+permissions:
+  contents: read
+
+jobs:
+  canonical-state-proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout candidate engine
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          path: app
+      - name: Checkout committed operational state
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          ref: operations/state
+          fetch-depth: 0
+          path: state-store
+      - name: Setup Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: "3.13"
+      - name: Install candidate engine
+        run: python -m pip install ./app
+      - name: Verify canonical state with candidate verifier
+        run: |
+          mkdir -p artifacts
+          python app/scripts/verify_github_operational_state.py \
+            --state-dir state-store/operations \
+            --out artifacts/operational_state_integrity.json
+          grep -q '"status": "GITHUB_OPERATIONAL_AUDIT_PASS"' artifacts/operational_state_integrity.json
+      - name: Recompute current primary card from frozen models
+        run: |
+          python app/scripts/github_operator_console.py \
+            --action primary-card \
+            --state-dir state-store/operations \
+            --out-dir artifacts/operator
+          grep -q '"status": "GITHUB_OPERATOR_PRIMARY_CARD_PASS"' artifacts/operator/primary_card.json
+          grep -q '"decision_source": "FROZEN_PRIMARY_CARD"' artifacts/operator/primary_card.json
+      - name: Record state commit provenance
+        run: |
+          git -C state-store rev-parse HEAD | tee artifacts/operations_state_commit.txt
+          test -s artifacts/operations_state_commit.txt
+      - name: Upload operational-state proof
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: operational-state-integrity-proof
+          path: |
+            artifacts/operational_state_integrity.json
+            artifacts/operator/primary_card.json
+            artifacts/operations_state_commit.txt
+          if-no-files-found: error

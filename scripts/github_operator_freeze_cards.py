@@ -61,8 +61,10 @@ def run(
     )
     if prediction is None:
         raise RuntimeError("OPERATOR_CARD_TARGET_HAS_NO_FROZEN_PREDICTION")
-    if str(prediction.get("training_snapshot_hash", "")) != str(latest["snapshot_hash"]):
-        raise RuntimeError("OPERATOR_CARD_STATE_SNAPSHOT_MISMATCH")
+    if int(prediction.get("training_last_contest", -1)) != official_latest:
+        raise RuntimeError("OPERATOR_CARD_PREDICTION_TRAINING_CUTOFF_MISMATCH")
+    if not isinstance(prediction.get("primary_card"), dict):
+        raise RuntimeError("OPERATOR_CARD_PRIMARY_CARD_NOT_FROZEN")
 
     ledger_path = state_dir / "operator_card_ledger.json"
     ledger = _load(ledger_path) if ledger_path.exists() else empty_operator_card_ledger()
