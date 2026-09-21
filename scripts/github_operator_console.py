@@ -12,7 +12,13 @@ from sare_lotofacil.analysis.post_contest_report import (
     render_post_contest_report_markdown,
 )
 from sare_lotofacil.analysis.ris import build_categorical_ris_from_draws
-from sare_lotofacil.portfolios.authority import CardGenerationService, STATUS_PREVIEW
+from sare_lotofacil.portfolios.authority import (
+    POLICY_PRIMARY,
+    STATUS_FROZEN,
+    STATUS_PREVIEW,
+    CardGenerationService,
+    validate_card_artifact,
+)
 from sare_lotofacil.portfolios.core import UNPROVEN_LABEL
 from sare_lotofacil.portfolios.primary import (
     PRIMARY_MODEL_NAME,
@@ -152,7 +158,15 @@ def _primary_card(state_dir: Path) -> dict:
 
     artifact_payload = prediction.get("primary_card_artifact")
     if isinstance(artifact_payload, dict):
-        card_artifact = artifact_payload
+        validated_artifact = validate_card_artifact(
+            artifact_payload,
+            expected_status=STATUS_FROZEN,
+            expected_cards=(decision.card,),
+            require_operational=True,
+        )
+        if validated_artifact.policy_id != POLICY_PRIMARY:
+            raise RuntimeError("PRIMARY_CARD_ARTIFACT_POLICY_MISMATCH")
+        card_artifact = validated_artifact.to_dict()
     else:
         card_artifact = CardGenerationService.freeze_primary(
             card=decision.card,
