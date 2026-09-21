@@ -229,6 +229,18 @@ def test_verifier_rejects_prediction_semantic_snapshot_drift_even_when_rehashed(
         verify(state)
 
 
+def test_verifier_rejects_primary_card_artifact_tampering_even_when_prediction_rehashed(tmp_path: Path) -> None:
+    state = _state_fixture(tmp_path)
+    ledger = _ledger(state)
+    pending = ledger["predictions"][-1]
+    pending["primary_card_artifact"]["cards"][0] = list(range(11, 26))
+    pending["prediction_sha256"] = cycle._sha256(cycle._prediction_hash_payload(pending))
+    _save_ledger(state, ledger)
+
+    with pytest.raises(RuntimeError, match="CARD_ARTIFACT_HASH_OR_PAYLOAD_MISMATCH"):
+        verify(state)
+
+
 def _prospective_for_operator(state: Path) -> dict:
     return json.loads((state / "prospective_ledger.json").read_text(encoding="utf-8"))
 
