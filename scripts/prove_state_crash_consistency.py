@@ -115,10 +115,12 @@ def prove(source_state: Path, work_dir: Path) -> dict[str, object]:
     if after["status"] != "STATE_COMMIT_VERIFIED":
         raise RuntimeError("real operational state could not be transactionally sealed")
 
-    (real_state / "latest.json").write_bytes(b'{"tampered":true}\n')
+    tamper_state = work_dir / "tamper-state"
+    shutil.copytree(real_state, tamper_state)
+    (tamper_state / "latest.json").write_bytes(b'{"tampered":true}\n')
     tamper_blocked = False
     try:
-        verify_state_commit(real_state, allow_legacy=False)
+        verify_state_commit(tamper_state, allow_legacy=False)
     except StateTransactionError:
         tamper_blocked = True
     if not tamper_blocked:
