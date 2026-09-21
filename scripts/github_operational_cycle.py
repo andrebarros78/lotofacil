@@ -158,6 +158,8 @@ def _prediction_hash_payload(prediction: dict[str, object]) -> dict[str, object]
     }
     # Compatibilidade criptográfica: previsões congeladas antes da 1.1.8 não
     # possuíam PRIMARY_CARD. Novas previsões passam a selá-lo no mesmo hash.
+    if "training_data_snapshot_hash" in prediction:
+        payload["training_data_snapshot_hash"] = prediction["training_data_snapshot_hash"]
     if "primary_card" in prediction:
         payload["primary_card"] = prediction["primary_card"]
     return payload
@@ -176,6 +178,8 @@ def _build_prediction(
     snapshot_hash: str,
     records,
     created_at_utc: str | None = None,
+    *,
+    data_snapshot_hash: str | None = None,
 ) -> dict[str, object]:
     draws = tuple(record.numbers for record in records)
     primary_scores = tuple(frequency_regularized(draws, lam=100.0))
@@ -201,6 +205,8 @@ def _build_prediction(
         "evaluation": None,
         "primary_card_evaluation": None,
     }
+    if data_snapshot_hash is not None:
+        prediction["training_data_snapshot_hash"] = data_snapshot_hash
     prediction["prediction_sha256"] = _sha256(_prediction_hash_payload(prediction))
     return prediction
 
@@ -465,7 +471,14 @@ def run_cycle(state_dir: Path, runtime_dir: Path) -> dict[str, object]:
 
     next_target = records[-1].contest_id + 1
     if not any(int(item["target_contest"]) == next_target for item in ledger["predictions"]):
-        ledger["predictions"].append(_build_prediction(next_target, snapshot.snapshot_hash, records))
+        ledger["predictions"].append(
+            _build_prediction(
+                next_target,
+                snapshot.snapshot_hash,
+                records,
+                data_snapshot_hash=snapshot.data_snapshot_hash,
+            )
+        )
     verify_prediction_hashes(ledger)
     ledger["summary"] = summarize_ledger(ledger)
 
@@ -478,6 +491,9 @@ def run_cycle(state_dir: Path, runtime_dir: Path) -> dict[str, object]:
         "database_integrity": database_integrity(db_path),
         "snapshot_id": snapshot.snapshot_id,
         "snapshot_hash": snapshot.snapshot_hash,
+        "storage_snapshot_id": snapshot.storage_snapshot_id,
+        "storage_snapshot_hash": snapshot.storage_snapshot_hash,
+        "data_snapshot_hash": snapshot.data_snapshot_hash,
         "snapshot_contests": snapshot.contest_count,
         "official_latest_contest": official_latest.record.contest_id,
         "inserted_official_contests": inserted,
