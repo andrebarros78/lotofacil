@@ -140,6 +140,25 @@ def test_verifier_rejects_wrong_primary_card_even_with_prediction_rehashed(tmp_p
         verify(state)
 
 
+def test_verifier_rejects_model_drift_even_when_card_and_prediction_are_rehashed(tmp_path: Path) -> None:
+    state = _state_fixture(tmp_path)
+    ledger = _ledger(state)
+    pending = ledger["predictions"][-1]
+    pending["models"][cycle.PRIMARY_MODEL][0] += 0.01
+    decision = cycle.select_primary_card(
+        pending["models"][cycle.PRIMARY_MODEL],
+        pending["models"][cycle.SECONDARY_MODEL],
+        target_contest=int(pending["target_contest"]),
+        training_last_contest=int(pending["training_last_contest"]),
+    )
+    pending["primary_card"] = decision.to_dict()
+    pending["prediction_sha256"] = cycle._sha256(cycle._prediction_hash_payload(pending))
+    _save_ledger(state, ledger)
+
+    with pytest.raises(RuntimeError, match="prediction model drift from canonical training data"):
+        verify(state)
+
+
 def test_verifier_rejects_observed_numbers_contamination(tmp_path: Path) -> None:
     state = _state_fixture(tmp_path)
     ledger = _ledger(state)
@@ -267,18 +286,18 @@ def test_operator_writer_rejects_noncanonical_future_target(tmp_path: Path) -> N
         )
 
 
-def test_operator_writer_rejects_pending_prediction_snapshot_drift(tmp_path: Path) -> None:
+def test_operator_writer_rejects_prediction_training_cutoff_drift(tmp_path: Path) -> None:
     state = _state_fixture(tmp_path)
     ledger = _ledger(state)
-    ledger["predictions"][-1]["training_snapshot_hash"] = "stale-snapshot"
+    ledger["predictions"][-1]["training_last_contest"] = 5
     _save_ledger(state, ledger)
 
-    with pytest.raises(RuntimeError, match="OPERATOR_CARD_STATE_SNAPSHOT_MISMATCH"):
+    with pytest.raises(RuntimeError, match="OPERATOR_CARD_PREDICTION_TRAINING_CUTOFF_MISMATCH"):
         run_operator_freeze(
             state,
             card_count=1,
             target_contest=7,
-            idempotency_key="stale-snapshot",
+            idempotency_key="stale-cutoff",
             source_commit="source-sha",
             workflow_run_id="run-4",
         )
