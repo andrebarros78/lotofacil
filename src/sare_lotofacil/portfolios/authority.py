@@ -9,6 +9,7 @@ from typing import Iterable, Mapping, Sequence
 from sare_lotofacil.domain.masks import normalize_numbers
 from sare_lotofacil.domain.rules import DEFAULT_RULES
 from sare_lotofacil.portfolios.core import UNPROVEN_LABEL, generate_uniform_portfolio
+from sare_lotofacil.resource_limits import require_artifact_size
 
 ARTIFACT_SCHEMA_VERSION = "card-artifact-v1"
 AUTHORITY_ID = "CARD_GENERATION_SERVICE_V1"
@@ -193,6 +194,7 @@ def build_card_artifact(
         evidence_label=evidence_label,
         metadata=metadata,
     )
+    require_artifact_size(payload)
     digest = _sha256(payload)
     return CardArtifact(
         artifact_id=f"card-{digest[:24]}",
