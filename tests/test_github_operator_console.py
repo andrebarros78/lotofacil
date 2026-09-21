@@ -89,7 +89,11 @@ def test_operator_status_primary_card_and_portfolio_are_read_only_derivations(tm
     assert primary["predictive_evidence"] == "NOT_ESTABLISHED"
 
     portfolio = _portfolio(state, card_count=1, seed=0)
-    assert portfolio["status"] == "GITHUB_OPERATOR_PORTFOLIO_PASS"
+    assert portfolio["status"] == "GITHUB_OPERATOR_PORTFOLIO_PREVIEW_PASS"
+    assert portfolio["artifact_status"] == "PREVIEW"
+    assert portfolio["operational_use_allowed"] is False
+    assert portfolio["card_artifact"]["status"] == "PREVIEW"
+    assert portfolio["card_artifact"]["authority_id"] == "CARD_GENERATION_SERVICE_V1"
     assert portfolio["target_contest"] == 3780
     assert portfolio["seed"] == 3780
     assert portfolio["card_count"] == 1
