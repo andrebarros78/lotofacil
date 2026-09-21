@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "status": "RESOURCE_BOUNDARY_PROOF_PASS",
+  "phase": "F5_RESOURCE_BOUNDARIES",
+  "repository": "andrebarros78/lotofacil",
+  "pull_request": 106,
+  "candidate_head_sha": "29a8cfafc538276b777c374ad7972fe69adef993",
+  "tested_pull_request_merge_sha": "32c01da0d8b831e3e0db2df1243dff7009b873f0",
+  "merged_main_sha": "07cf53906fd4bd84c44bb6d26ddd3401eaf0e8d2",
+  "operations_state_commit": "56ac44b592b933cff2071efd3d30b1d2d35e03b7",
+  "workflow_run_id": 35633026536,
+  "limits": {
+    "MAX_CARDS_PER_REQUEST": 100,
+    "MAX_OPERATOR_CARDS_PER_REQUEST": 200,
+    "MAX_GENERATION_ATTEMPTS": 1000,
+    "MAX_RUNTIME_SECONDS": 30,
+    "MAX_ARTIFACT_BYTES": 131072,
+    "MAX_REQUEST_BODY_BYTES": 65536,
+    "MAX_PENDING_JOBS": 200,
+    "MAX_JOB_PAYLOAD_BYTES": 32768,
+    "MAX_JOB_ATTEMPTS": 8
+  },
+  "proof": {
+    "maximum_card_generation": true,
+    "cardinality_overflow_blocked": true,
+    "oversized_artifact_blocked": true,
+    "operator_attempt_exhaustion_blocked_without_ledger_mutation": true,
+    "pending_queue_saturation_blocked": true,
+    "duplicate_job_allowed_at_queue_capacity": true,
+    "actual_http_body_bytes_enforced": true,
+    "expired_jobs_at_attempt_ceiling_fail_closed": true
+  },
+  "compatibility": {
+    "uniform_generator_sequence_preserved": true,
+    "legacy_operator_over_100_cards_preserved_with_finite_ceiling": true,
+    "operator_ceiling": 200
+  },
+  "regression": {
+    "python_3_13": "347 passed, 1 skipped, 2 warnings",
+    "python_3_12": "PASS",
+    "max_capacity_audit": "PASS"
+  },
+  "artifact": {
+    "artifact_id": 10655736338,
+    "name": "f5-resource-boundary-proof",
+    "digest": "sha256:459179d467525d8ceb35e545c87a2ffb8d3e01d4bcbe42be16ba44982d485b5d"
+  },
+  "checks": [
+    "F5 Resource Boundary Proof",
+    "Operational State Integrity Proof",
+    "Semantic Snapshot Proof",
+    "Card Authority Proof",
+    "Concurrency Fencing Proof",
+    "CI",
+    "SARE Stable Merge Gates",
+    "Scope Seal Proof",
+    "CodeQL Security Scan",
+    "Repository Sanitization",
+    "Agent Capability Proof",
+    "Agent Resilience Proof",
+    "Max Capacity Audit"
+  ],
+  "notes": [
+    "Uniform random generation retains the historical random.Random(seed) sequence while bounding attempts and runtime.",
+    "The operator freeze surface retains its pre-existing ability to exceed 100 cards, but is now capped at 200 cards per request.",
+    "Operator generation failure is detected before ledger append, so attempt exhaustion cannot publish a partial request.",
+    "Pending queue saturation is checked transactionally; an already-existing idempotent job remains readable/replayable at capacity.",
+    "HTTP request size is checked against bytes actually received, not only the Content-Length header."
+  ],
+  "proof_payload_hash_scope": "SHA-256 of canonical JSON for this object excluding proof_payload_sha256",
+  "proof_payload_sha256": "c0573c0b0a925fc313a6cc50c1397fa93dcf6998e6ae7aa5eaa171c0582ba3be"
+}
