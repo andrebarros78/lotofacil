@@ -165,8 +165,12 @@ def save_checkpoint(
     worker_id: str,
     lease_token: int,
     checkpoint: dict[str, Any],
+    *,
+    now: datetime | None = None,
 ) -> None:
-    current = _utcnow()
+    current = now or _utcnow()
+    if current.tzinfo is None:
+        raise ValueError("now deve possuir timezone")
     with connect(path) as connection:
         _assert_active_lease(connection, job_id, worker_id, lease_token, current)
         valid = connection.execute(
@@ -188,8 +192,12 @@ def complete_job(
     worker_id: str,
     lease_token: int,
     result: dict[str, Any],
+    *,
+    now: datetime | None = None,
 ) -> JobRecord:
-    current = _utcnow()
+    current = now or _utcnow()
+    if current.tzinfo is None:
+        raise ValueError("now deve possuir timezone")
     with connect(path) as connection:
         connection.execute("BEGIN IMMEDIATE")
         row = _assert_active_lease(connection, job_id, worker_id, lease_token, current)
@@ -212,8 +220,12 @@ def fail_job(
     worker_id: str,
     lease_token: int,
     error: dict[str, Any],
+    *,
+    now: datetime | None = None,
 ) -> JobRecord:
-    current = _utcnow()
+    current = now or _utcnow()
+    if current.tzinfo is None:
+        raise ValueError("now deve possuir timezone")
     with connect(path) as connection:
         cursor = connection.execute(
             "UPDATE jobs SET state='FAILED', error_json=?, lease_owner=NULL, lease_expires_at=NULL, updated_at=CURRENT_TIMESTAMP, finished_at=CURRENT_TIMESTAMP "
