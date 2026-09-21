@@ -1,11 +1,18 @@
 from __future__ import annotations
 
 import random
+import time
 from dataclasses import dataclass
 from typing import Iterable, Sequence
 
 from sare_lotofacil.domain.masks import intersection_hits, numbers_to_mask, normalize_numbers
 from sare_lotofacil.domain.rules import DEFAULT_RULES
+from sare_lotofacil.resource_limits import (
+    MAX_CARDS_PER_REQUEST,
+    MAX_GENERATION_ATTEMPTS,
+    ResourceLimitError,
+    require_runtime,
+)
 
 UNPROVEN_LABEL = "CARTEIRA COMBINATÓRIA — SEM VANTAGEM PREDITIVA COMPROVADA"
 
@@ -32,12 +39,24 @@ def normalize_portfolio_cards(
 
 
 def generate_uniform_portfolio(card_count: int, *, seed: int) -> Portfolio:
-    if not 1 <= card_count <= 100:
-        raise ValueError("card_count deve estar entre 1 e 100")
+    if not 1 <= card_count <= MAX_CARDS_PER_REQUEST:
+        raise ValueError(
+            f"card_count deve estar entre 1 e {MAX_CARDS_PER_REQUEST}"
+        )
     rng = random.Random(seed)
     unique: set[tuple[int, ...]] = set()
+    attempts = 0
+    started = time.monotonic()
     while len(unique) < card_count:
+        if attempts >= MAX_GENERATION_ATTEMPTS:
+            raise ResourceLimitError(
+                "GENERATION_ATTEMPTS_LIMIT_EXCEEDED "
+                f"attempts={attempts} limit={MAX_GENERATION_ATTEMPTS}"
+            )
+        require_runtime(started)
+        attempts += 1
         unique.add(tuple(sorted(rng.sample(range(1, 26), 15))))
+    require_runtime(started)
     cards = normalize_portfolio_cards(tuple(sorted(unique)), expected_count=card_count)
     return Portfolio(
         seed=seed,
