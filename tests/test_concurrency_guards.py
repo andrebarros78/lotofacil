@@ -124,7 +124,8 @@ def test_failed_effect_is_completed_fail_closed_and_not_reexecuted(tmp_path) -> 
 def test_heartbeat_keeps_live_worker_from_being_reclaimed(tmp_path) -> None:
     db = tmp_path / "sare.db"
     job = enqueue_job(db, "PORTFOLIO", {"card_count": 1, "seed": 88})
-    claimed = claim_next_job(db, "worker-a", lease_seconds=1)
+    lease_seconds = 3
+    claimed = claim_next_job(db, "worker-a", lease_seconds=lease_seconds)
     assert claimed is not None
 
     heartbeat = LeaseHeartbeat(
@@ -132,14 +133,14 @@ def test_heartbeat_keeps_live_worker_from_being_reclaimed(tmp_path) -> None:
         job.job_id,
         "worker-a",
         claimed.lease_token,
-        lease_seconds=1,
-        interval_seconds=0.15,
+        lease_seconds=lease_seconds,
+        interval_seconds=0.10,
     )
     heartbeat.start()
     try:
-        time.sleep(1.25)
+        time.sleep(3.25)
         heartbeat.ensure_valid()
-        assert claim_next_job(db, "worker-b", lease_seconds=1) is None
+        assert claim_next_job(db, "worker-b", lease_seconds=lease_seconds) is None
     finally:
         heartbeat.stop()
     heartbeat.ensure_valid()
