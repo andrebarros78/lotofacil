@@ -82,6 +82,7 @@ def run(
             if latest.get("data_snapshot_hash") is not None
             else None
         ),
+        state_snapshot_id=str(latest["snapshot_id"]),
         source_commit=source_commit,
         workflow_run_id=workflow_run_id,
         reserved_cards=reserved,
