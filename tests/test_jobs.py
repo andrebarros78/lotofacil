@@ -25,8 +25,14 @@ def test_fencing_token_blocks_stale_worker(tmp_path):
     second = claim_next_job(db, "worker-b", lease_seconds=30, now=t0 + timedelta(seconds=31))
     assert second and second.lease_token == 2 and second.attempts == 2
     with pytest.raises(StaleLeaseError):
-        complete_job(db, job.job_id, "worker-a", first.lease_token, {"invalid": True})
-    completed = complete_job(db, job.job_id, "worker-b", second.lease_token, {"ok": True})
+        complete_job(
+            db, job.job_id, "worker-a", first.lease_token, {"invalid": True},
+            now=t0 + timedelta(seconds=32),
+        )
+    completed = complete_job(
+        db, job.job_id, "worker-b", second.lease_token, {"ok": True},
+        now=t0 + timedelta(seconds=32),
+    )
     assert completed.state == "COMPLETED"
     assert completed.result == {"ok": True}
 
@@ -37,7 +43,10 @@ def test_worker_restart_reclaims_job_without_duplicate_domain_result(tmp_path):
     t0 = datetime(2026, 9, 11, tzinfo=timezone.utc)
     first = claim_next_job(db, "worker-a", lease_seconds=5, now=t0)
     assert first
-    save_checkpoint(db, job.job_id, "worker-a", first.lease_token, {"phase": "CLAIMED"})
+    save_checkpoint(
+        db, job.job_id, "worker-a", first.lease_token, {"phase": "CLAIMED"},
+        now=t0 + timedelta(seconds=1),
+    )
 
     recovered = run_worker_once(db, "worker-b", lease_seconds=30, now=t0 + timedelta(seconds=6))
     assert recovered and recovered.state == "COMPLETED" and recovered.attempts == 2
@@ -62,7 +71,10 @@ def test_cancel_never_publishes_partial_result(tmp_path):
     assert claimed and claimed.job_id == leased.job_id
     requested = request_cancel(db, leased.job_id)
     assert requested.cancel_requested is True and requested.state == "LEASED"
-    final = complete_job(db, leased.job_id, "worker-a", claimed.lease_token, {"must_not_publish": True})
+    final = complete_job(
+        db, leased.job_id, "worker-a", claimed.lease_token, {"must_not_publish": True},
+        now=t0 + timedelta(seconds=1),
+    )
     assert final.state == "CANCELLED" and final.result is None
 
 
