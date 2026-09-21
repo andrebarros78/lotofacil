@@ -1,0 +1,113 @@
+name: Semantic Snapshot Proof
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/semantic-snapshot-proof.yml"
+      - "scripts/prove_semantic_snapshot.py"
+      - "scripts/github_operational_cycle.py"
+      - "scripts/verify_github_operational_state.py"
+      - "scripts/github_operator_freeze_cards.py"
+      - "scripts/github_operator_console.py"
+      - "src/sare_lotofacil/persistence/**"
+      - "src/sare_lotofacil/portfolios/frozen.py"
+      - "tests/**"
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/semantic-snapshot-proof.yml"
+      - "scripts/prove_semantic_snapshot.py"
+      - "scripts/github_operational_cycle.py"
+      - "scripts/verify_github_operational_state.py"
+      - "scripts/github_operator_freeze_cards.py"
+      - "scripts/github_operator_console.py"
+      - "src/sare_lotofacil/persistence/**"
+      - "src/sare_lotofacil/portfolios/frozen.py"
+
+permissions:
+  contents: read
+
+jobs:
+  semantic-snapshot-proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout candidate engine
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          path: app
+
+      - name: Checkout canonical operational state
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          ref: operations/state
+          fetch-depth: 0
+          path: state-store
+
+      - name: Setup Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: "3.13"
+
+      - name: Install candidate engine
+        run: python -m pip install ./app
+
+      - name: Prove semantic identity across different storage revision graphs
+        run: |
+          mkdir -p artifacts
+          python app/scripts/prove_semantic_snapshot.py \
+            --canonical state-store/operations/canonical_history.json \
+            --work-dir artifacts/semantic-runtime \
+            --out artifacts/semantic_snapshot_proof.json
+          grep -q '"status": "SEMANTIC_SNAPSHOT_PROOF_PASS"' artifacts/semantic_snapshot_proof.json
+          grep -q '"storage_hashes_differ": true' artifacts/semantic_snapshot_proof.json
+          grep -q '"semantic_hashes_equal": true' artifacts/semantic_snapshot_proof.json
+
+      - name: Recompute semantic identity through operational verifier
+        run: |
+          python app/scripts/verify_github_operational_state.py \
+            --state-dir state-store/operations \
+            --out artifacts/operational_state_integrity.json
+          grep -q '"status": "GITHUB_OPERATIONAL_AUDIT_PASS"' artifacts/operational_state_integrity.json
+          grep -q '"data_snapshot_hash":' artifacts/operational_state_integrity.json
+
+      - name: Cross-check independent semantic hashes
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          proof = json.loads(Path("artifacts/semantic_snapshot_proof.json").read_text(encoding="utf-8"))
+          audit = json.loads(Path("artifacts/operational_state_integrity.json").read_text(encoding="utf-8"))
+          if proof["data_snapshot_hash"] != audit["data_snapshot_hash"]:
+              raise SystemExit("semantic hash mismatch between proof runner and operational verifier")
+          if proof["canonical_contests"] != audit["canonical_contests"]:
+              raise SystemExit("contest count mismatch between proof runner and operational verifier")
+          print(json.dumps({
+              "status": "SEMANTIC_SNAPSHOT_CROSS_CHECK_PASS",
+              "canonical_contests": proof["canonical_contests"],
+              "data_snapshot_hash": proof["data_snapshot_hash"],
+              "operational_state_mode": audit["data_snapshot_state"],
+          }, sort_keys=True))
+          PY
+
+      - name: Record provenance
+        run: |
+          git -C app rev-parse HEAD | tee artifacts/candidate_code_commit.txt
+          git -C state-store rev-parse HEAD | tee artifacts/operations_state_commit.txt
+          sha256sum state-store/operations/canonical_history.json | tee artifacts/canonical_history_file_sha256.txt
+
+      - name: Upload F2 semantic snapshot evidence
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: semantic-snapshot-proof
+          path: |
+            artifacts/semantic_snapshot_proof.json
+            artifacts/operational_state_integrity.json
+            artifacts/candidate_code_commit.txt
+            artifacts/operations_state_commit.txt
+            artifacts/canonical_history_file_sha256.txt
+          if-no-files-found: error
+          retention-days: 90
