@@ -133,6 +133,12 @@ def test_clean_fixture_passes_full_operational_verifier(tmp_path: Path) -> None:
     assert result["status"] == "GITHUB_OPERATIONAL_AUDIT_PASS"
     assert result["pending_predictions"] == 1
     assert result["last_contest"] == 6
+    assert result["evaluation_isolation"] == {
+        "evaluation_class": "CANONICAL_EVALUATION",
+        "canonical_binding_verified": True,
+        "canonical_source": "canonical_history.json",
+        "evaluated_predictions_verified": 1,
+    }
 
 
 def test_verifier_rejects_wrong_primary_card_even_with_prediction_rehashed(tmp_path: Path) -> None:
