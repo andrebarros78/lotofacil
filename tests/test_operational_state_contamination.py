@@ -17,6 +17,7 @@ from sare_lotofacil.analysis.post_contest_report import (
 from sare_lotofacil.ingestion.validation import validate_contest
 from sare_lotofacil.persistence.snapshot_identity import semantic_data_snapshot_hash
 from sare_lotofacil.portfolios import frozen as frozen_mod
+from sare_lotofacil.portfolios.authority import CardGenerationService
 from sare_lotofacil.portfolios.frozen import (
     card_for_generation_index,
     card_sha256,
@@ -270,6 +271,14 @@ def test_operator_verifier_rejects_unjustified_generation_skip(tmp_path: Path) -
         }
     )[:32]
     request["generation_index_next"] = index + 1
+    request["card_artifact"] = CardGenerationService.freeze_operator_batch(
+        cards=[item["card"]],
+        target_contest=7,
+        data_snapshot_hash=None,
+        storage_snapshot_id=None,
+        storage_snapshot_hash="snapshot-current",
+        request_fingerprint=request["request_fingerprint"],
+    ).to_dict()
     request["request_sha256"] = frozen_mod._sha256(
         frozen_mod._request_hash_payload(request)
     )
