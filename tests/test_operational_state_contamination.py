@@ -15,6 +15,7 @@ from sare_lotofacil.analysis.post_contest_report import (
     render_post_contest_report_markdown,
 )
 from sare_lotofacil.ingestion.validation import validate_contest
+from sare_lotofacil.persistence.snapshot_identity import semantic_data_snapshot_hash
 from sare_lotofacil.portfolios import frozen as frozen_mod
 from sare_lotofacil.portfolios.frozen import (
     card_for_generation_index,
@@ -67,6 +68,7 @@ def _state_fixture(tmp_path: Path) -> Path:
         "snapshot-before-6",
         records[:5],
         "2026-09-20T10:00:00+00:00",
+        data_snapshot_hash=semantic_data_snapshot_hash(records[:5]),
     )
     cycle._evaluate_prediction(evaluated, records[5])
     pending = cycle._build_prediction(
@@ -74,6 +76,7 @@ def _state_fixture(tmp_path: Path) -> Path:
         "snapshot-current",
         records,
         "2026-09-21T10:00:00+00:00",
+        data_snapshot_hash=semantic_data_snapshot_hash(records),
     )
     ledger = cycle._empty_ledger()
     ledger["predictions"] = [evaluated, pending]
@@ -96,6 +99,9 @@ def _state_fixture(tmp_path: Path) -> Path:
         "snapshot_contests": 6,
         "snapshot_id": "snap-current",
         "snapshot_hash": "snapshot-current",
+        "storage_snapshot_id": "snap-current",
+        "storage_snapshot_hash": "snapshot-current",
+        "data_snapshot_hash": semantic_data_snapshot_hash(records),
         "canonical_history_sha256": hashlib.sha256(history_path.read_bytes()).hexdigest(),
         "bootstrap_manifest_sha256": hashlib.sha256(manifest_path.read_bytes()).hexdigest(),
         "prospective": ledger["summary"],
@@ -196,6 +202,29 @@ def test_verifier_rejects_latest_target_and_history_hash_drift(tmp_path: Path) -
     latest["canonical_history_sha256"] = "0" * 64
     _write_json(latest_path, latest)
     with pytest.raises(RuntimeError, match="canonical history hash diverges"):
+        verify(state)
+
+
+def test_verifier_rejects_semantic_snapshot_hash_drift(tmp_path: Path) -> None:
+    state = _state_fixture(tmp_path)
+    latest_path = state / "latest.json"
+    latest = json.loads(latest_path.read_text(encoding="utf-8"))
+    latest["data_snapshot_hash"] = "0" * 64
+    _write_json(latest_path, latest)
+
+    with pytest.raises(RuntimeError, match="semantic data snapshot hash diverges"):
+        verify(state)
+
+
+def test_verifier_rejects_prediction_semantic_snapshot_drift_even_when_rehashed(tmp_path: Path) -> None:
+    state = _state_fixture(tmp_path)
+    ledger = _ledger(state)
+    pending = ledger["predictions"][-1]
+    pending["training_data_snapshot_hash"] = "0" * 64
+    pending["prediction_sha256"] = cycle._sha256(cycle._prediction_hash_payload(pending))
+    _save_ledger(state, ledger)
+
+    with pytest.raises(RuntimeError, match="prediction semantic snapshot mismatch"):
         verify(state)
 
 
