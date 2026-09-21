@@ -10,7 +10,7 @@ from sare_lotofacil.ingestion.validation import validate_contest
 from sare_lotofacil.persistence.snapshot_identity import semantic_data_snapshot_hash
 from sare_lotofacil.portfolios.authority import CardGenerationService
 
-SCHEMA_VERSION = 10
+SCHEMA_VERSION = 11
 
 SCHEMA_SQL = """
 PRAGMA foreign_keys = ON;
@@ -129,6 +129,11 @@ CREATE TABLE IF NOT EXISTS portfolio_cards (
 CREATE TABLE IF NOT EXISTS evaluations (
     evaluation_id TEXT PRIMARY KEY,
     portfolio_id TEXT NOT NULL REFERENCES portfolios(portfolio_id) ON DELETE CASCADE,
+    evaluation_class TEXT NOT NULL DEFAULT 'MANUAL_EVALUATION'
+        CHECK (evaluation_class = 'MANUAL_EVALUATION'),
+    evidence_eligible INTEGER NOT NULL DEFAULT 0 CHECK (evidence_eligible = 0),
+    source_class TEXT NOT NULL DEFAULT 'USER_SUPPLIED'
+        CHECK (source_class = 'USER_SUPPLIED'),
     result_mask INTEGER NOT NULL CHECK (result_mask > 0),
     hits_json TEXT NOT NULL,
     max_hits INTEGER NOT NULL CHECK (max_hits BETWEEN 5 AND 15),
@@ -138,6 +143,11 @@ CREATE TABLE IF NOT EXISTS evaluations (
 CREATE TABLE IF NOT EXISTS revision_evaluations (
     evaluation_id TEXT PRIMARY KEY,
     portfolio_id TEXT NOT NULL REFERENCES portfolios(portfolio_id) ON DELETE CASCADE,
+    evaluation_class TEXT NOT NULL DEFAULT 'CANONICAL_EVALUATION'
+        CHECK (evaluation_class = 'CANONICAL_EVALUATION'),
+    evidence_eligible INTEGER NOT NULL DEFAULT 1 CHECK (evidence_eligible = 1),
+    source_class TEXT NOT NULL,
+    source_artifact_id TEXT,
     contest_id INTEGER NOT NULL,
     revision INTEGER NOT NULL,
     result_mask INTEGER NOT NULL CHECK (result_mask > 0),
@@ -507,6 +517,87 @@ def _migrate_concurrency_to_v10(connection: sqlite3.Connection) -> None:
     )
 
 
+
+
+def _migrate_evaluation_isolation_to_v11(connection: sqlite3.Connection) -> None:
+    manual_columns = {
+        row[1] for row in connection.execute("PRAGMA table_info(evaluations)").fetchall()
+    }
+    manual_additions = (
+        ("evaluation_class", "TEXT NOT NULL DEFAULT 'MANUAL_EVALUATION'"),
+        ("evidence_eligible", "INTEGER NOT NULL DEFAULT 0"),
+        ("source_class", "TEXT NOT NULL DEFAULT 'USER_SUPPLIED'"),
+    )
+    for name, ddl in manual_additions:
+        if name not in manual_columns:
+            connection.execute(f"ALTER TABLE evaluations ADD COLUMN {name} {ddl}")
+    connection.execute(
+        "UPDATE evaluations SET evaluation_class='MANUAL_EVALUATION', "
+        "evidence_eligible=0, source_class='USER_SUPPLIED'"
+    )
+
+    canonical_columns = {
+        row[1]
+        for row in connection.execute("PRAGMA table_info(revision_evaluations)").fetchall()
+    }
+    canonical_additions = (
+        ("evaluation_class", "TEXT NOT NULL DEFAULT 'CANONICAL_EVALUATION'"),
+        ("evidence_eligible", "INTEGER NOT NULL DEFAULT 1"),
+        ("source_class", "TEXT"),
+        ("source_artifact_id", "TEXT"),
+    )
+    for name, ddl in canonical_additions:
+        if name not in canonical_columns:
+            connection.execute(
+                f"ALTER TABLE revision_evaluations ADD COLUMN {name} {ddl}"
+            )
+
+    connection.execute(
+        "UPDATE revision_evaluations SET "
+        "evaluation_class='CANONICAL_EVALUATION', evidence_eligible=1, "
+        "source_class=(SELECT cr.source_class FROM contest_revisions cr "
+        "WHERE cr.contest_id=revision_evaluations.contest_id "
+        "AND cr.revision=revision_evaluations.revision), "
+        "source_artifact_id=(SELECT cr.source_artifact_id FROM contest_revisions cr "
+        "WHERE cr.contest_id=revision_evaluations.contest_id "
+        "AND cr.revision=revision_evaluations.revision)"
+    )
+    missing_source = connection.execute(
+        "SELECT evaluation_id FROM revision_evaluations "
+        "WHERE source_class IS NULL LIMIT 1"
+    ).fetchone()
+    if missing_source:
+        raise RuntimeError(
+            f"canonical evaluation source missing while migrating v11: {missing_source[0]}"
+        )
+
+    connection.executescript(
+        "CREATE TRIGGER IF NOT EXISTS trg_manual_evaluation_isolation "
+        "BEFORE INSERT ON evaluations BEGIN "
+        "SELECT CASE WHEN NEW.evaluation_class!='MANUAL_EVALUATION' "
+        "OR NEW.evidence_eligible!=0 OR NEW.source_class!='USER_SUPPLIED' "
+        "THEN RAISE(ABORT,'MANUAL_EVALUATION_ISOLATION_VIOLATION') END; "
+        "END; "
+        "CREATE TRIGGER IF NOT EXISTS trg_canonical_evaluation_isolation "
+        "BEFORE INSERT ON revision_evaluations BEGIN "
+        "SELECT CASE WHEN NEW.evaluation_class!='CANONICAL_EVALUATION' "
+        "OR NEW.evidence_eligible!=1 "
+        "THEN RAISE(ABORT,'CANONICAL_EVALUATION_CLASS_VIOLATION') END; "
+        "SELECT CASE WHEN (SELECT target_contest FROM portfolios "
+        "WHERE portfolio_id=NEW.portfolio_id) IS NULL "
+        "THEN RAISE(ABORT,'CANONICAL_EVALUATION_REQUIRES_TARGET') END; "
+        "SELECT CASE WHEN (SELECT target_contest FROM portfolios "
+        "WHERE portfolio_id=NEW.portfolio_id)!=NEW.contest_id "
+        "THEN RAISE(ABORT,'CANONICAL_EVALUATION_TARGET_MISMATCH') END; "
+        "SELECT CASE WHEN (SELECT result_mask FROM contest_revisions "
+        "WHERE contest_id=NEW.contest_id AND revision=NEW.revision)!=NEW.result_mask "
+        "THEN RAISE(ABORT,'CANONICAL_EVALUATION_RESULT_MISMATCH') END; "
+        "SELECT CASE WHEN (SELECT source_class FROM contest_revisions "
+        "WHERE contest_id=NEW.contest_id AND revision=NEW.revision)!=NEW.source_class "
+        "THEN RAISE(ABORT,'CANONICAL_EVALUATION_SOURCE_MISMATCH') END; "
+        "END;"
+    )
+
 def initialize_database(path: str | Path) -> Path:
     db_path = Path(path)
     with connect(db_path) as connection:
@@ -515,6 +606,7 @@ def initialize_database(path: str | Path) -> Path:
         _migrate_snapshots_to_v8(connection)
         _migrate_portfolios_to_v9(connection)
         _migrate_concurrency_to_v10(connection)
+        _migrate_evaluation_isolation_to_v11(connection)
         connection.execute(
             "INSERT INTO schema_meta(key, value) VALUES('schema_version', ?) "
             "ON CONFLICT(key) DO UPDATE SET value = excluded.value",

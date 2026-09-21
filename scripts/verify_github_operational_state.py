@@ -10,6 +10,7 @@ from sare_lotofacil.analysis.post_contest_report import (
     build_post_contest_reports,
     render_post_contest_report_markdown,
 )
+from sare_lotofacil.evaluation import CANONICAL_EVALUATION
 from sare_lotofacil.experiments.models import exponential_update, frequency_regularized
 from sare_lotofacil.ingestion.validation import validate_contest
 from sare_lotofacil.portfolios.authority import (
@@ -337,6 +338,12 @@ def verify(state_dir: Path) -> dict[str, object]:
         "last_contest": records[-1].contest_id,
         "evaluated_predictions": evaluated,
         "pending_predictions": pending,
+        "evaluation_isolation": {
+            "evaluation_class": CANONICAL_EVALUATION,
+            "canonical_binding_verified": True,
+            "canonical_source": "canonical_history.json",
+            "evaluated_predictions_verified": evaluated,
+        },
         "protocol_hash": protocol["protocol_hash"],
         "canonical_history_sha256": hashlib.sha256(canonical_path.read_bytes()).hexdigest(),
         "data_snapshot_hash": actual_data_snapshot_hash,

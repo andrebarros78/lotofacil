@@ -9,6 +9,11 @@ from typing import Any, Iterable
 
 from sare_lotofacil.analysis.core_report import analyze_core
 from sare_lotofacil.domain.masks import mask_to_numbers, numbers_to_mask, normalize_numbers
+from sare_lotofacil.evaluation import (
+    CANONICAL_EVALUATION,
+    MANUAL_EVALUATION,
+    USER_SUPPLIED_SOURCE,
+)
 from sare_lotofacil.persistence.db import connect, initialize_database
 from sare_lotofacil.persistence.repository import load_snapshot_draws
 from sare_lotofacil.portfolios.authority import CardGenerationService, STATUS_FROZEN
@@ -65,6 +70,9 @@ class PortfolioRecord:
 class EvaluationRecord:
     evaluation_id: str
     portfolio_id: str
+    evaluation_class: str
+    evidence_eligible: bool
+    source_class: str
     result: tuple[int, ...]
     hits: tuple[int, ...]
     max_hits: int
@@ -74,6 +82,10 @@ class EvaluationRecord:
 class RevisionEvaluationRecord:
     evaluation_id: str
     portfolio_id: str
+    evaluation_class: str
+    evidence_eligible: bool
+    source_class: str
+    source_artifact_id: str | None
     contest_id: int
     revision: int
     result: tuple[int, ...]
@@ -288,6 +300,11 @@ def get_portfolio(path: str | Path, portfolio_id: str) -> PortfolioRecord:
 
 
 def evaluate_portfolio(path: str | Path, portfolio_id: str, draw: Iterable[int]) -> EvaluationRecord:
+    """Evaluate against user-supplied numbers.
+
+    This channel is intentionally non-canonical and can never become evidence
+    eligible. Canonical evaluation must use evaluate_portfolio_revision().
+    """
     record = get_portfolio(path, portfolio_id)
     result = normalize_numbers(draw)
     portfolio = Portfolio(
@@ -298,21 +315,52 @@ def evaluate_portfolio(path: str | Path, portfolio_id: str, draw: Iterable[int])
     )
     hits = audit_portfolio(portfolio, result)
     result_mask = numbers_to_mask(result)
-    evaluation_id = f"evaluation-{payload_hash({'portfolio_id': portfolio_id, 'result_mask': result_mask})[:24]}"
+    identity = {
+        "portfolio_id": portfolio_id,
+        "result_mask": result_mask,
+        "evaluation_class": MANUAL_EVALUATION,
+    }
+    evaluation_id = f"evaluation-{payload_hash(identity)[:24]}"
     hits_json = canonical_json(hits)
     with connect(path) as connection:
         connection.execute(
-            "INSERT OR IGNORE INTO evaluations(evaluation_id, portfolio_id, result_mask, hits_json, max_hits) VALUES (?, ?, ?, ?, ?)",
-            (evaluation_id, portfolio_id, result_mask, hits_json, max(hits)),
+            "INSERT OR IGNORE INTO evaluations("
+            "evaluation_id, portfolio_id, evaluation_class, evidence_eligible, "
+            "source_class, result_mask, hits_json, max_hits"
+            ") VALUES (?, ?, ?, 0, ?, ?, ?, ?)",
+            (
+                evaluation_id,
+                portfolio_id,
+                MANUAL_EVALUATION,
+                USER_SUPPLIED_SOURCE,
+                result_mask,
+                hits_json,
+                max(hits),
+            ),
         )
         _audit(
             connection,
-            "PORTFOLIO_EVALUATED",
+            "PORTFOLIO_MANUAL_EVALUATED",
             "evaluation",
             evaluation_id,
-            {"portfolio_id": portfolio_id, "max_hits": max(hits)},
+            {
+                "portfolio_id": portfolio_id,
+                "max_hits": max(hits),
+                "evaluation_class": MANUAL_EVALUATION,
+                "evidence_eligible": False,
+                "source_class": USER_SUPPLIED_SOURCE,
+            },
         )
-    return EvaluationRecord(evaluation_id, portfolio_id, result, hits, max(hits))
+    return EvaluationRecord(
+        evaluation_id,
+        portfolio_id,
+        MANUAL_EVALUATION,
+        False,
+        USER_SUPPLIED_SOURCE,
+        result,
+        hits,
+        max(hits),
+    )
 
 
 def evaluate_portfolio_revision(
@@ -321,17 +369,26 @@ def evaluate_portfolio_revision(
     contest_id: int,
     revision: int,
 ) -> RevisionEvaluationRecord:
+    """Evaluate only the frozen target against a persisted contest revision."""
     initialize_database(path)
     record = get_portfolio(path, portfolio_id)
+    if record.target_contest is None:
+        raise ValueError("CANONICAL_EVALUATION_REQUIRES_TARGET")
+    if int(record.target_contest) != int(contest_id):
+        raise ValueError("CANONICAL_EVALUATION_TARGET_MISMATCH")
+
     with connect(path) as connection:
         row = connection.execute(
-            "SELECT result_mask FROM contest_revisions WHERE contest_id=? AND revision=?",
+            "SELECT result_mask, source_class, source_artifact_id "
+            "FROM contest_revisions WHERE contest_id=? AND revision=?",
             (contest_id, revision),
         ).fetchone()
     if not row:
         raise KeyError((contest_id, revision))
 
     result_mask = int(row[0])
+    source_class = str(row[1])
+    source_artifact_id = str(row[2]) if row[2] is not None else None
     result = mask_to_numbers(result_mask)
     portfolio = Portfolio(
         seed=record.seed,
@@ -340,23 +397,60 @@ def evaluate_portfolio_revision(
         evidence_label=record.evidence_label,
     )
     hits = audit_portfolio(portfolio, result)
-    identity = {"portfolio_id": portfolio_id, "contest_id": contest_id, "revision": revision}
+    identity = {
+        "portfolio_id": portfolio_id,
+        "contest_id": contest_id,
+        "revision": revision,
+        "evaluation_class": CANONICAL_EVALUATION,
+    }
     evaluation_id = f"revision-evaluation-{payload_hash(identity)[:24]}"
     hits_json = canonical_json(hits)
     with connect(path) as connection:
         connection.execute(
-            "INSERT OR IGNORE INTO revision_evaluations(evaluation_id, portfolio_id, contest_id, revision, result_mask, hits_json, max_hits) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?)",
-            (evaluation_id, portfolio_id, contest_id, revision, result_mask, hits_json, max(hits)),
+            "INSERT OR IGNORE INTO revision_evaluations("
+            "evaluation_id, portfolio_id, evaluation_class, evidence_eligible, "
+            "source_class, source_artifact_id, contest_id, revision, result_mask, "
+            "hits_json, max_hits"
+            ") VALUES (?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                evaluation_id,
+                portfolio_id,
+                CANONICAL_EVALUATION,
+                source_class,
+                source_artifact_id,
+                contest_id,
+                revision,
+                result_mask,
+                hits_json,
+                max(hits),
+            ),
         )
         _audit(
             connection,
-            "PORTFOLIO_REVISION_EVALUATED",
+            "PORTFOLIO_CANONICAL_EVALUATED",
             "revision_evaluation",
             evaluation_id,
-            {**identity, "max_hits": max(hits)},
+            {
+                **identity,
+                "max_hits": max(hits),
+                "evidence_eligible": True,
+                "source_class": source_class,
+                "source_artifact_id": source_artifact_id,
+            },
         )
-    return RevisionEvaluationRecord(evaluation_id, portfolio_id, contest_id, revision, result, hits, max(hits))
+    return RevisionEvaluationRecord(
+        evaluation_id,
+        portfolio_id,
+        CANONICAL_EVALUATION,
+        True,
+        source_class,
+        source_artifact_id,
+        contest_id,
+        revision,
+        result,
+        hits,
+        max(hits),
+    )
 
 
 def list_snapshots(path: str | Path) -> tuple[dict[str, Any], ...]:
