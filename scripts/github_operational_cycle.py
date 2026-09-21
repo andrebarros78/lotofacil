@@ -209,6 +209,12 @@ def _evaluate_prediction(prediction: dict[str, object], observed_record) -> None
     if prediction.get("evaluation") is not None:
         return
     verify_prediction_hashes({"predictions": [prediction]})
+    target = int(prediction["target_contest"])
+    training_last = int(prediction["training_last_contest"])
+    if target != training_last + 1:
+        raise RuntimeError("PREDICTION_TARGET_MUST_EQUAL_TRAINING_LAST_PLUS_ONE")
+    if int(observed_record.contest_id) != target:
+        raise RuntimeError("PREDICTION_EVALUATION_TARGET_MISMATCH")
     models = prediction["models"]
     m0 = brier_score(models["M0_uniform"], observed_record.numbers)
     m1 = brier_score(models[PRIMARY_MODEL], observed_record.numbers)
