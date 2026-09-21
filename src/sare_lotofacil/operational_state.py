@@ -218,7 +218,11 @@ def _restore_old(state_dir: Path, manifest: Mapping[str, object]) -> None:
             if not old.exists() or _sha256_bytes(old.read_bytes()) != expected:
                 raise StateTransactionError(f"old backup invalid: {relative}")
             target.parent.mkdir(parents=True, exist_ok=True)
-            os.replace(old, target)
+            temp = target.with_name(f".{target.name}.{uuid.uuid4().hex}.recovery")
+            shutil.copyfile(old, temp)
+            with temp.open("rb") as handle:
+                os.fsync(handle.fileno())
+            os.replace(temp, target)
             _fsync_dir(target.parent)
         elif target.exists():
             target.unlink()
@@ -241,9 +245,11 @@ def _complete_new(state_dir: Path, manifest: Mapping[str, object]) -> None:
         if not new.exists() or _sha256_bytes(new.read_bytes()) != expected:
             raise StateTransactionError(f"new staged file invalid: {relative}")
         target.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(new, target)
-        with target.open("rb") as handle:
+        temp = target.with_name(f".{target.name}.{uuid.uuid4().hex}.recovery")
+        shutil.copyfile(new, temp)
+        with temp.open("rb") as handle:
             os.fsync(handle.fileno())
+        os.replace(temp, target)
         _fsync_dir(target.parent)
 
 
