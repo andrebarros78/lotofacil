@@ -303,18 +303,16 @@ def verify(state_dir: Path) -> dict[str, object]:
     if latest["prospective"] != ledger["summary"]:
         raise RuntimeError("latest prospective summary diverges from ledger")
     if state_commit["status"] == "STATE_COMMIT_VERIFIED":
-        transaction = latest.get("state_transaction")
-        if not isinstance(transaction, dict):
-            raise RuntimeError("latest state transaction metadata missing")
         commit_metadata = state_commit.get("metadata")
         if not isinstance(commit_metadata, dict):
             raise RuntimeError("state commit metadata missing")
         cycle_generation = commit_metadata.get("cycle_generation_id")
-        if (
-            isinstance(cycle_generation, str)
-            and transaction.get("generation_id") != cycle_generation
-        ):
-            raise RuntimeError("latest cycle generation diverges from state commit ancestry")
+        if isinstance(cycle_generation, str):
+            transaction = latest.get("state_transaction")
+            if not isinstance(transaction, dict):
+                raise RuntimeError("latest state transaction metadata missing")
+            if transaction.get("generation_id") != cycle_generation:
+                raise RuntimeError("latest cycle generation diverges from state commit ancestry")
 
     expected_reports = build_post_contest_reports(ledger)
     report_summary = latest.get("post_contest_report")
