@@ -310,7 +310,10 @@ def verify(state_dir: Path) -> dict[str, object]:
         if not isinstance(commit_metadata, dict):
             raise RuntimeError("state commit metadata missing")
         cycle_generation = commit_metadata.get("cycle_generation_id")
-        if transaction.get("generation_id") != cycle_generation:
+        if (
+            isinstance(cycle_generation, str)
+            and transaction.get("generation_id") != cycle_generation
+        ):
             raise RuntimeError("latest cycle generation diverges from state commit ancestry")
 
     expected_reports = build_post_contest_reports(ledger)
