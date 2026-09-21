@@ -94,16 +94,22 @@ def _request_hash_payload(request: dict[str, object]) -> dict[str, object]:
 
 
 def _request_fingerprint(
-    *, target_contest: int, requested_card_count: int, state_snapshot_hash: str, idempotency_key: str
+    *,
+    target_contest: int,
+    requested_card_count: int,
+    state_snapshot_hash: str,
+    idempotency_key: str,
+    state_data_snapshot_hash: str | None = None,
 ) -> str:
-    return _sha256(
-        {
-            "target_contest": int(target_contest),
-            "requested_card_count": int(requested_card_count),
-            "state_snapshot_hash": state_snapshot_hash,
-            "idempotency_key": idempotency_key,
-        }
-    )
+    payload: dict[str, object] = {
+        "target_contest": int(target_contest),
+        "requested_card_count": int(requested_card_count),
+        "state_snapshot_hash": state_snapshot_hash,
+        "idempotency_key": idempotency_key,
+    }
+    if state_data_snapshot_hash is not None:
+        payload["state_data_snapshot_hash"] = state_data_snapshot_hash
+    return _sha256(payload)
 
 
 def _operator_cards_for_target(ledger: dict[str, object], target_contest: int) -> set[tuple[int, ...]]:
@@ -171,6 +177,11 @@ def validate_operator_card_ledger(ledger: dict[str, object]) -> dict[str, object
             requested_card_count=int(request["requested_card_count"]),
             state_snapshot_hash=str(request["state_snapshot_hash"]),
             idempotency_key=key,
+            state_data_snapshot_hash=(
+                str(request["state_data_snapshot_hash"])
+                if request.get("state_data_snapshot_hash") is not None
+                else None
+            ),
         )
         if request.get("request_fingerprint") != expected_fingerprint:
             raise RuntimeError("OPERATOR_CARD_REQUEST_FINGERPRINT_MISMATCH")
@@ -274,6 +285,7 @@ def freeze_operator_cards(
     requested_card_count: int,
     state_snapshot_hash: str,
     created_at_utc: str,
+    state_data_snapshot_hash: str | None = None,
     idempotency_key: str,
     source_commit: str,
     workflow_run_id: str,
@@ -294,6 +306,7 @@ def freeze_operator_cards(
         requested_card_count=requested_card_count,
         state_snapshot_hash=state_snapshot_hash,
         idempotency_key=key,
+        state_data_snapshot_hash=state_data_snapshot_hash,
     )
     reserved = {normalize_numbers(card) for card in reserved_cards}
     for prior in ledger["requests"]:
@@ -369,6 +382,8 @@ def freeze_operator_cards(
         "evidence_label": UNPROVEN_LABEL,
         "cards": generated,
     }
+    if state_data_snapshot_hash is not None:
+        request["state_data_snapshot_hash"] = state_data_snapshot_hash
     request["request_sha256"] = _sha256(_request_hash_payload(request))
     requests.append(request)
     ledger["summary"] = _recompute_summary(ledger)
