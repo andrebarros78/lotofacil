@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import sqlite3
+
 import pytest
 
 from sare_lotofacil.portfolios.authority import (
@@ -13,6 +15,7 @@ from sare_lotofacil.portfolios.authority import (
     operator_card_for_generation_index,
     validate_card_artifact,
 )
+from sare_lotofacil.persistence.operations import get_portfolio, persist_uniform_portfolio
 from sare_lotofacil.portfolios.frozen import card_for_generation_index
 
 
@@ -99,3 +102,24 @@ def test_primary_and_operator_policies_share_same_authority_contract() -> None:
 def test_operator_generation_sequence_is_preserved_by_authority_refactor() -> None:
     for index in (0, 1, 2, 17, 999):
         assert card_for_generation_index(3785, index) == operator_card_for_generation_index(3785, index)
+
+
+def test_persisted_portfolio_rejects_artifact_status_tampering(tmp_path) -> None:
+    db = tmp_path / "sare.db"
+    record = persist_uniform_portfolio(
+        db,
+        card_count=1,
+        seed=44,
+        target_contest=100,
+    )
+    assert record.artifact_status == STATUS_FROZEN
+
+    with sqlite3.connect(db) as connection:
+        connection.execute(
+            "UPDATE portfolios SET artifact_status='PREVIEW' WHERE portfolio_id=?",
+            (record.portfolio_id,),
+        )
+        connection.commit()
+
+    with pytest.raises(RuntimeError, match="PORTFOLIO_CARD_ARTIFACT_MISMATCH"):
+        get_portfolio(db, record.portfolio_id)
