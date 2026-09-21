@@ -83,6 +83,29 @@ def test_api_idempotency_conflict_and_restart_persistence(tmp_path) -> None:
     assert f"# card_artifact_id={first.json()['artifact_id']}" in exported.text
 
 
+def test_api_in_progress_idempotency_reservation_blocks_duplicate_effect(tmp_path) -> None:
+    from sare_lotofacil.persistence.operations import payload_hash, reserve_idempotency
+
+    db, snapshot, _ = _database_with_snapshot(tmp_path)
+    body = {"card_count": 3, "seed": 71, "snapshot_id": snapshot.snapshot_id, "target_contest": 106}
+    reserve_idempotency(
+        db,
+        "CREATE_PORTFOLIO",
+        "concurrent-001",
+        payload_hash(body),
+        "simulated-first-request",
+    )
+
+    client = TestClient(create_app(db, write_token="secret"))
+    response = client.post(
+        "/v1/portfolios",
+        json=body,
+        headers={"Idempotency-Key": "concurrent-001", "X-SARE-Token": "secret"},
+    )
+    assert response.status_code == 409
+    assert response.json()["detail"] == "IDEMPOTENCY_REQUEST_IN_PROGRESS"
+
+
 def test_api_analysis_exposes_baseline_delta_interval_and_inconclusive_status(tmp_path) -> None:
     db, snapshot, _ = _database_with_snapshot(tmp_path)
     client = TestClient(create_app(db, write_token="secret"))
