@@ -273,6 +273,11 @@ def recover_state_transaction(state_dir: Path) -> str:
     state_dir.mkdir(parents=True, exist_ok=True)
     pointer = _transaction_pointer_path(state_dir)
     if not pointer.exists():
+        txn_parent = state_dir / TXN_DIR
+        if txn_parent.exists():
+            shutil.rmtree(txn_parent, ignore_errors=False)
+            _fsync_dir(state_dir)
+            return "ORPHAN_STAGING_REMOVED"
         return "CLEAN"
 
     pointer_payload = _load_json(pointer)
