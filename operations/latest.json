@@ -1,7 +1,7 @@
 {
   "bootstrap_manifest_sha256": "716feea67b3b5a2ee712a498adcd9975578b9bc6837431584578ba1e7b7aefe5",
   "bootstrap_official_patches": [],
-  "canonical_history_sha256": "0831de92996ae403759b1929e8915fb1ec3aec76f644157bb38bac8ed30bb972",
+  "canonical_history_sha256": "cd1b75c64a5d46f06ec50f89131018d5c0b770689b9671cd01a5d40315e041b0",
   "database_integrity": "ok",
   "inserted_official_contests": [],
   "next_prediction_target": 3785,
@@ -86,7 +86,7 @@
     "predictive_evidence": "NOT_ESTABLISHED",
     "scientific_conclusion": "EVIDENCIA_PREDITIVA_INSUFICIENTE"
   },
-  "run_at_utc": "2026-09-21T12:31:45.349533+00:00",
+  "run_at_utc": "2026-09-21T14:20:33.270634+00:00",
   "snapshot_contests": 3784,
   "snapshot_hash": "e7acbeef78371c7db8746ac4456ae02c29d54b38c5ad7d003f9197a72f097f10",
   "snapshot_id": "snap-e7acbeef78371c7db874",
