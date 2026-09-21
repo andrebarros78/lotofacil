@@ -132,7 +132,7 @@ def test_verifier_rejects_wrong_primary_card_even_with_prediction_rehashed(tmp_p
     state = _state_fixture(tmp_path)
     ledger = _ledger(state)
     pending = ledger["predictions"][-1]
-    pending["primary_card"]["card"] = list(range(1, 16))
+    pending["primary_card"]["card"] = list(range(11, 26))
     pending["prediction_sha256"] = cycle._sha256(cycle._prediction_hash_payload(pending))
     _save_ledger(state, ledger)
 
