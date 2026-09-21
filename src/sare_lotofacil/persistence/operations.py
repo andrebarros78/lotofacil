@@ -84,8 +84,10 @@ class RevisionEvaluationRecord:
 @dataclass(frozen=True, slots=True)
 class IdempotencyRecord:
     request_hash: str
-    response_json: str
-    status_code: int
+    state: str
+    owner_token: str | None
+    response_json: str | None
+    status_code: int | None
 
 
 def persist_analysis(
@@ -365,10 +367,84 @@ def get_idempotency(path: str | Path, operation: str, key: str) -> IdempotencyRe
     initialize_database(path)
     with connect(path) as connection:
         row = connection.execute(
-            "SELECT request_hash, response_json, status_code FROM idempotency_keys WHERE operation=? AND idempotency_key=?",
+            "SELECT request_hash, state, owner_token, response_json, status_code "
+            "FROM idempotency_keys WHERE operation=? AND idempotency_key=?",
             (operation, key),
         ).fetchone()
     return IdempotencyRecord(*row) if row else None
+
+
+def reserve_idempotency(
+    path: str | Path,
+    operation: str,
+    key: str,
+    request_digest: str,
+    owner_token: str,
+) -> IdempotencyRecord:
+    if not owner_token:
+        raise ValueError("owner_token obrigatório")
+    initialize_database(path)
+    with connect(path) as connection:
+        connection.execute("BEGIN IMMEDIATE")
+        row = connection.execute(
+            "SELECT request_hash, state, owner_token, response_json, status_code "
+            "FROM idempotency_keys WHERE operation=? AND idempotency_key=?",
+            (operation, key),
+        ).fetchone()
+        if row is None:
+            connection.execute(
+                "INSERT INTO idempotency_keys("
+                "operation,idempotency_key,request_hash,state,owner_token,response_json,status_code"
+                ") VALUES (?, ?, ?, 'RESERVED', ?, NULL, NULL)",
+                (operation, key, request_digest, owner_token),
+            )
+            return IdempotencyRecord(request_digest, "RESERVED", owner_token, None, None)
+        return IdempotencyRecord(*row)
+
+
+def complete_idempotency(
+    path: str | Path,
+    operation: str,
+    key: str,
+    request_digest: str,
+    owner_token: str,
+    response_payload: dict[str, Any],
+    status_code: int,
+) -> None:
+    with connect(path) as connection:
+        connection.execute("BEGIN IMMEDIATE")
+        cursor = connection.execute(
+            "UPDATE idempotency_keys SET state='COMPLETED', owner_token=NULL, response_json=?, "
+            "status_code=?, updated_at=CURRENT_TIMESTAMP "
+            "WHERE operation=? AND idempotency_key=? AND request_hash=? "
+            "AND state='RESERVED' AND owner_token=?",
+            (
+                canonical_json(response_payload),
+                status_code,
+                operation,
+                key,
+                request_digest,
+                owner_token,
+            ),
+        )
+        if cursor.rowcount != 1:
+            raise RuntimeError("IDEMPOTENCY_RESERVATION_LOST")
+
+
+def release_idempotency(
+    path: str | Path,
+    operation: str,
+    key: str,
+    request_digest: str,
+    owner_token: str,
+) -> None:
+    with connect(path) as connection:
+        connection.execute("BEGIN IMMEDIATE")
+        connection.execute(
+            "DELETE FROM idempotency_keys WHERE operation=? AND idempotency_key=? "
+            "AND request_hash=? AND state='RESERVED' AND owner_token=?",
+            (operation, key, request_digest, owner_token),
+        )
 
 
 def save_idempotency(
@@ -379,11 +455,15 @@ def save_idempotency(
     response_payload: dict[str, Any],
     status_code: int,
 ) -> None:
-    with connect(path) as connection:
-        connection.execute(
-            "INSERT INTO idempotency_keys(operation, idempotency_key, request_hash, response_json, status_code) VALUES (?, ?, ?, ?, ?)",
-            (operation, key, request_digest, canonical_json(response_payload), status_code),
-        )
+    owner_token = f"legacy-save-{payload_hash({'operation': operation, 'key': key, 'request_hash': request_digest})[:24]}"
+    record = reserve_idempotency(path, operation, key, request_digest, owner_token)
+    if record.request_hash != request_digest:
+        raise sqlite3.IntegrityError("IDEMPOTENCY_KEY_CONFLICT")
+    if record.state == "COMPLETED":
+        raise sqlite3.IntegrityError("IDEMPOTENCY_KEY_EXISTS")
+    if record.owner_token != owner_token:
+        raise sqlite3.IntegrityError("IDEMPOTENCY_KEY_RESERVED")
+    complete_idempotency(path, operation, key, request_digest, owner_token, response_payload, status_code)
 
 
 def audit_event_count(path: str | Path) -> int:
