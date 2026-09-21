@@ -17,6 +17,7 @@ from sare_lotofacil.portfolios.frozen import (
     validate_operator_card_ledger,
 )
 from sare_lotofacil.portfolios.primary import validate_primary_card_payload
+from sare_lotofacil.persistence.snapshot_identity import semantic_data_snapshot_hash
 from sare_lotofacil.statistics.baseline import brier_score, uniform_baseline
 
 PRIMARY_MODEL = "M1_frequency_regularized_lambda_100"
@@ -40,6 +41,8 @@ def _prediction_hash_payload(prediction: dict[str, object]) -> dict[str, object]
         "protocol_hash": prediction["protocol_hash"],
         "models": prediction["models"],
     }
+    if "training_data_snapshot_hash" in prediction:
+        payload["training_data_snapshot_hash"] = prediction["training_data_snapshot_hash"]
     if "primary_card" in prediction:
         payload["primary_card"] = prediction["primary_card"]
     return payload
@@ -157,6 +160,13 @@ def verify(state_dir: Path) -> dict[str, object]:
         if len(training_records) != training_last:
             raise RuntimeError(f"training history is incomplete for prediction: {target}")
         training_draws = tuple(record.numbers for record in training_records)
+        expected_training_data_hash = semantic_data_snapshot_hash(training_records)
+        stored_training_data_hash = prediction.get("training_data_snapshot_hash")
+        if (
+            stored_training_data_hash is not None
+            and str(stored_training_data_hash) != expected_training_data_hash
+        ):
+            raise RuntimeError(f"prediction semantic snapshot mismatch: {target}")
         expected_models = {
             "M0_uniform": tuple(uniform_baseline()),
             PRIMARY_MODEL: tuple(frequency_regularized(training_draws, lam=100.0)),
@@ -234,6 +244,7 @@ def verify(state_dir: Path) -> dict[str, object]:
     latest = json.loads(latest_path.read_text(encoding="utf-8"))
     actual_history_sha256 = hashlib.sha256(canonical_path.read_bytes()).hexdigest()
     actual_manifest_sha256 = hashlib.sha256(manifest_path.read_bytes()).hexdigest()
+    actual_data_snapshot_hash = semantic_data_snapshot_hash(records)
     expected_next_target = records[-1].contest_id + 1
     if int(latest["official_latest_contest"]) != records[-1].contest_id:
         raise RuntimeError("latest report diverges from canonical history")
@@ -243,6 +254,15 @@ def verify(state_dir: Path) -> dict[str, object]:
         raise RuntimeError("latest snapshot contest count diverges from canonical history")
     if str(latest["canonical_history_sha256"]) != actual_history_sha256:
         raise RuntimeError("latest canonical history hash diverges from persisted bytes")
+    if (
+        latest.get("data_snapshot_hash") is not None
+        and str(latest["data_snapshot_hash"]) != actual_data_snapshot_hash
+    ):
+        raise RuntimeError("latest semantic data snapshot hash diverges from canonical history")
+    if latest.get("storage_snapshot_id") is not None and str(latest["storage_snapshot_id"]) != str(latest["snapshot_id"]):
+        raise RuntimeError("latest storage snapshot id alias mismatch")
+    if latest.get("storage_snapshot_hash") is not None and str(latest["storage_snapshot_hash"]) != str(latest["snapshot_hash"]):
+        raise RuntimeError("latest storage snapshot hash alias mismatch")
     if str(latest["bootstrap_manifest_sha256"]) != actual_manifest_sha256:
         raise RuntimeError("latest bootstrap manifest hash diverges from persisted bytes")
     if pending_targets != [expected_next_target]:
@@ -291,6 +311,14 @@ def verify(state_dir: Path) -> dict[str, object]:
         "pending_predictions": pending,
         "protocol_hash": protocol["protocol_hash"],
         "canonical_history_sha256": hashlib.sha256(canonical_path.read_bytes()).hexdigest(),
+        "data_snapshot_hash": actual_data_snapshot_hash,
+        "data_snapshot_state": (
+            "PERSISTED_MATCH"
+            if latest.get("data_snapshot_hash") is not None
+            else "LEGACY_COMPUTED"
+        ),
+        "storage_snapshot_id": latest.get("storage_snapshot_id", latest.get("snapshot_id")),
+        "storage_snapshot_hash": latest.get("storage_snapshot_hash", latest.get("snapshot_hash")),
         "ledger_sha256": hashlib.sha256(ledger_path.read_bytes()).hexdigest(),
         "predictive_evidence": ledger["summary"].get("predictive_evidence", "NOT_ESTABLISHED"),
         "prospective_state": ledger["summary"].get("prospective_state"),
