@@ -114,6 +114,51 @@ def claim_next_job(
     return get_job(path, job_id)
 
 
+def renew_lease(
+    path: str | Path,
+    job_id: str,
+    worker_id: str,
+    lease_token: int,
+    *,
+    lease_seconds: int = 30,
+    now: datetime | None = None,
+) -> JobRecord:
+    if lease_seconds <= 0:
+        raise ValueError("lease_seconds deve ser positivo")
+    current = now or _utcnow()
+    if current.tzinfo is None:
+        raise ValueError("now deve possuir timezone")
+    expires = current + timedelta(seconds=lease_seconds)
+    with connect(path) as connection:
+        connection.execute("BEGIN IMMEDIATE")
+        cursor = connection.execute(
+            "UPDATE jobs SET lease_expires_at=?, updated_at=CURRENT_TIMESTAMP "
+            "WHERE job_id=? AND state='LEASED' AND lease_owner=? AND lease_token=? "
+            "AND cancel_requested=0 AND lease_expires_at>?",
+            (expires.isoformat(), job_id, worker_id, lease_token, current.isoformat()),
+        )
+        if cursor.rowcount != 1:
+            raise StaleLeaseError("STALE_LEASE")
+    return get_job(path, job_id)
+
+
+def _assert_active_lease(
+    connection,
+    job_id: str,
+    worker_id: str,
+    lease_token: int,
+    current: datetime,
+) -> tuple[int]:
+    row = connection.execute(
+        "SELECT cancel_requested FROM jobs WHERE job_id=? AND state='LEASED' "
+        "AND lease_owner=? AND lease_token=? AND lease_expires_at>?",
+        (job_id, worker_id, lease_token, current.isoformat()),
+    ).fetchone()
+    if not row:
+        raise StaleLeaseError("STALE_LEASE")
+    return row
+
+
 def save_checkpoint(
     path: str | Path,
     job_id: str,
@@ -121,10 +166,12 @@ def save_checkpoint(
     lease_token: int,
     checkpoint: dict[str, Any],
 ) -> None:
+    current = _utcnow()
     with connect(path) as connection:
+        _assert_active_lease(connection, job_id, worker_id, lease_token, current)
         valid = connection.execute(
-            "SELECT 1 FROM jobs WHERE job_id=? AND state='LEASED' AND lease_owner=? AND lease_token=? AND cancel_requested=0",
-            (job_id, worker_id, lease_token),
+            "SELECT 1 FROM jobs WHERE job_id=? AND cancel_requested=0",
+            (job_id,),
         ).fetchone()
         if not valid:
             raise StaleLeaseError("STALE_LEASE")
@@ -142,14 +189,10 @@ def complete_job(
     lease_token: int,
     result: dict[str, Any],
 ) -> JobRecord:
+    current = _utcnow()
     with connect(path) as connection:
         connection.execute("BEGIN IMMEDIATE")
-        row = connection.execute(
-            "SELECT cancel_requested FROM jobs WHERE job_id=? AND state='LEASED' AND lease_owner=? AND lease_token=?",
-            (job_id, worker_id, lease_token),
-        ).fetchone()
-        if not row:
-            raise StaleLeaseError("STALE_LEASE")
+        row = _assert_active_lease(connection, job_id, worker_id, lease_token, current)
         if row[0]:
             connection.execute(
                 "UPDATE jobs SET state='CANCELLED', lease_owner=NULL, lease_expires_at=NULL, result_json=NULL, updated_at=CURRENT_TIMESTAMP, finished_at=CURRENT_TIMESTAMP WHERE job_id=?",
@@ -170,11 +213,12 @@ def fail_job(
     lease_token: int,
     error: dict[str, Any],
 ) -> JobRecord:
+    current = _utcnow()
     with connect(path) as connection:
         cursor = connection.execute(
             "UPDATE jobs SET state='FAILED', error_json=?, lease_owner=NULL, lease_expires_at=NULL, updated_at=CURRENT_TIMESTAMP, finished_at=CURRENT_TIMESTAMP "
-            "WHERE job_id=? AND state='LEASED' AND lease_owner=? AND lease_token=?",
-            (canonical_json(error), job_id, worker_id, lease_token),
+            "WHERE job_id=? AND state='LEASED' AND lease_owner=? AND lease_token=? AND lease_expires_at>?",
+            (canonical_json(error), job_id, worker_id, lease_token, current.isoformat()),
         )
         if cursor.rowcount != 1:
             raise StaleLeaseError("STALE_LEASE")
