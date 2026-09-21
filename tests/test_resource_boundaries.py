@@ -22,6 +22,7 @@ from sare_lotofacil.resource_limits import (
     MAX_GENERATION_ATTEMPTS,
     MAX_JOB_ATTEMPTS,
     MAX_JOB_PAYLOAD_BYTES,
+    MAX_OPERATOR_CARDS_PER_REQUEST,
     MAX_PENDING_JOBS,
     MAX_REQUEST_BODY_BYTES,
     MAX_RUNTIME_SECONDS,
@@ -75,7 +76,7 @@ def test_operator_freeze_card_limit_and_attempt_limit_leave_ledger_unchanged() -
         freeze_operator_cards(
             ledger,
             target_contest=3785,
-            requested_card_count=MAX_CARDS_PER_REQUEST + 1,
+            requested_card_count=MAX_OPERATOR_CARDS_PER_REQUEST + 1,
             state_snapshot_hash="storage",
             created_at_utc="2026-09-21T17:00:00+00:00",
             idempotency_key="too-many",
