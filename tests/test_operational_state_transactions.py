@@ -4,6 +4,7 @@ import hashlib
 import json
 from datetime import date, datetime, timezone
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -211,6 +212,11 @@ def test_operational_cycle_migrates_legacy_state_to_committed_transaction(
         raw_payload={"numero": 6, "listaDezenas": list(records[-1].numbers)},
     )
     monkeypatch.setattr(cycle, "_resolve_official_latest", lambda current_last: official)
+    monkeypatch.setattr(
+        cycle,
+        "analyze_core",
+        lambda draws: SimpleNamespace(to_dict=lambda: {"fixture": True}),
+    )
 
     result = cycle.run_cycle(state, tmp_path / "runtime")
 
