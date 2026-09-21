@@ -12,6 +12,7 @@ from sare_lotofacil.analysis.post_contest_report import (
     render_post_contest_report_markdown,
 )
 from sare_lotofacil.analysis.ris import build_categorical_ris_from_draws
+from sare_lotofacil.operational_state import verify_state_commit
 from sare_lotofacil.portfolios.authority import (
     POLICY_PRIMARY,
     STATUS_FROZEN,
