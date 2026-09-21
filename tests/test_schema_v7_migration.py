@@ -52,7 +52,7 @@ def test_schema_v6_migrates_portfolios_to_allow_single_card_without_data_loss(tm
         ).fetchone()
         foreign_key_violations = connection.execute("PRAGMA foreign_key_check").fetchall()
 
-    assert schema_version == SCHEMA_VERSION == 7
+    assert schema_version == SCHEMA_VERSION
     assert "BETWEEN 1 AND 100" in " ".join(table_sql.upper().split())
     assert legacy == ("legacy-portfolio", 3, 1050)
     assert foreign_key_violations == []

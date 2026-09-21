@@ -77,6 +77,11 @@ def run(
         state_snapshot_hash=str(latest["snapshot_hash"]),
         created_at_utc=datetime.now(timezone.utc).isoformat(),
         idempotency_key=idempotency_key,
+        state_data_snapshot_hash=(
+            str(latest["data_snapshot_hash"])
+            if latest.get("data_snapshot_hash") is not None
+            else None
+        ),
         source_commit=source_commit,
         workflow_run_id=workflow_run_id,
         reserved_cards=reserved,
@@ -88,6 +93,9 @@ def run(
         "canonical_next_prediction_target": canonical_target,
         "state_snapshot_id": latest["snapshot_id"],
         "state_snapshot_hash": latest["snapshot_hash"],
+        "storage_snapshot_id": latest.get("storage_snapshot_id", latest["snapshot_id"]),
+        "storage_snapshot_hash": latest.get("storage_snapshot_hash", latest["snapshot_hash"]),
+        "data_snapshot_hash": latest.get("data_snapshot_hash"),
         "predictive_evidence": latest["prospective"]["predictive_evidence"],
         "operator_card_ledger": "operations/operator_card_ledger.json",
     }

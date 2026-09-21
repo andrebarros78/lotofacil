@@ -2,9 +2,14 @@ from __future__ import annotations
 
 import sqlite3
 import time
+from datetime import date
 from pathlib import Path
 
-SCHEMA_VERSION = 7
+from sare_lotofacil.domain.masks import mask_to_numbers
+from sare_lotofacil.ingestion.validation import validate_contest
+from sare_lotofacil.persistence.snapshot_identity import semantic_data_snapshot_hash
+
+SCHEMA_VERSION = 8
 
 SCHEMA_SQL = """
 PRAGMA foreign_keys = ON;
@@ -61,6 +66,7 @@ CREATE TABLE IF NOT EXISTS prize_tiers (
 CREATE TABLE IF NOT EXISTS snapshots (
     snapshot_id TEXT PRIMARY KEY,
     snapshot_hash TEXT NOT NULL UNIQUE,
+    data_snapshot_hash TEXT,
     state TEXT NOT NULL CHECK (state IN ('DRAFT', 'PUBLISHED')),
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -322,11 +328,51 @@ def _migrate_portfolios_to_v7(connection: sqlite3.Connection) -> None:
         raise RuntimeError(f"foreign key violations after v7 migration: {violations[:5]}")
 
 
+def _migrate_snapshots_to_v8(connection: sqlite3.Connection) -> None:
+    columns = {
+        row[1]
+        for row in connection.execute("PRAGMA table_info(snapshots)").fetchall()
+    }
+    if "data_snapshot_hash" not in columns:
+        connection.execute("ALTER TABLE snapshots ADD COLUMN data_snapshot_hash TEXT")
+
+    snapshot_ids = [
+        row[0]
+        for row in connection.execute(
+            "SELECT snapshot_id FROM snapshots WHERE data_snapshot_hash IS NULL"
+        ).fetchall()
+    ]
+    for snapshot_id in snapshot_ids:
+        rows = connection.execute(
+            "SELECT c.contest_id, c.draw_date, c.result_mask "
+            "FROM snapshot_members sm "
+            "JOIN contest_revisions c "
+            "ON c.contest_id=sm.contest_id AND c.revision=sm.revision "
+            "WHERE sm.snapshot_id=? ORDER BY c.contest_id",
+            (snapshot_id,),
+        ).fetchall()
+        if not rows:
+            continue
+        records = tuple(
+            validate_contest(contest_id, date.fromisoformat(draw_date), mask_to_numbers(result_mask))
+            for contest_id, draw_date, result_mask in rows
+        )
+        connection.execute(
+            "UPDATE snapshots SET data_snapshot_hash=? WHERE snapshot_id=?",
+            (semantic_data_snapshot_hash(records), snapshot_id),
+        )
+
+    connection.execute(
+        "CREATE INDEX IF NOT EXISTS idx_snapshots_data_hash ON snapshots(data_snapshot_hash)"
+    )
+
+
 def initialize_database(path: str | Path) -> Path:
     db_path = Path(path)
     with connect(db_path) as connection:
         connection.executescript(SCHEMA_SQL)
         _migrate_portfolios_to_v7(connection)
+        _migrate_snapshots_to_v8(connection)
         connection.execute(
             "INSERT INTO schema_meta(key, value) VALUES('schema_version', ?) "
             "ON CONFLICT(key) DO UPDATE SET value = excluded.value",
