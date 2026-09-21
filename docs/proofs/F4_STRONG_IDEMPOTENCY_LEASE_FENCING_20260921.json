@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "status": "F4_TERMINAL_PROOF_PASS",
+  "phase": "F4_STRONG_IDEMPOTENCY_AND_LEASE_FENCING",
+  "repository": "andrebarros78/lotofacil",
+  "pull_request": 103,
+  "candidate_head_sha": "9fbeff68f19562c0f280d06f2d5523273e9863b5",
+  "tested_pull_request_merge_sha": "2dd4118314875dab04923d0842f414c39a01d18b",
+  "merged_main_sha": "0b7354476abd151a519be48982078024adac02e7",
+  "operations_state_commit": "ba09fe7790cb5a3024b9b2c7c9344d0d34a4673a",
+  "workflow_run_id": 35630822172,
+  "database_schema_version": 10,
+  "idempotency": {
+    "contenders": 16,
+    "acquired": 1,
+    "in_progress": 15,
+    "replay": true,
+    "conflict": true,
+    "reservation_before_effect": true,
+    "fast_concurrent_replay_wait_seconds": 2,
+    "unexpected_effect_failure_fail_closed": true
+  },
+  "leases": {
+    "heartbeat_persisted": true,
+    "renewal_preserved_fencing_token": true,
+    "renewed_lease_not_reclaimed": true,
+    "reclaim_incremented_fencing_token": true,
+    "stale_completion_blocked": true,
+    "checkpoint_requires_live_lease": true,
+    "failure_requires_live_lease": true,
+    "completion_requires_live_lease": true
+  },
+  "regression": {
+    "python_3_13": "339 passed, 1 skipped, 2 warnings",
+    "python_3_12": "PASS"
+  },
+  "artifact": {
+    "artifact_id": 10653338527,
+    "name": "concurrency-fencing-proof",
+    "digest": "sha256:693e559c60e6ce29f0be52a437ed49ca42ac55e715505634d6c0f00e692076e6"
+  },
+  "checks": [
+    "Concurrency Fencing Proof",
+    "Operational State Integrity Proof",
+    "Semantic Snapshot Proof",
+    "Card Authority Proof",
+    "CI",
+    "SARE Stable Merge Gates",
+    "Scope Seal Proof",
+    "CodeQL Security Scan",
+    "Repository Sanitization",
+    "Agent Capability Proof",
+    "Agent Resilience Proof"
+  ],
+  "notes": [
+    "Idempotency keys are reserved transactionally in PENDING state before callback execution.",
+    "Concurrent matching requests can replay a completed fast response after a bounded wait; long-running active effects remain fail-closed as IDEMPOTENCY_IN_PROGRESS.",
+    "Unexpected callback failure is sealed as a completed 500 idempotency response to prevent automatic duplicate effect execution.",
+    "Lease renewals do not change the fencing token; only reclaim after expiry increments it.",
+    "Stale or expired workers cannot checkpoint, fail, or complete a job."
+  ],
+  "proof_payload_hash_scope": "SHA-256 of canonical JSON for this object excluding proof_payload_sha256",
+  "proof_payload_sha256": "99eb2e6a6615a1018f5410521da5f73edd71d71fbd22723bbe478c7fa29a5ad8"
+}
