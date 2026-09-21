@@ -11,7 +11,11 @@ from sare_lotofacil.analysis.post_contest_report import (
     render_post_contest_report_markdown,
 )
 from sare_lotofacil.ingestion.validation import validate_contest
-from sare_lotofacil.portfolios.frozen import validate_operator_card_ledger
+from sare_lotofacil.portfolios.frozen import (
+    card_for_generation_index,
+    validate_operator_card_ledger,
+)
+from sare_lotofacil.portfolios.primary import validate_primary_card_payload
 from sare_lotofacil.statistics.baseline import brier_score
 
 PRIMARY_MODEL = "M1_frequency_regularized_lambda_100"
@@ -52,22 +56,54 @@ def _verify_operator_cards(state_dir: Path, prospective: dict[str, object]) -> d
     operator_ledger = json.loads(path.read_text(encoding="utf-8"))
     result = validate_operator_card_ledger(operator_ledger)
 
+    predictions_by_target: dict[int, dict[str, object]] = {}
     reserved_by_target: dict[int, set[tuple[int, ...]]] = {}
     for prediction in prospective.get("predictions", []):
+        target = int(prediction["target_contest"])
+        predictions_by_target[target] = prediction
         primary = prediction.get("primary_card")
         if not isinstance(primary, dict) or not isinstance(primary.get("card"), list):
             continue
-        target = int(prediction["target_contest"])
         reserved_by_target.setdefault(target, set()).add(tuple(int(number) for number in primary["card"]))
 
+    occupied_by_target = {target: set(cards) for target, cards in reserved_by_target.items()}
+    cursor_by_target: dict[int, int] = {}
     for request in operator_ledger.get("requests", []):
         target = int(request["target_contest"])
-        reserved = reserved_by_target.get(target, set())
-        for item in request.get("cards", []):
-            if tuple(int(number) for number in item["card"]) in reserved:
-                raise RuntimeError("OPERATOR_CARD_DUPLICATES_FROZEN_PRIMARY_CARD")
-    return result
+        prediction = predictions_by_target.get(target)
+        if prediction is None:
+            raise RuntimeError("OPERATOR_CARD_TARGET_HAS_NO_FROZEN_PREDICTION")
+        if str(request["state_snapshot_hash"]) != str(prediction["training_snapshot_hash"]):
+            raise RuntimeError("OPERATOR_CARD_STATE_SNAPSHOT_MISMATCH")
 
+        expected_start = cursor_by_target.get(target, 0)
+        if int(request["generation_index_start"]) != expected_start:
+            raise RuntimeError("OPERATOR_CARD_GENERATION_CURSOR_MISMATCH")
+        occupied = occupied_by_target.setdefault(target, set())
+        cursor = expected_start
+
+        for item in request.get("cards", []):
+            index = int(item["generation_index"])
+            while cursor < index:
+                skipped = card_for_generation_index(target, cursor)
+                if skipped not in occupied:
+                    raise RuntimeError("OPERATOR_CARD_UNJUSTIFIED_GENERATION_SKIP")
+                cursor += 1
+
+            card = tuple(int(number) for number in item["card"])
+            expected_card = card_for_generation_index(target, index)
+            if card != expected_card:
+                raise RuntimeError("OPERATOR_CARD_GENERATION_PROOF_MISMATCH")
+            if card in occupied:
+                raise RuntimeError("OPERATOR_CARD_SELECTED_OCCUPIED_COMBINATION")
+            occupied.add(card)
+            cursor = index + 1
+
+        if int(request["generation_index_next"]) != cursor:
+            raise RuntimeError("OPERATOR_CARD_UNJUSTIFIED_TRAILING_SKIP")
+        cursor_by_target[target] = cursor
+
+    return result
 
 def verify(state_dir: Path) -> dict[str, object]:
     canonical_path = state_dir / "canonical_history.json"
@@ -96,23 +132,55 @@ def verify(state_dir: Path) -> dict[str, object]:
 
     evaluated = 0
     pending = 0
+    pending_targets: list[int] = []
+    predictions_by_target: dict[int, dict[str, object]] = {}
     for prediction in ledger.get("predictions", []):
-        if int(prediction["training_last_contest"]) >= int(prediction["target_contest"]):
-            raise RuntimeError("prediction contains future leakage")
-        if prediction.get("prediction_sha256") != _sha256(_prediction_hash_payload(prediction)):
-            raise RuntimeError(f"prediction hash mismatch: {prediction['target_contest']}")
         target = int(prediction["target_contest"])
+        training_last = int(prediction["training_last_contest"])
+        if target in predictions_by_target:
+            raise RuntimeError(f"duplicate prediction target: {target}")
+        predictions_by_target[target] = prediction
+        if target != training_last + 1:
+            raise RuntimeError("prediction target is not adjacent to training cutoff")
+        if prediction.get("prediction_sha256") != _sha256(_prediction_hash_payload(prediction)):
+            raise RuntimeError(f"prediction hash mismatch: {target}")
+
+        models = prediction.get("models")
+        if not isinstance(models, dict):
+            raise RuntimeError(f"prediction models missing: {target}")
+        primary_card = prediction.get("primary_card")
+        if primary_card is not None:
+            try:
+                validate_primary_card_payload(
+                    primary_card,
+                    models[PRIMARY_MODEL],
+                    models[SECONDARY_MODEL],
+                    target_contest=target,
+                    training_last_contest=training_last,
+                )
+            except (KeyError, RuntimeError, ValueError) as exc:
+                raise RuntimeError(f"primary card semantic mismatch: {target}") from exc
+
         evaluation = prediction.get("evaluation")
         if evaluation is None:
             pending += 1
+            pending_targets.append(target)
             if target <= records[-1].contest_id:
                 raise RuntimeError(f"unevaluated prediction already has official history: {target}")
             continue
+
         evaluated += 1
         record = by_id.get(target)
         if record is None:
             raise RuntimeError(f"evaluation has no canonical result: {target}")
-        models = prediction["models"]
+        if int(evaluation.get("observed_contest", 0)) != target:
+            raise RuntimeError(f"evaluation contest mismatch: {target}")
+        if str(evaluation.get("observed_draw_date", "")) != record.draw_date.isoformat():
+            raise RuntimeError(f"evaluation draw date mismatch: {target}")
+        observed_numbers = evaluation.get("observed_numbers")
+        if not isinstance(observed_numbers, list) or tuple(int(number) for number in observed_numbers) != record.numbers:
+            raise RuntimeError(f"evaluation observed numbers mismatch: {target}")
+
         recomputed = {
             "M0_uniform": brier_score(models["M0_uniform"], record.numbers),
             PRIMARY_MODEL: brier_score(models[PRIMARY_MODEL], record.numbers),
@@ -127,9 +195,39 @@ def verify(state_dir: Path) -> dict[str, object]:
         if abs(float(evaluation["delta_brier"][SECONDARY_MODEL]) - (recomputed["M0_uniform"] - recomputed[SECONDARY_MODEL])) > 1e-12:
             raise RuntimeError(f"secondary delta mismatch for contest {target}")
 
+        card_evaluation = prediction.get("primary_card_evaluation")
+        if primary_card is not None:
+            if not isinstance(card_evaluation, dict):
+                raise RuntimeError(f"primary card evaluation missing: {target}")
+            if int(card_evaluation.get("observed_contest", 0)) != target:
+                raise RuntimeError(f"primary card evaluation contest mismatch: {target}")
+            expected_hits = len(set(int(number) for number in primary_card["card"]) & set(record.numbers))
+            if int(card_evaluation.get("hits", -1)) != expected_hits:
+                raise RuntimeError(f"primary card hit mismatch: {target}")
+        elif card_evaluation is not None:
+            raise RuntimeError(f"primary card evaluation without frozen card: {target}")
+
     latest = json.loads(latest_path.read_text(encoding="utf-8"))
+    actual_history_sha256 = hashlib.sha256(canonical_path.read_bytes()).hexdigest()
+    actual_manifest_sha256 = hashlib.sha256(manifest_path.read_bytes()).hexdigest()
+    expected_next_target = records[-1].contest_id + 1
     if int(latest["official_latest_contest"]) != records[-1].contest_id:
         raise RuntimeError("latest report diverges from canonical history")
+    if int(latest["next_prediction_target"]) != expected_next_target:
+        raise RuntimeError("latest next prediction target diverges from canonical history")
+    if int(latest["snapshot_contests"]) != len(records):
+        raise RuntimeError("latest snapshot contest count diverges from canonical history")
+    if str(latest["canonical_history_sha256"]) != actual_history_sha256:
+        raise RuntimeError("latest canonical history hash diverges from persisted bytes")
+    if str(latest["bootstrap_manifest_sha256"]) != actual_manifest_sha256:
+        raise RuntimeError("latest bootstrap manifest hash diverges from persisted bytes")
+    if pending_targets != [expected_next_target]:
+        raise RuntimeError(
+            f"pending prediction set mismatch: expected={[expected_next_target]} observed={pending_targets}"
+        )
+    pending_prediction = predictions_by_target[expected_next_target]
+    if str(pending_prediction["training_snapshot_hash"]) != str(latest["snapshot_hash"]):
+        raise RuntimeError("pending prediction snapshot diverges from latest snapshot")
     if latest["prospective"] != ledger["summary"]:
         raise RuntimeError("latest prospective summary diverges from ledger")
 

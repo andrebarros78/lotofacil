@@ -106,6 +106,28 @@ def select_primary_card(
     )
 
 
+def validate_primary_card_payload(
+    payload: object,
+    primary_scores: Sequence[float],
+    secondary_scores: Sequence[float],
+    *,
+    target_contest: int,
+    training_last_contest: int,
+) -> PrimaryCardDecision:
+    """Recalcula a decisão congelada e exige equivalência semântica completa."""
+    if not isinstance(payload, dict):
+        raise RuntimeError("PRIMARY_CARD_FROZEN_DECISION_MISSING")
+    expected = select_primary_card(
+        primary_scores,
+        secondary_scores,
+        target_contest=target_contest,
+        training_last_contest=training_last_contest,
+    )
+    if payload != expected.to_dict():
+        raise RuntimeError("PRIMARY_CARD_FROZEN_DECISION_MISMATCH")
+    return expected
+
+
 def build_primary_card(
     training_draws: Sequence[Iterable[int]],
     *,

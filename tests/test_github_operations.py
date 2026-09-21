@@ -58,6 +58,13 @@ def test_prediction_is_scored_only_after_result_and_keeps_uniform_oracle():
     cycle.verify_prediction_hashes({"predictions": [prediction]})
 
 
+def test_prediction_evaluation_rejects_wrong_contest_record():
+    records = _records(7)
+    prediction = cycle._build_prediction(6, "snapshot-hash", records[:5], "2026-09-13T12:00:00+00:00")
+    with pytest.raises(RuntimeError, match="PREDICTION_EVALUATION_TARGET_MISMATCH"):
+        cycle._evaluate_prediction(prediction, records[6])
+
+
 def test_prospective_summary_cannot_claim_replication_early():
     records = _records(6)
     prediction = cycle._build_prediction(6, "snapshot-hash", records[:5], "2026-09-13T12:00:00+00:00")
