@@ -29,7 +29,9 @@ jobs:
       - name: Install locked environment
         run: python -m pip install -e .[dev]
       - name: Prove atomic idempotency and lease fencing
+        shell: bash
         run: |
+          set -euo pipefail
           mkdir -p artifacts
           pytest -q             tests/test_idempotency_reservations.py             tests/test_jobs.py             tests/test_api.py | tee artifacts/f4-pytest.txt
       - name: Emit terminal F4 proof
