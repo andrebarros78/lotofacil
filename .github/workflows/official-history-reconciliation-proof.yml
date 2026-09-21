@@ -1,0 +1,229 @@
+name: Official History Reconciliation Proof
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/official-history-reconciliation-proof.yml"
+      - "scripts/reconcile_official_history.py"
+      - "src/sare_lotofacil/reconciliation/**"
+      - "src/sare_lotofacil/ingestion/caixa.py"
+      - "src/sare_lotofacil/ingestion/validation.py"
+      - "tests/test_official_history_reconciliation.py"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: official-history-reconciliation-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      operations_state_sha: ${{ steps.state.outputs.operations_state_sha }}
+      contest_count: ${{ steps.state.outputs.contest_count }}
+    steps:
+      - name: Checkout canonical operational state
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          ref: operations/state
+          fetch-depth: 0
+          path: state-store
+
+      - name: Freeze canonical state identity
+        id: state
+        run: |
+          STATE_SHA="$(git -C state-store rev-parse HEAD)"
+          CONTEST_COUNT="$(python - <<'PY'
+          import json
+          from pathlib import Path
+
+          payload = json.loads(Path("state-store/operations/canonical_history.json").read_text(encoding="utf-8"))
+          records = payload["records"]
+          if not records:
+              raise SystemExit("canonical history is empty")
+          if int(records[0]["contest_id"]) != 1 or int(records[-1]["contest_id"]) != len(records):
+              raise SystemExit("canonical history boundary is not 1..N")
+          if any(int(record["contest_id"]) != index for index, record in enumerate(records, start=1)):
+              raise SystemExit("canonical history is not contiguous from contest 1")
+          print(len(records))
+          PY
+          )"
+          echo "operations_state_sha=$STATE_SHA" >> "$GITHUB_OUTPUT"
+          echo "contest_count=$CONTEST_COUNT" >> "$GITHUB_OUTPUT"
+          echo "Frozen operations/state: $STATE_SHA contests=$CONTEST_COUNT"
+
+  reconcile:
+    needs: plan
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3]
+    steps:
+      - name: Checkout candidate engine
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          path: app
+
+      - name: Checkout frozen canonical operational state
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          ref: ${{ needs.plan.outputs.operations_state_sha }}
+          fetch-depth: 0
+          path: state-store
+
+      - name: Setup Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: "3.13"
+
+      - name: Install candidate engine
+        run: python -m pip install ./app
+
+      - name: Calculate deterministic shard range
+        id: range
+        env:
+          CONTEST_COUNT: ${{ needs.plan.outputs.contest_count }}
+          SHARD_INDEX: ${{ matrix.shard }}
+          SHARD_COUNT: "4"
+        run: |
+          START=$(( CONTEST_COUNT * SHARD_INDEX / SHARD_COUNT + 1 ))
+          END=$(( CONTEST_COUNT * (SHARD_INDEX + 1) / SHARD_COUNT ))
+          test "$START" -le "$END"
+          echo "start=$START" >> "$GITHUB_OUTPUT"
+          echo "end=$END" >> "$GITHUB_OUTPUT"
+          echo "Shard $SHARD_INDEX range: $START..$END of $CONTEST_COUNT"
+
+      - name: Reconcile shard against official CAIXA
+        run: |
+          mkdir -p artifacts/official-reconciliation/raw
+          python app/scripts/reconcile_official_history.py run \
+            --canonical state-store/operations/canonical_history.json \
+            --start "${{ steps.range.outputs.start }}" \
+            --end "${{ steps.range.outputs.end }}" \
+            --out artifacts/official-reconciliation/official_reconciliation.json \
+            --raw-dir artifacts/official-reconciliation/raw \
+            --checkpoint-every 25 \
+            --delay-seconds 0.10 \
+            --timeout 20 \
+            --retries 4 \
+            --backoff-seconds 0.5 \
+            --strict
+
+      - name: Assert shard proof
+        env:
+          EXPECTED_START: ${{ steps.range.outputs.start }}
+          EXPECTED_END: ${{ steps.range.outputs.end }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          payload = json.loads(
+              Path("artifacts/official-reconciliation/official_reconciliation.json").read_text(encoding="utf-8")
+          )
+          if payload["status"] != "OFFICIAL_HISTORY_RECONCILIATION_SHARD_PASS":
+              raise SystemExit(payload["status"])
+          expected_start = int(os.environ["EXPECTED_START"])
+          expected_end = int(os.environ["EXPECTED_END"])
+          expected = expected_end - expected_start + 1
+          if payload["range"] != {"start": expected_start, "end": expected_end, "expected": expected}:
+              raise SystemExit(f"range mismatch: {payload['range']}")
+          counts = payload["counts"]
+          if counts["OFFICIAL_MATCH"] != expected:
+              raise SystemExit(f"official matches {counts['OFFICIAL_MATCH']} != {expected}")
+          if any(counts[key] for key in (
+              "OFFICIAL_DIVERGENCE",
+              "OFFICIAL_UNAVAILABLE",
+              "OFFICIAL_INVALID_RESPONSE",
+          )):
+              raise SystemExit(f"non-match states present: {counts}")
+          if not payload["raw_evidence_complete"]:
+              raise SystemExit("raw evidence is incomplete")
+          print(json.dumps({
+              "status": payload["status"],
+              "range": payload["range"],
+              "counts": counts,
+              "canonical_file_sha256": payload["canonical_file_sha256"],
+              "manifest_sha256": payload["manifest_sha256"],
+              "raw_evidence_complete": payload["raw_evidence_complete"],
+          }, sort_keys=True))
+          PY
+
+      - name: Record shard provenance
+        run: |
+          git -C app rev-parse HEAD | tee artifacts/official-reconciliation/candidate_code_commit.txt
+          git -C state-store rev-parse HEAD | tee artifacts/official-reconciliation/operations_state_commit.txt
+          test "$(cat artifacts/official-reconciliation/operations_state_commit.txt)" = "${{ needs.plan.outputs.operations_state_sha }}"
+          python - <<'PY'
+          import hashlib
+          from pathlib import Path
+
+          root = Path("artifacts/official-reconciliation/raw")
+          rows = []
+          for path in sorted(root.glob("*.json")):
+              rows.append(f"{path.name} {hashlib.sha256(path.read_bytes()).hexdigest()}")
+          Path("artifacts/official-reconciliation/raw_payload_sha256.txt").write_text(
+              "\n".join(rows) + "\n",
+              encoding="utf-8",
+          )
+          PY
+          test -s artifacts/official-reconciliation/raw_payload_sha256.txt
+
+      - name: Upload F1 shard evidence
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: official-history-reconciliation-shard-${{ matrix.shard }}
+          path: artifacts/official-reconciliation/
+          if-no-files-found: error
+          retention-days: 90
+
+  terminal-proof:
+    needs: [plan, reconcile]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Emit terminal F1 proof
+        env:
+          OPERATIONS_STATE_SHA: ${{ needs.plan.outputs.operations_state_sha }}
+          CONTEST_COUNT: ${{ needs.plan.outputs.contest_count }}
+        run: |
+          mkdir -p artifacts
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          payload = {
+              "status": "OFFICIAL_HISTORY_RECONCILIATION_PASS",
+              "coverage": {
+                  "start": 1,
+                  "end": int(os.environ["CONTEST_COUNT"]),
+                  "expected": int(os.environ["CONTEST_COUNT"]),
+              },
+              "operations_state_commit": os.environ["OPERATIONS_STATE_SHA"],
+              "shard_count": 4,
+              "raw_evidence": "PRESERVED_IN_SHARD_ARTIFACTS",
+          }
+          Path("artifacts/official_history_reconciliation_terminal.json").write_text(
+              json.dumps(payload, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+          print(json.dumps(payload, sort_keys=True))
+          PY
+
+      - name: Upload terminal F1 proof
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: official-history-reconciliation-terminal
+          path: artifacts/official_history_reconciliation_terminal.json
+          if-no-files-found: error
+          retention-days: 90
