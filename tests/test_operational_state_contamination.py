@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 
 from scripts import github_operational_cycle as cycle
+from scripts.github_operator_freeze_cards import run as run_operator_freeze
 from scripts.verify_github_operational_state import _verify_operator_cards, verify
 from sare_lotofacil.analysis.post_contest_report import (
     build_post_contest_reports,
@@ -41,7 +42,7 @@ def _write_json(path: Path, payload: object) -> None:
 
 def _state_fixture(tmp_path: Path) -> Path:
     state = tmp_path / "operations"
-    state.mkdir()
+    state.mkdir(parents=True)
     records = _records(6)
 
     history = {
@@ -251,3 +252,33 @@ def test_operator_verifier_rejects_cross_snapshot_contamination(tmp_path: Path) 
 
     with pytest.raises(RuntimeError, match="OPERATOR_CARD_STATE_SNAPSHOT_MISMATCH"):
         _verify_operator_cards(state, prospective)
+
+
+def test_operator_writer_rejects_noncanonical_future_target(tmp_path: Path) -> None:
+    state = _state_fixture(tmp_path)
+    with pytest.raises(RuntimeError, match="OPERATOR_CARD_TARGET_MUST_EQUAL_CANONICAL_NEXT"):
+        run_operator_freeze(
+            state,
+            card_count=1,
+            target_contest=8,
+            idempotency_key="future-target",
+            source_commit="source-sha",
+            workflow_run_id="run-3",
+        )
+
+
+def test_operator_writer_rejects_pending_prediction_snapshot_drift(tmp_path: Path) -> None:
+    state = _state_fixture(tmp_path)
+    ledger = _ledger(state)
+    ledger["predictions"][-1]["training_snapshot_hash"] = "stale-snapshot"
+    _save_ledger(state, ledger)
+
+    with pytest.raises(RuntimeError, match="OPERATOR_CARD_STATE_SNAPSHOT_MISMATCH"):
+        run_operator_freeze(
+            state,
+            card_count=1,
+            target_contest=7,
+            idempotency_key="stale-snapshot",
+            source_commit="source-sha",
+            workflow_run_id="run-4",
+        )
