@@ -292,7 +292,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Read-only operator console for the canonical GitHub state")
     parser.add_argument(
         "--action",
-        choices=("status", "audit", "analyze", "ris", "primary-card", "portfolio", "export"),
+        choices=("status", "audit", "analyze", "ris", "primary-card", "portfolio-preview", "portfolio", "export"),
         required=True,
     )
     parser.add_argument("--state-dir", type=Path, required=True)
@@ -319,9 +319,12 @@ def main() -> int:
     elif args.action == "primary-card":
         payload = _primary_card(args.state_dir)
         _write_json(args.out_dir / "primary_card.json", payload)
-    elif args.action == "portfolio":
+    elif args.action in {"portfolio-preview", "portfolio"}:
         payload = _portfolio(args.state_dir, args.card_count, args.seed)
-        _write_json(args.out_dir / "portfolio.json", payload)
+        payload["action"] = "portfolio-preview"
+        if args.action == "portfolio":
+            payload["legacy_action_alias"] = "portfolio"
+        _write_json(args.out_dir / "portfolio_preview.json", payload)
     elif args.action == "export":
         payload, md = _export(args.state_dir)
         _write_json(args.out_dir / "operational_report.json", payload)
