@@ -19,6 +19,7 @@ from sare_lotofacil.persistence.jobs import enqueue_job, get_job, request_cancel
 from sare_lotofacil.persistence.operations import get_portfolio, get_run
 from sare_lotofacil.persistence.repository import create_latest_snapshot
 from sare_lotofacil.portfolios.authority import OPERATIONAL_STATUSES
+from sare_lotofacil.resource_limits import MAX_REQUEST_BODY_BYTES, ResourceLimitError
 from sare_lotofacil.persistence.workflows import (
     execute_experiment, get_experiment, get_hypothesis, get_ingestion, get_latest_contest,
     list_contests, list_hypotheses, list_ingestions, promote_model, record_caixa_ingestion,
@@ -104,7 +105,12 @@ def _ingestion_payload(record) -> dict[str, Any]:
     }
 
 
-def create_app(db_path: str | Path, *, write_token: str | None = None, max_body_bytes: int = 65_536):
+def create_app(
+    db_path: str | Path,
+    *,
+    write_token: str | None = None,
+    max_body_bytes: int = MAX_REQUEST_BODY_BYTES,
+):
     path = Path(db_path)
     app = _legacy_create_app(path, write_token=write_token, max_body_bytes=max_body_bytes)
     app.version = __version__
@@ -248,6 +254,8 @@ def create_app(db_path: str | Path, *, write_token: str | None = None, max_body_
         def execute():
             try:
                 job = enqueue_job(path, body.job_type, body.payload)
+            except ResourceLimitError as exc:
+                raise HTTPException(429, str(exc))
             except ValueError as exc:
                 raise HTTPException(422, str(exc))
             return {"job_id": job.job_id, "state": job.state, "location": f"/v1/jobs/{job.job_id}"}, 202
