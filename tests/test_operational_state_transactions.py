@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-import github_operational_cycle as cycle
+from scripts import github_operational_cycle as cycle
 from sare_lotofacil.analysis.post_contest_report import (
     build_post_contest_reports,
     render_post_contest_report_markdown,
@@ -22,7 +22,7 @@ from sare_lotofacil.operational_state import (
     verify_state_commit,
 )
 from sare_lotofacil.persistence.snapshot_identity import semantic_data_snapshot_hash
-from verify_github_operational_state import verify
+from scripts.verify_github_operational_state import verify
 
 
 def _write_json(path: Path, payload: object) -> None:
