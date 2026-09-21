@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "status": "CARD_AUTHORITY_UNIFICATION_PASS",
+  "phase": "F3_CARD_AUTHORITY_UNIFICATION",
+  "proven_at_utc": "2026-09-21T17:00:42.826392+00:00",
+  "repository": "andrebarros78/lotofacil",
+  "pull_request": 101,
+  "candidate_head_sha": "9ee70da5fe232392d920bcf76f5fd14665d6d670",
+  "tested_pull_request_merge_sha": "a2e483d380e1157846c69fba2efc03382b7a272f",
+  "merged_main_sha": "b7b9fcc315398d26d8f0dbf1e999525e9dbe904a",
+  "operations_state_commit": "b84def9973c0e8e6d6bfb2be4d23ba62d31f1e0a",
+  "workflow_run_id": 35629217871,
+  "authority_id": "CARD_GENERATION_SERVICE_V1",
+  "artifact_schema_version": "card-artifact-v1",
+  "data_snapshot_hash": "7f6afa0bc3718e2f34bd08340b795124e6fbd56c1fca56c10da7a11f50fde94b",
+  "surfaces": {
+    "primary_card": {
+      "status": "FROZEN",
+      "artifact_id": "card-76a9e3b957ec262537b927cf",
+      "artifact_sha256": "76a9e3b957ec262537b927cf1667dd683c25a9d64a7c5f781ac17f6c72d6ba6d",
+      "policy_id": "PRIMARY_CARD_M1_M2_V1"
+    },
+    "operator_cards": {
+      "status": "FROZEN",
+      "artifact_id": "card-15c93b8811367725ada4b00f",
+      "artifact_sha256": "15c93b8811367725ada4b00f715bfaa0067ae183cf86b7a2aac41ee97aa665ba",
+      "policy_id": "OPERATOR_MULTI_FREEZE_V2"
+    },
+    "operator_preview": {
+      "status": "PREVIEW",
+      "operational_use_allowed": false,
+      "artifact_id": "card-c353464ecfb490feab98acae",
+      "artifact_sha256": "c353464ecfb490feab98acaecb1eb286a109f9e0120a5a99e6e6c6a8fabef7e6",
+      "policy_id": "UNIFORM_RANDOM_PORTFOLIO_V1"
+    },
+    "persisted_api_portfolio": {
+      "status": "FROZEN",
+      "artifact_id": "card-a61c1c985729bf5161f75227",
+      "artifact_sha256": "a61c1c985729bf5161f752270173eabe1be74a019b568c987d7661f8573f3d6f",
+      "policy_id": "UNIFORM_RANDOM_PORTFOLIO_V1"
+    }
+  },
+  "database_schema_version": 9,
+  "legacy_migration_rule": "UNVERIFIABLE_LEGACY_PORTFOLIOS_INVALIDATED",
+  "regression": {
+    "python_3_13": "332 passed, 1 skipped, 2 warnings",
+    "python_3_12": "PASS"
+  },
+  "artifact": {
+    "artifact_id": 10654071307,
+    "name": "card-authority-proof",
+    "digest": "sha256:a9f076635531b43d4f22fd2a592ff80bafd94b95299a3ab013a0d12d729032d1"
+  },
+  "checks": [
+    "Card Authority Proof",
+    "Operational State Integrity Proof",
+    "Semantic Snapshot Proof",
+    "CI",
+    "SARE Stable Merge Gates",
+    "Scope Seal Proof",
+    "CodeQL Security Scan",
+    "Repository Sanitization",
+    "Agent Capability Proof",
+    "Agent Resilience Proof",
+    "Max Capacity Audit"
+  ],
+  "notes": [
+    "PREVIEW artifacts are explicitly non-operational.",
+    "Persisted API portfolios are generated and verified as FROZEN card artifacts.",
+    "Primary and operator card surfaces retain legacy compatibility while exposing canonical artifacts.",
+    "Unverifiable legacy portfolio rows are INVALIDATED instead of silently promoted."
+  ],
+  "proof_payload_hash_scope": "SHA-256 of canonical JSON for this object excluding proof_payload_sha256",
+  "proof_payload_sha256": "f5500dc3448767ea3036ea9814d50b95007dafdbd71cc1ad2caae6fadbfafa10"
+}
