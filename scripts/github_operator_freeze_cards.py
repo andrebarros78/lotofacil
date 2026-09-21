@@ -50,6 +50,19 @@ def run(
         raise RuntimeError(
             f"OPERATOR_CARD_TARGET_ALREADY_OBSERVED: requested={target} official_latest={official_latest}"
         )
+    if target != canonical_target:
+        raise RuntimeError(
+            f"OPERATOR_CARD_TARGET_MUST_EQUAL_CANONICAL_NEXT: requested={target} canonical={canonical_target}"
+        )
+
+    prediction = next(
+        (item for item in prospective.get("predictions", []) if int(item.get("target_contest", -1)) == target),
+        None,
+    )
+    if prediction is None:
+        raise RuntimeError("OPERATOR_CARD_TARGET_HAS_NO_FROZEN_PREDICTION")
+    if str(prediction.get("training_snapshot_hash", "")) != str(latest["snapshot_hash"]):
+        raise RuntimeError("OPERATOR_CARD_STATE_SNAPSHOT_MISMATCH")
 
     ledger_path = state_dir / "operator_card_ledger.json"
     ledger = _load(ledger_path) if ledger_path.exists() else empty_operator_card_ledger()
