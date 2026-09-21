@@ -387,7 +387,7 @@ class CardGenerationService:
         data_snapshot_hash: str | None,
         storage_snapshot_id: str | None,
         storage_snapshot_hash: str | None,
-        request_sha256: str,
+        request_fingerprint: str,
     ) -> CardArtifact:
         return build_card_artifact(
             status=STATUS_FROZEN,
@@ -399,7 +399,7 @@ class CardGenerationService:
             storage_snapshot_id=storage_snapshot_id,
             storage_snapshot_hash=storage_snapshot_hash,
             metadata={
-                "request_sha256": request_sha256,
+                "request_fingerprint": request_fingerprint,
                 "surface": "OPERATOR_FREEZE",
             },
         )
