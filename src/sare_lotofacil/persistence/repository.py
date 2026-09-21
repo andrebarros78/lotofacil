@@ -13,6 +13,7 @@ from sare_lotofacil.domain.masks import mask_to_numbers
 from sare_lotofacil.ingestion.caixa import CaixaContest
 from sare_lotofacil.ingestion.validation import ContestRecord, validate_contest
 from sare_lotofacil.persistence.db import connect, initialize_database
+from sare_lotofacil.persistence.snapshot_identity import semantic_data_snapshot_hash
 
 
 @dataclass(frozen=True, slots=True)
@@ -35,7 +36,16 @@ class BulkPersistResult:
 class SnapshotInfo:
     snapshot_id: str
     snapshot_hash: str
+    data_snapshot_hash: str
     contest_count: int
+
+    @property
+    def storage_snapshot_id(self) -> str:
+        return self.snapshot_id
+
+    @property
+    def storage_snapshot_hash(self) -> str:
+        return self.snapshot_hash
 
 
 def _canonical_json(payload: object) -> str:
@@ -201,7 +211,7 @@ def create_latest_snapshot(path: str | Path) -> SnapshotInfo:
     initialize_database(path)
     with connect(path) as connection:
         rows = connection.execute(
-            "SELECT c.contest_id, c.revision, c.result_mask "
+            "SELECT c.contest_id, c.revision, c.draw_date, c.result_mask "
             "FROM contest_revisions c "
             "JOIN (SELECT contest_id, MAX(revision) AS revision FROM contest_revisions GROUP BY contest_id) latest "
             "ON latest.contest_id=c.contest_id AND latest.revision=c.revision "
@@ -209,18 +219,39 @@ def create_latest_snapshot(path: str | Path) -> SnapshotInfo:
         ).fetchall()
         if not rows:
             raise ValueError("não há concursos para publicar snapshot")
-        canonical = "\n".join(f"{contest_id}:{revision}:{result_mask}" for contest_id, revision, result_mask in rows)
-        snapshot_hash = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+        # Storage identity preserves the historical contract: it proves the exact
+        # revision graph selected from this database representation.
+        storage_canonical = "\n".join(
+            f"{contest_id}:{revision}:{result_mask}"
+            for contest_id, revision, _, result_mask in rows
+        )
+        snapshot_hash = hashlib.sha256(storage_canonical.encode("utf-8")).hexdigest()
         snapshot_id = f"snap-{snapshot_hash[:20]}"
+
+        # Data identity deliberately excludes SQLite revision numbering and all
+        # physical storage metadata. Equal Lotofácil data must hash equally even
+        # after a rebuild with a different revision history.
+        semantic_records = tuple(
+            validate_contest(contest_id, date.fromisoformat(draw_date), mask_to_numbers(result_mask))
+            for contest_id, _, draw_date, result_mask in rows
+        )
+        data_snapshot_hash = semantic_data_snapshot_hash(semantic_records)
+
         connection.execute(
-            "INSERT OR IGNORE INTO snapshots(snapshot_id, snapshot_hash, state) VALUES (?, ?, 'PUBLISHED')",
-            (snapshot_id, snapshot_hash),
+            "INSERT OR IGNORE INTO snapshots(snapshot_id, snapshot_hash, data_snapshot_hash, state) "
+            "VALUES (?, ?, ?, 'PUBLISHED')",
+            (snapshot_id, snapshot_hash, data_snapshot_hash),
+        )
+        connection.execute(
+            "UPDATE snapshots SET data_snapshot_hash=? WHERE snapshot_id=?",
+            (data_snapshot_hash, snapshot_id),
         )
         connection.executemany(
             "INSERT OR IGNORE INTO snapshot_members(snapshot_id, contest_id, revision) VALUES (?, ?, ?)",
-            [(snapshot_id, contest_id, revision) for contest_id, revision, _ in rows],
+            [(snapshot_id, contest_id, revision) for contest_id, revision, _, _ in rows],
         )
-        return SnapshotInfo(snapshot_id, snapshot_hash, len(rows))
+        return SnapshotInfo(snapshot_id, snapshot_hash, data_snapshot_hash, len(rows))
 
 
 def load_snapshot_records(path: str | Path, snapshot_id: str) -> tuple[ContestRecord, ...]:
