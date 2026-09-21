@@ -87,7 +87,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add operations/operator_card_ledger.json
+          git add operations/operator_card_ledger.json operations/state_commit.json
           if git diff --cached --quiet; then
             echo "Idempotent replay: canonical state unchanged"
           else
@@ -103,4 +103,5 @@ jobs:
             artifacts/operator_freeze_audit_before.json
             artifacts/operator_freeze_audit_after.json
             state-store/operations/operator_card_ledger.json
+            state-store/operations/state_commit.json
           if-no-files-found: error
