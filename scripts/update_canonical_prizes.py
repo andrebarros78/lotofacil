@@ -8,6 +8,10 @@ from pathlib import Path
 
 from sare_lotofacil.ingestion.caixa import CaixaContest, fetch_caixa_contest
 from sare_lotofacil.ingestion.validation import validate_contest
+from sare_lotofacil.operational_state import (
+    publish_state_transaction,
+    verify_state_commit,
+)
 
 SCHEMA_VERSION = 1
 
@@ -90,6 +94,7 @@ def _upsert_contest(state: dict[str, object], contest: CaixaContest) -> bool:
 
 def update_state(state_dir: Path, *, fetcher=fetch_caixa_contest) -> dict[str, object]:
     state_dir.mkdir(parents=True, exist_ok=True)
+    state_commit_before = verify_state_commit(state_dir, allow_legacy=True)
     history = _load_history(state_dir)
     latest_contest = max(history)
     path = state_dir / "canonical_prizes.json"
@@ -117,13 +122,34 @@ def update_state(state_dir: Path, *, fetcher=fetch_caixa_contest) -> dict[str, o
     state["updated_at_utc"] = _utcnow()
     state["latest_contest"] = latest_contest
     state["contest_count"] = len(state.get("contests", []))
-    path.write_text(json.dumps(state, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    content = (
+        json.dumps(state, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
+    ).encode("utf-8")
+    digest = hashlib.sha256(content).hexdigest()
+    generation_id = f"prizes-{latest_contest}-{digest[:16]}"
+    commit = publish_state_transaction(
+        state_dir,
+        {"canonical_prizes.json": content},
+        generation_id=generation_id,
+        metadata={
+            "source": "canonical_prize_update",
+            "latest_contest": latest_contest,
+            "canonical_prizes_sha256": digest,
+        },
+    )
+    state_commit_after = verify_state_commit(state_dir, allow_legacy=False)
     return {
         "status": "CANONICAL_PRIZE_STATE_PASS",
         "latest_contest": latest_contest,
         "prize_contests": len(state.get("contests", [])),
         "changed_contests": changed_ids,
-        "canonical_prizes_sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+        "canonical_prizes_sha256": digest,
+        "state_transaction": {
+            "generation_id": commit["generation_id"],
+            "previous_commit_status": state_commit_before["status"],
+            "commit_status": state_commit_after["status"],
+            "verified_files": state_commit_after["verified_files"],
+        },
     }
 
 
