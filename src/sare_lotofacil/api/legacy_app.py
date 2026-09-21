@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import hmac
 import json
-import sqlite3
 from pathlib import Path
 from typing import Annotated, Any, Callable
 
@@ -13,18 +12,16 @@ from pydantic import BaseModel, Field
 from sare_lotofacil.analysis.ris import build_categorical_ris
 from sare_lotofacil.persistence.backup import database_integrity
 from sare_lotofacil.persistence.db import SCHEMA_VERSION, connect, initialize_database
+from sare_lotofacil.api.idempotency import execute_idempotent
 from sare_lotofacil.persistence.operations import (
     evaluate_portfolio,
     evaluate_portfolio_revision,
-    get_idempotency,
     get_portfolio,
     get_run,
     list_audit_events,
     list_snapshots,
-    payload_hash,
     persist_analysis,
     persist_uniform_portfolio,
-    save_idempotency,
 )
 
 
@@ -127,25 +124,7 @@ def create_app(
         request_payload: dict[str, Any],
         callback: Callable[[], tuple[dict[str, Any], int]],
     ) -> JSONResponse:
-        if key is None or not key.strip():
-            raise HTTPException(status_code=400, detail="IDEMPOTENCY_KEY_REQUIRED")
-        if len(key) > 128:
-            raise HTTPException(status_code=400, detail="IDEMPOTENCY_KEY_TOO_LONG")
-        digest = payload_hash(request_payload)
-        existing = get_idempotency(path, operation, key)
-        if existing:
-            if existing.request_hash != digest:
-                raise HTTPException(status_code=409, detail="IDEMPOTENCY_KEY_CONFLICT")
-            return JSONResponse(json.loads(existing.response_json), status_code=existing.status_code)
-        response_payload, status_code = callback()
-        try:
-            save_idempotency(path, operation, key, digest, response_payload, status_code)
-        except sqlite3.IntegrityError:
-            existing = get_idempotency(path, operation, key)
-            if not existing or existing.request_hash != digest:
-                raise HTTPException(status_code=409, detail="IDEMPOTENCY_KEY_CONFLICT")
-            return JSONResponse(json.loads(existing.response_json), status_code=existing.status_code)
-        return JSONResponse(response_payload, status_code=status_code)
+        return execute_idempotent(path, operation, key, request_payload, callback)
 
     @app.get("/health/live")
     def health_live() -> dict[str, str]:

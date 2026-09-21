@@ -10,7 +10,7 @@ from sare_lotofacil.ingestion.validation import validate_contest
 from sare_lotofacil.persistence.snapshot_identity import semantic_data_snapshot_hash
 from sare_lotofacil.portfolios.authority import CardGenerationService
 
-SCHEMA_VERSION = 9
+SCHEMA_VERSION = 10
 
 SCHEMA_SQL = """
 PRAGMA foreign_keys = ON;
@@ -153,10 +153,19 @@ CREATE TABLE IF NOT EXISTS idempotency_keys (
     operation TEXT NOT NULL,
     idempotency_key TEXT NOT NULL,
     request_hash TEXT NOT NULL,
-    response_json TEXT NOT NULL,
-    status_code INTEGER NOT NULL,
+    state TEXT NOT NULL DEFAULT 'COMPLETED' CHECK (state IN ('PENDING', 'COMPLETED')),
+    reservation_token INTEGER NOT NULL DEFAULT 1 CHECK (reservation_token > 0),
+    response_json TEXT,
+    status_code INTEGER,
+    reserved_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    completed_at TEXT,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (operation, idempotency_key)
+    PRIMARY KEY (operation, idempotency_key),
+    CHECK (
+        (state='PENDING' AND response_json IS NULL AND status_code IS NULL)
+        OR
+        (state='COMPLETED' AND response_json IS NOT NULL AND status_code IS NOT NULL)
+    )
 );
 
 CREATE TABLE IF NOT EXISTS audit_events (
@@ -218,6 +227,7 @@ CREATE TABLE IF NOT EXISTS jobs (
     lease_owner TEXT,
     lease_token INTEGER NOT NULL DEFAULT 0,
     lease_expires_at TEXT,
+    lease_heartbeat_at TEXT,
     attempts INTEGER NOT NULL DEFAULT 0,
     cancel_requested INTEGER NOT NULL DEFAULT 0 CHECK (cancel_requested IN (0, 1)),
     result_json TEXT,
@@ -450,6 +460,53 @@ def _migrate_portfolios_to_v9(connection: sqlite3.Connection) -> None:
     )
 
 
+def _migrate_concurrency_to_v10(connection: sqlite3.Connection) -> None:
+    idem_row = connection.execute(
+        "SELECT sql FROM sqlite_master WHERE type='table' AND name='idempotency_keys'"
+    ).fetchone()
+    if idem_row and idem_row[0]:
+        idem_columns = {
+            row[1] for row in connection.execute("PRAGMA table_info(idempotency_keys)").fetchall()
+        }
+        if "state" not in idem_columns:
+            connection.commit()
+            connection.executescript(
+                "BEGIN;\n"
+                "ALTER TABLE idempotency_keys RENAME TO idempotency_keys_v9;\n"
+                "CREATE TABLE idempotency_keys ("
+                "operation TEXT NOT NULL,"
+                "idempotency_key TEXT NOT NULL,"
+                "request_hash TEXT NOT NULL,"
+                "state TEXT NOT NULL DEFAULT 'COMPLETED' CHECK (state IN ('PENDING','COMPLETED')),"
+                "reservation_token INTEGER NOT NULL DEFAULT 1 CHECK (reservation_token > 0),"
+                "response_json TEXT,"
+                "status_code INTEGER,"
+                "reserved_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,"
+                "completed_at TEXT,"
+                "created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,"
+                "PRIMARY KEY (operation,idempotency_key),"
+                "CHECK ((state='PENDING' AND response_json IS NULL AND status_code IS NULL) OR "
+                "(state='COMPLETED' AND response_json IS NOT NULL AND status_code IS NOT NULL))"
+                ");\n"
+                "INSERT INTO idempotency_keys("
+                "operation,idempotency_key,request_hash,state,reservation_token,response_json,status_code,"
+                "reserved_at,completed_at,created_at"
+                ") SELECT operation,idempotency_key,request_hash,'COMPLETED',1,response_json,status_code,"
+                "created_at,created_at,created_at FROM idempotency_keys_v9;\n"
+                "DROP TABLE idempotency_keys_v9;\n"
+                "COMMIT;"
+            )
+
+    job_columns = {row[1] for row in connection.execute("PRAGMA table_info(jobs)").fetchall()}
+    if "lease_heartbeat_at" not in job_columns:
+        connection.execute("ALTER TABLE jobs ADD COLUMN lease_heartbeat_at TEXT")
+
+    connection.execute(
+        "CREATE INDEX IF NOT EXISTS idx_idempotency_state "
+        "ON idempotency_keys(state, operation, idempotency_key)"
+    )
+
+
 def initialize_database(path: str | Path) -> Path:
     db_path = Path(path)
     with connect(db_path) as connection:
@@ -457,6 +514,7 @@ def initialize_database(path: str | Path) -> Path:
         _migrate_portfolios_to_v7(connection)
         _migrate_snapshots_to_v8(connection)
         _migrate_portfolios_to_v9(connection)
+        _migrate_concurrency_to_v10(connection)
         connection.execute(
             "INSERT INTO schema_meta(key, value) VALUES('schema_version', ?) "
             "ON CONFLICT(key) DO UPDATE SET value = excluded.value",

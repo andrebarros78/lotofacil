@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import threading
 from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -107,10 +108,50 @@ def claim_next_job(
         job_id, old_token = row
         new_token = int(old_token) + 1
         connection.execute(
-            "UPDATE jobs SET state='LEASED', lease_owner=?, lease_token=?, lease_expires_at=?, attempts=attempts+1, updated_at=CURRENT_TIMESTAMP "
+            "UPDATE jobs SET state='LEASED', lease_owner=?, lease_token=?, lease_expires_at=?, "
+            "lease_heartbeat_at=?, attempts=attempts+1, updated_at=CURRENT_TIMESTAMP "
             "WHERE job_id=?",
-            (worker_id, new_token, expires.isoformat(), job_id),
+            (worker_id, new_token, expires.isoformat(), current.isoformat(), job_id),
         )
+    return get_job(path, job_id)
+
+
+def _lease_now(now: datetime | None) -> datetime:
+    current = now or _utcnow()
+    if current.tzinfo is None:
+        raise ValueError("now deve possuir timezone")
+    return current
+
+
+def renew_lease(
+    path: str | Path,
+    job_id: str,
+    worker_id: str,
+    lease_token: int,
+    *,
+    lease_seconds: int = 30,
+    now: datetime | None = None,
+) -> JobRecord:
+    if lease_seconds <= 0:
+        raise ValueError("lease_seconds deve ser positivo")
+    current = _lease_now(now)
+    expires = current + timedelta(seconds=lease_seconds)
+    with connect(path) as connection:
+        cursor = connection.execute(
+            "UPDATE jobs SET lease_expires_at=?, lease_heartbeat_at=?, updated_at=CURRENT_TIMESTAMP "
+            "WHERE job_id=? AND state='LEASED' AND lease_owner=? AND lease_token=? "
+            "AND cancel_requested=0 AND lease_expires_at>?",
+            (
+                expires.isoformat(),
+                current.isoformat(),
+                job_id,
+                worker_id,
+                int(lease_token),
+                current.isoformat(),
+            ),
+        )
+        if cursor.rowcount != 1:
+            raise StaleLeaseError("STALE_OR_EXPIRED_LEASE")
     return get_job(path, job_id)
 
 
@@ -120,19 +161,88 @@ def save_checkpoint(
     worker_id: str,
     lease_token: int,
     checkpoint: dict[str, Any],
+    *,
+    now: datetime | None = None,
 ) -> None:
+    current = _lease_now(now)
     with connect(path) as connection:
         valid = connection.execute(
-            "SELECT 1 FROM jobs WHERE job_id=? AND state='LEASED' AND lease_owner=? AND lease_token=? AND cancel_requested=0",
-            (job_id, worker_id, lease_token),
+            "SELECT 1 FROM jobs WHERE job_id=? AND state='LEASED' AND lease_owner=? "
+            "AND lease_token=? AND cancel_requested=0 AND lease_expires_at>?",
+            (job_id, worker_id, int(lease_token), current.isoformat()),
         ).fetchone()
         if not valid:
-            raise StaleLeaseError("STALE_LEASE")
+            raise StaleLeaseError("STALE_OR_EXPIRED_LEASE")
         connection.execute(
             "INSERT INTO job_checkpoints(job_id, lease_token, checkpoint_json) VALUES (?, ?, ?) "
-            "ON CONFLICT(job_id) DO UPDATE SET lease_token=excluded.lease_token, checkpoint_json=excluded.checkpoint_json, updated_at=CURRENT_TIMESTAMP",
-            (job_id, lease_token, canonical_json(checkpoint)),
+            "ON CONFLICT(job_id) DO UPDATE SET lease_token=excluded.lease_token, "
+            "checkpoint_json=excluded.checkpoint_json, updated_at=CURRENT_TIMESTAMP",
+            (job_id, int(lease_token), canonical_json(checkpoint)),
         )
+
+
+class LeaseHeartbeat:
+    def __init__(
+        self,
+        path: str | Path,
+        job_id: str,
+        worker_id: str,
+        lease_token: int,
+        *,
+        lease_seconds: int,
+        interval_seconds: float | None = None,
+    ) -> None:
+        self.path = path
+        self.job_id = job_id
+        self.worker_id = worker_id
+        self.lease_token = int(lease_token)
+        self.lease_seconds = int(lease_seconds)
+        self.interval_seconds = (
+            max(0.05, min(float(lease_seconds) / 3.0, 5.0))
+            if interval_seconds is None
+            else float(interval_seconds)
+        )
+        if self.interval_seconds <= 0:
+            raise ValueError("heartbeat interval deve ser positivo")
+        self._stop = threading.Event()
+        self._thread: threading.Thread | None = None
+        self._error: BaseException | None = None
+
+    def _run(self) -> None:
+        while not self._stop.wait(self.interval_seconds):
+            try:
+                renew_lease(
+                    self.path,
+                    self.job_id,
+                    self.worker_id,
+                    self.lease_token,
+                    lease_seconds=self.lease_seconds,
+                )
+            except BaseException as exc:
+                self._error = exc
+                self._stop.set()
+                return
+
+    def start(self) -> None:
+        if self._thread is not None:
+            raise RuntimeError("heartbeat already started")
+        self._thread = threading.Thread(
+            target=self._run,
+            name=f"sare-lease-heartbeat-{self.job_id}",
+            daemon=True,
+        )
+        self._thread.start()
+
+    def stop(self) -> None:
+        self._stop.set()
+        if self._thread is not None:
+            self._thread.join(timeout=max(1.0, self.interval_seconds * 2.0))
+
+    def ensure_valid(self) -> None:
+        if self._error is not None:
+            if isinstance(self._error, StaleLeaseError):
+                raise self._error
+            raise StaleLeaseError(f"LEASE_HEARTBEAT_FAILED:{type(self._error).__name__}") from self._error
 
 
 def complete_job(
@@ -141,23 +251,31 @@ def complete_job(
     worker_id: str,
     lease_token: int,
     result: dict[str, Any],
+    *,
+    now: datetime | None = None,
 ) -> JobRecord:
+    current = _lease_now(now)
     with connect(path) as connection:
         connection.execute("BEGIN IMMEDIATE")
         row = connection.execute(
-            "SELECT cancel_requested FROM jobs WHERE job_id=? AND state='LEASED' AND lease_owner=? AND lease_token=?",
-            (job_id, worker_id, lease_token),
+            "SELECT cancel_requested FROM jobs WHERE job_id=? AND state='LEASED' "
+            "AND lease_owner=? AND lease_token=? AND lease_expires_at>?",
+            (job_id, worker_id, int(lease_token), current.isoformat()),
         ).fetchone()
         if not row:
             raise StaleLeaseError("STALE_LEASE")
         if row[0]:
             connection.execute(
-                "UPDATE jobs SET state='CANCELLED', lease_owner=NULL, lease_expires_at=NULL, result_json=NULL, updated_at=CURRENT_TIMESTAMP, finished_at=CURRENT_TIMESTAMP WHERE job_id=?",
+                "UPDATE jobs SET state='CANCELLED', lease_owner=NULL, lease_expires_at=NULL, "
+                "lease_heartbeat_at=NULL, result_json=NULL, updated_at=CURRENT_TIMESTAMP, "
+                "finished_at=CURRENT_TIMESTAMP WHERE job_id=?",
                 (job_id,),
             )
         else:
             connection.execute(
-                "UPDATE jobs SET state='COMPLETED', result_json=?, error_json=NULL, lease_owner=NULL, lease_expires_at=NULL, updated_at=CURRENT_TIMESTAMP, finished_at=CURRENT_TIMESTAMP WHERE job_id=?",
+                "UPDATE jobs SET state='COMPLETED', result_json=?, error_json=NULL, lease_owner=NULL, "
+                "lease_expires_at=NULL, lease_heartbeat_at=NULL, updated_at=CURRENT_TIMESTAMP, "
+                "finished_at=CURRENT_TIMESTAMP WHERE job_id=?",
                 (canonical_json(result), job_id),
             )
     return get_job(path, job_id)
@@ -169,12 +287,23 @@ def fail_job(
     worker_id: str,
     lease_token: int,
     error: dict[str, Any],
+    *,
+    now: datetime | None = None,
 ) -> JobRecord:
+    current = _lease_now(now)
     with connect(path) as connection:
         cursor = connection.execute(
-            "UPDATE jobs SET state='FAILED', error_json=?, lease_owner=NULL, lease_expires_at=NULL, updated_at=CURRENT_TIMESTAMP, finished_at=CURRENT_TIMESTAMP "
-            "WHERE job_id=? AND state='LEASED' AND lease_owner=? AND lease_token=?",
-            (canonical_json(error), job_id, worker_id, lease_token),
+            "UPDATE jobs SET state='FAILED', error_json=?, lease_owner=NULL, lease_expires_at=NULL, "
+            "lease_heartbeat_at=NULL, updated_at=CURRENT_TIMESTAMP, finished_at=CURRENT_TIMESTAMP "
+            "WHERE job_id=? AND state='LEASED' AND lease_owner=? AND lease_token=? "
+            "AND lease_expires_at>?",
+            (
+                canonical_json(error),
+                job_id,
+                worker_id,
+                int(lease_token),
+                current.isoformat(),
+            ),
         )
         if cursor.rowcount != 1:
             raise StaleLeaseError("STALE_LEASE")
@@ -235,18 +364,63 @@ def run_worker_once(
     job = claim_next_job(path, worker_id, lease_seconds=lease_seconds, now=now)
     if job is None:
         return None
+
+    heartbeat: LeaseHeartbeat | None = None
+    deterministic_now = now
+    if now is None:
+        heartbeat = LeaseHeartbeat(
+            path,
+            job.job_id,
+            worker_id,
+            job.lease_token,
+            lease_seconds=lease_seconds,
+        )
+        heartbeat.start()
+
     try:
-        save_checkpoint(path, job.job_id, worker_id, job.lease_token, {"phase": "CLAIMED", "attempt": job.attempts})
+        save_checkpoint(
+            path,
+            job.job_id,
+            worker_id,
+            job.lease_token,
+            {"phase": "CLAIMED", "attempt": job.attempts},
+            now=deterministic_now,
+        )
         result = _execute_payload(path, job)
-        save_checkpoint(path, job.job_id, worker_id, job.lease_token, {"phase": "COMPUTED", "attempt": job.attempts})
-        return complete_job(path, job.job_id, worker_id, job.lease_token, result)
+        if heartbeat is not None:
+            heartbeat.ensure_valid()
+        save_checkpoint(
+            path,
+            job.job_id,
+            worker_id,
+            job.lease_token,
+            {"phase": "COMPUTED", "attempt": job.attempts},
+            now=deterministic_now,
+        )
+        if heartbeat is not None:
+            heartbeat.stop()
+            heartbeat.ensure_valid()
+        return complete_job(
+            path,
+            job.job_id,
+            worker_id,
+            job.lease_token,
+            result,
+            now=deterministic_now,
+        )
     except StaleLeaseError:
+        if heartbeat is not None:
+            heartbeat.stop()
         raise
     except Exception as exc:
+        if heartbeat is not None:
+            heartbeat.stop()
+            heartbeat.ensure_valid()
         return fail_job(
             path,
             job.job_id,
             worker_id,
             job.lease_token,
             {"type": type(exc).__name__, "message": str(exc)},
+            now=deterministic_now,
         )

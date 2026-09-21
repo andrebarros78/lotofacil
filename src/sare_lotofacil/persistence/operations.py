@@ -84,8 +84,19 @@ class RevisionEvaluationRecord:
 @dataclass(frozen=True, slots=True)
 class IdempotencyRecord:
     request_hash: str
-    response_json: str
-    status_code: int
+    state: str
+    reservation_token: int
+    response_json: str | None
+    status_code: int | None
+
+
+@dataclass(frozen=True, slots=True)
+class IdempotencyReservation:
+    outcome: str
+    request_hash: str
+    reservation_token: int | None
+    response_json: str | None = None
+    status_code: int | None = None
 
 
 def persist_analysis(
@@ -365,10 +376,81 @@ def get_idempotency(path: str | Path, operation: str, key: str) -> IdempotencyRe
     initialize_database(path)
     with connect(path) as connection:
         row = connection.execute(
-            "SELECT request_hash, response_json, status_code FROM idempotency_keys WHERE operation=? AND idempotency_key=?",
+            "SELECT request_hash, state, reservation_token, response_json, status_code "
+            "FROM idempotency_keys WHERE operation=? AND idempotency_key=?",
             (operation, key),
         ).fetchone()
     return IdempotencyRecord(*row) if row else None
+
+
+def reserve_idempotency(
+    path: str | Path,
+    operation: str,
+    key: str,
+    request_digest: str,
+) -> IdempotencyReservation:
+    initialize_database(path)
+    with connect(path) as connection:
+        connection.execute("BEGIN IMMEDIATE")
+        row = connection.execute(
+            "SELECT request_hash, state, reservation_token, response_json, status_code "
+            "FROM idempotency_keys WHERE operation=? AND idempotency_key=?",
+            (operation, key),
+        ).fetchone()
+        if row is None:
+            connection.execute(
+                "INSERT INTO idempotency_keys("
+                "operation,idempotency_key,request_hash,state,reservation_token,response_json,status_code"
+                ") VALUES (?, ?, ?, 'PENDING', 1, NULL, NULL)",
+                (operation, key, request_digest),
+            )
+            return IdempotencyReservation("ACQUIRED", request_digest, 1)
+        existing_hash, state, token, response_json, status_code = row
+        if str(existing_hash) != request_digest:
+            return IdempotencyReservation("CONFLICT", str(existing_hash), int(token))
+        if state == "COMPLETED":
+            return IdempotencyReservation(
+                "REPLAY",
+                request_digest,
+                int(token),
+                str(response_json),
+                int(status_code),
+            )
+        return IdempotencyReservation("IN_PROGRESS", request_digest, int(token))
+
+
+def complete_idempotency(
+    path: str | Path,
+    operation: str,
+    key: str,
+    request_digest: str,
+    reservation_token: int,
+    response_payload: dict[str, Any],
+    status_code: int,
+) -> IdempotencyRecord:
+    response_json = canonical_json(response_payload)
+    with connect(path) as connection:
+        connection.execute("BEGIN IMMEDIATE")
+        cursor = connection.execute(
+            "UPDATE idempotency_keys SET state='COMPLETED', response_json=?, status_code=?, "
+            "completed_at=CURRENT_TIMESTAMP "
+            "WHERE operation=? AND idempotency_key=? AND request_hash=? "
+            "AND state='PENDING' AND reservation_token=?",
+            (
+                response_json,
+                int(status_code),
+                operation,
+                key,
+                request_digest,
+                int(reservation_token),
+            ),
+        )
+        if cursor.rowcount != 1:
+            raise RuntimeError("IDEMPOTENCY_RESERVATION_LOST")
+    record = get_idempotency(path, operation, key)
+    if record is None:
+        raise RuntimeError("IDEMPOTENCY_COMPLETION_MISSING")
+    return record
 
 
 def save_idempotency(
@@ -379,11 +461,22 @@ def save_idempotency(
     response_payload: dict[str, Any],
     status_code: int,
 ) -> None:
-    with connect(path) as connection:
-        connection.execute(
-            "INSERT INTO idempotency_keys(operation, idempotency_key, request_hash, response_json, status_code) VALUES (?, ?, ?, ?, ?)",
-            (operation, key, request_digest, canonical_json(response_payload), status_code),
-        )
+    reservation = reserve_idempotency(path, operation, key, request_digest)
+    if reservation.outcome == "CONFLICT":
+        raise ValueError("IDEMPOTENCY_KEY_CONFLICT")
+    if reservation.outcome == "IN_PROGRESS":
+        raise RuntimeError("IDEMPOTENCY_IN_PROGRESS")
+    if reservation.outcome == "REPLAY":
+        return
+    complete_idempotency(
+        path,
+        operation,
+        key,
+        request_digest,
+        int(reservation.reservation_token),
+        response_payload,
+        status_code,
+    )
 
 
 def audit_event_count(path: str | Path) -> int:

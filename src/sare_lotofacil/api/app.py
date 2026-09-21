@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import hmac
 import json
-import sqlite3
 from pathlib import Path
 from typing import Annotated, Any, Callable, Literal
 
@@ -11,12 +10,13 @@ from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse
 from pydantic import BaseModel, ConfigDict, Field
 
 from sare_lotofacil import __version__
+from sare_lotofacil.api.idempotency import execute_idempotent
 from sare_lotofacil.api.legacy_app import create_app as _legacy_create_app
 from sare_lotofacil.experiments.protocol import ExperimentProtocol
 from sare_lotofacil.ingestion.caixa import fetch_caixa_contest
 from sare_lotofacil.persistence.evidence import verify_source_artifacts
 from sare_lotofacil.persistence.jobs import enqueue_job, get_job, request_cancel
-from sare_lotofacil.persistence.operations import get_idempotency, get_portfolio, get_run, payload_hash, save_idempotency
+from sare_lotofacil.persistence.operations import get_portfolio, get_run
 from sare_lotofacil.persistence.repository import create_latest_snapshot
 from sare_lotofacil.portfolios.authority import OPERATIONAL_STATUSES
 from sare_lotofacil.persistence.workflows import (
@@ -117,26 +117,13 @@ def create_app(db_path: str | Path, *, write_token: str | None = None, max_body_
         if not hmac.compare_digest(token, write_token):
             raise HTTPException(403, "AUTH_INVALID")
 
-    def idem(operation: str, key: str | None, request_payload: dict[str, Any], callback: Callable[[], tuple[dict[str, Any], int]]) -> JSONResponse:
-        if not key or not key.strip():
-            raise HTTPException(400, "IDEMPOTENCY_KEY_REQUIRED")
-        if len(key) > 128:
-            raise HTTPException(400, "IDEMPOTENCY_KEY_TOO_LONG")
-        digest = payload_hash(request_payload)
-        existing = get_idempotency(path, operation, key)
-        if existing:
-            if existing.request_hash != digest:
-                raise HTTPException(409, "IDEMPOTENCY_KEY_CONFLICT")
-            return JSONResponse(json.loads(existing.response_json), status_code=existing.status_code)
-        payload, status = callback()
-        try:
-            save_idempotency(path, operation, key, digest, payload, status)
-        except sqlite3.IntegrityError:
-            existing = get_idempotency(path, operation, key)
-            if not existing or existing.request_hash != digest:
-                raise HTTPException(409, "IDEMPOTENCY_KEY_CONFLICT")
-            return JSONResponse(json.loads(existing.response_json), status_code=existing.status_code)
-        return JSONResponse(payload, status_code=status)
+    def idem(
+        operation: str,
+        key: str | None,
+        request_payload: dict[str, Any],
+        callback: Callable[[], tuple[dict[str, Any], int]],
+    ) -> JSONResponse:
+        return execute_idempotent(path, operation, key, request_payload, callback)
 
     @app.get("/v1/contests")
     def contests(limit: int = 100, offset: int = 0):
