@@ -17,7 +17,7 @@ from sare_lotofacil.portfolios.authority import (
 )
 from sare_lotofacil.portfolios.core import UNPROVEN_LABEL
 from sare_lotofacil.resource_limits import (
-    MAX_CARDS_PER_REQUEST,
+    MAX_OPERATOR_CARDS_PER_REQUEST,
     MAX_GENERATION_ATTEMPTS,
     ResourceLimitError,
     require_artifact_size,
@@ -326,9 +326,10 @@ def freeze_operator_cards(
     config_identity: str = POLICY_NAME,
     reserved_cards: Sequence[Iterable[int]] = (),
 ) -> tuple[dict[str, object], dict[str, object]]:
-    if not 1 <= requested_card_count <= MAX_CARDS_PER_REQUEST:
+    if not 1 <= requested_card_count <= MAX_OPERATOR_CARDS_PER_REQUEST:
         raise ValueError(
-            f"requested_card_count deve estar entre 1 e {MAX_CARDS_PER_REQUEST}"
+            "requested_card_count deve estar entre 1 e "
+            f"{MAX_OPERATOR_CARDS_PER_REQUEST}"
         )
     key = idempotency_key.strip()
     if not key:
