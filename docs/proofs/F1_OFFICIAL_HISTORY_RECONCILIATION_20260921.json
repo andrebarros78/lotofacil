@@ -81,5 +81,6 @@
     "Each shard asserted zero divergence, zero unavailable responses, zero invalid responses, and complete raw evidence.",
     "No canonical history correction was required by F1."
   ],
-  "proof_payload_sha256": "0fadcc98e625dfe618b8cf9854200786ffb421f610a3af91cf552a49483304c7"
+  "proof_payload_hash_scope": "SHA-256 of canonical JSON for this object excluding proof_payload_sha256",
+  "proof_payload_sha256": "dfb036cf0653fab1ae609c28bad863d163b9f0862572b0a2507d18abd6b0e106"
 }
