@@ -67,8 +67,21 @@ def test_concurrent_same_idempotency_key_creates_one_logical_job(tmp_path):
     with ThreadPoolExecutor(max_workers=2) as executor:
         first, second = list(executor.map(lambda _: submit(), range(2)))
 
-    assert first[0] == 202 and second[0] == 202
-    assert first[1]["job_id"] == second[1]["job_id"]
+    statuses = {first[0], second[0]}
+    assert statuses <= {202, 409}
+    assert 202 in statuses
+    accepted = first if first[0] == 202 else second
+    blocked = second if first[0] == 202 else first
+    if blocked[0] == 409:
+        assert blocked[1]["detail"] == "IDEMPOTENCY_REQUEST_IN_PROGRESS"
+    else:
+        assert blocked[1]["job_id"] == accepted[1]["job_id"]
+
+    replay = TestClient(create_app(db, write_token="secret")).post(
+        "/v1/jobs", json=body, headers=headers
+    )
+    assert replay.status_code == 202
+    assert replay.json()["job_id"] == accepted[1]["job_id"]
 
     from sare_lotofacil.persistence.db import connect
     with connect(db) as connection:
