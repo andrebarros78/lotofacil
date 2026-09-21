@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "status": "EVALUATION_ISOLATION_PROOF_PASS",
+  "phase": "F6_CANONICAL_EVALUATION_ISOLATION",
+  "repository": "andrebarros78/lotofacil",
+  "pull_request": 108,
+  "candidate_head_sha": "24936381162070e5811b78526a28b5d97c90ca83",
+  "tested_pull_request_merge_sha": "1252681037a20eba882fa2dc619f29016a43241a",
+  "merged_main_sha": "72c2fba94d05fccfcee7dfe70da90807f851bf81",
+  "operations_state_commit": "b811dfdd2efadea1b88870ec7f3831398b8af7ab",
+  "workflow_run_id": 35649188328,
+  "schema_version_sqlite": 11,
+  "manual_channel": {
+    "evaluation_class": "MANUAL_EVALUATION",
+    "evidence_eligible": false,
+    "source_class": "USER_SUPPLIED"
+  },
+  "canonical_channel": {
+    "evaluation_class": "CANONICAL_EVALUATION",
+    "evidence_eligible": true,
+    "source": "contest_revisions",
+    "target_binding_required": true
+  },
+  "operational_state": {
+    "canonical_contests": 3784,
+    "evaluated_predictions_verified": 5,
+    "pending_predictions": 1,
+    "evaluation_class": "CANONICAL_EVALUATION",
+    "canonical_binding_verified": true,
+    "canonical_source": "canonical_history.json",
+    "predictive_evidence": "NOT_ESTABLISHED"
+  },
+  "proof": {
+    "same_draw_does_not_cross_channels": true,
+    "canonical_target_mismatch_blocked": true,
+    "manual_spoof_blocked_at_database": true,
+    "canonical_spoof_blocked_at_database": true,
+    "legacy_manual_rows_migrate_non_evidence": true,
+    "legacy_revision_rows_migrate_canonical": true
+  },
+  "regression": {
+    "python_3_13": "352 passed, 1 skipped, 2 warnings",
+    "python_3_12": "PASS"
+  },
+  "artifact": {
+    "artifact_id": 10661157334,
+    "name": "f6-evaluation-isolation-proof",
+    "digest": "sha256:9128791d8975b6a39e23a1208c95e601a92792182316488a7f6fdc2566390f67"
+  },
+  "checks": [
+    "F6 Evaluation Isolation Proof",
+    "Operational State Integrity Proof",
+    "Semantic Snapshot Proof",
+    "Concurrency Fencing Proof",
+    "Card Authority Proof",
+    "F5 Resource Boundary Proof",
+    "CI",
+    "SARE Stable Merge Gates",
+    "Scope Seal Proof",
+    "CodeQL Security Scan",
+    "Repository Sanitization",
+    "Agent Capability Proof",
+    "Agent Resilience Proof"
+  ],
+  "notes": [
+    "User-supplied result numbers are permanently non-evidence and cannot be promoted by API labeling or direct SQLite insertion.",
+    "Canonical evaluation is only valid for the portfolio frozen target contest and a persisted contest revision.",
+    "Existing v10 manual evaluation rows migrate conservatively to MANUAL_EVALUATION with evidence_eligible=false.",
+    "Existing v10 revision evaluation rows migrate to CANONICAL_EVALUATION with persisted source provenance.",
+    "Operational prospective evaluations are independently recomputed and checked against canonical_history.json."
+  ],
+  "proof_payload_hash_scope": "SHA-256 of canonical JSON for this object excluding proof_payload_sha256",
+  "proof_payload_sha256": "b4ee4e83e1126645b5a578c807a0a1fb6aebd2b938f98520eff3cb7bad36c1e1"
+}
