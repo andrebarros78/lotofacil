@@ -13,6 +13,7 @@ from sare_lotofacil.analysis.post_contest_report import (
 from sare_lotofacil.evaluation import CANONICAL_EVALUATION
 from sare_lotofacil.experiments.models import exponential_update, frequency_regularized
 from sare_lotofacil.ingestion.validation import validate_contest
+from sare_lotofacil.operational_state import verify_state_commit
 from sare_lotofacil.portfolios.authority import (
     POLICY_PRIMARY,
     STATUS_FROZEN,
@@ -125,6 +126,7 @@ def _verify_operator_cards(state_dir: Path, prospective: dict[str, object]) -> d
     return result
 
 def verify(state_dir: Path) -> dict[str, object]:
+    state_commit = verify_state_commit(state_dir, allow_legacy=True)
     canonical_path = state_dir / "canonical_history.json"
     ledger_path = state_dir / "prospective_ledger.json"
     latest_path = state_dir / "latest.json"
@@ -300,6 +302,12 @@ def verify(state_dir: Path) -> dict[str, object]:
         )
     if latest["prospective"] != ledger["summary"]:
         raise RuntimeError("latest prospective summary diverges from ledger")
+    if state_commit["status"] == "STATE_COMMIT_VERIFIED":
+        transaction = latest.get("state_transaction")
+        if not isinstance(transaction, dict):
+            raise RuntimeError("latest state transaction metadata missing")
+        if transaction.get("generation_id") != state_commit["generation_id"]:
+            raise RuntimeError("latest state generation diverges from state commit")
 
     expected_reports = build_post_contest_reports(ledger)
     report_summary = latest.get("post_contest_report")
@@ -359,6 +367,7 @@ def verify(state_dir: Path) -> dict[str, object]:
         "prospective_state": ledger["summary"].get("prospective_state"),
         "operator_cards": operator_cards,
         "post_contest_reports": post_contest_reports,
+        "state_transaction": state_commit,
     }
 
 
