@@ -1,0 +1,86 @@
+{
+  "schema_version": 1,
+  "status": "OFFICIAL_HISTORY_RECONCILIATION_PASS",
+  "phase": "F1_OFFICIAL_HISTORY_RECONCILIATION",
+  "proven_at_utc": "2026-09-21T14:01:59.859991+00:00",
+  "repository": "andrebarros78/lotofacil",
+  "pull_request": 97,
+  "candidate_head_sha": "3fef35f40349f01be2a012943509ee48261e0795",
+  "merged_main_sha": "c81869a6fcfd57c82dcde34fa430828990f3a9a1",
+  "operations_state_commit": "5b7ab0080281455388e128d9b590a1454b6a7e39",
+  "canonical_file_sha256": "0831de92996ae403759b1929e8915fb1ec3aec76f644157bb38bac8ed30bb972",
+  "workflow_run_id": 35607912832,
+  "coverage": {
+    "start": 1,
+    "end": 3784,
+    "expected": 3784,
+    "observed": 3784
+  },
+  "counts": {
+    "OFFICIAL_MATCH": 3784,
+    "OFFICIAL_DIVERGENCE": 0,
+    "OFFICIAL_UNAVAILABLE": 0,
+    "OFFICIAL_INVALID_RESPONSE": 0
+  },
+  "raw_evidence_complete": true,
+  "shards": [
+    {
+      "index": 0,
+      "start": 1,
+      "end": 946,
+      "count": 946,
+      "manifest_sha256": "94ffa321364d9e36d4fe9af65168f1f31715da7a15e75069b94cdcb10631c2e3",
+      "artifact_id": 10643391134,
+      "artifact_digest": "sha256:45b85b8401c92c6de81b888cd93b2b69d34f07f3cb60478e25b03c9936634b1b"
+    },
+    {
+      "index": 1,
+      "start": 947,
+      "end": 1892,
+      "count": 946,
+      "manifest_sha256": "d53f9985e03ef68ca91de3e4e4640242bdfa3787aec1cc564e7cba3036fc5071",
+      "artifact_id": 10643530030,
+      "artifact_digest": "sha256:5828cc6579981ac5b1d2e232c05d71a411dfa59a93755df59336d80a551b49f1"
+    },
+    {
+      "index": 2,
+      "start": 1893,
+      "end": 2838,
+      "count": 946,
+      "manifest_sha256": "943d864b5a9e2d8efa22530b76d13d933b869c4181a01dea6d0323e70e7fb912",
+      "artifact_id": 10643940378,
+      "artifact_digest": "sha256:96a99e08569349ce8ac969b1df2fc29d305ad60c782f5c2a44f8960abdefe629"
+    },
+    {
+      "index": 3,
+      "start": 2839,
+      "end": 3784,
+      "count": 946,
+      "manifest_sha256": "77ee11db4f1e5b773a6e624f5c89171e2ddaadcad537e2b4fb9e4ee16ac88b0f",
+      "artifact_id": 10643336106,
+      "artifact_digest": "sha256:6b4b9a3fe6b95508893e11afd50f8e6cdbfc0d75a60428ca66e4917c863461a7"
+    }
+  ],
+  "terminal_artifact": {
+    "artifact_id": 10642139234,
+    "artifact_digest": "sha256:e979765ad87cc5c5f39bccdbe0313cf58fcb79501aa44a8642e89816bd8cbd08"
+  },
+  "checks": [
+    "Official History Reconciliation Proof",
+    "CI",
+    "SARE Stable Merge Gates",
+    "Operational State Integrity Proof",
+    "Scope Seal Proof",
+    "CodeQL Security Scan",
+    "Repository Sanitization",
+    "Agent Capability Proof",
+    "Agent Resilience Proof"
+  ],
+  "notes": [
+    "Each shard was proven against the same frozen operations/state commit.",
+    "Each shard asserted zero divergence, zero unavailable responses, zero invalid responses, and complete raw evidence.",
+    "No canonical history correction was required by F1."
+  ],
+  "proof_payload_hash_scope": "SHA-256 of canonical JSON for this object excluding proof_payload_sha256",
+  "proof_payload_sha256": "dfb036cf0653fab1ae609c28bad863d163b9f0862572b0a2507d18abd6b0e106"
+}
