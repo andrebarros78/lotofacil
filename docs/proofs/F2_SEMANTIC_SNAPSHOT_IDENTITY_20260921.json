@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "status": "SEMANTIC_SNAPSHOT_PROOF_PASS",
+  "phase": "F2_SEMANTIC_SNAPSHOT_IDENTITY",
+  "repository": "andrebarros78/lotofacil",
+  "pull_request": 99,
+  "candidate_head_sha": "8e58e2334999327cbbeb5b4548861d52d2b917cc",
+  "merged_main_sha": "6f20f6317eba4191e0f5baaca40fc8eb502cab2d",
+  "workflow_run_id": 35619329504,
+  "operations_state_commit": "2409731257cb917033e07453505e1ce6aae0f3b5",
+  "canonical_contests": 3784,
+  "canonical_history_file_sha256": "cd1b75c64a5d46f06ec50f89131018d5c0b770689b9671cd01a5d40315e041b0",
+  "semantic_schema": "lotofacil-data-snapshot-v1",
+  "data_snapshot_hash": "7f6afa0bc3718e2f34bd08340b795124e6fbd56c1fca56c10da7a11f50fde94b",
+  "rebuild_a": {
+    "storage_snapshot_id": "snap-e6598926af3d0ed82b61",
+    "storage_snapshot_hash": "e6598926af3d0ed82b61dd1bb34c2a3db783d52c01ce8607bd85ed99b982ae78",
+    "data_snapshot_hash": "7f6afa0bc3718e2f34bd08340b795124e6fbd56c1fca56c10da7a11f50fde94b"
+  },
+  "rebuild_b": {
+    "storage_snapshot_id": "snap-ae2fdf4fd6d1174021ab",
+    "storage_snapshot_hash": "ae2fdf4fd6d1174021ab0ada28e4a37d6db7e947fba13ad9413ab88b8c1bdd4a",
+    "data_snapshot_hash": "7f6afa0bc3718e2f34bd08340b795124e6fbd56c1fca56c10da7a11f50fde94b"
+  },
+  "operational_state": {
+    "storage_snapshot_id": "snap-e7acbeef78371c7db874",
+    "storage_snapshot_hash": "e7acbeef78371c7db8746ac4456ae02c29d54b38c5ad7d003f9197a72f097f10",
+    "data_snapshot_hash": "7f6afa0bc3718e2f34bd08340b795124e6fbd56c1fca56c10da7a11f50fde94b",
+    "data_snapshot_state": "LEGACY_COMPUTED"
+  },
+  "assertions": {
+    "storage_hashes_differ": true,
+    "semantic_hashes_equal": true,
+    "canonical_hash_matches_both": true,
+    "operational_verifier_cross_check": true
+  },
+  "regression": {
+    "python_3_13": "325 passed, 1 skipped, 2 warnings",
+    "python_3_12": "PASS"
+  },
+  "artifact": {
+    "artifact_id": 10646808340,
+    "name": "semantic-snapshot-proof",
+    "digest": "sha256:5a08c7282c1fd3b7d12bc69b9d81fe40e617b9ca1f79706a75c8f13d249c2a9d"
+  },
+  "checks": [
+    "Semantic Snapshot Proof",
+    "Operational State Integrity Proof",
+    "CI",
+    "SARE Stable Merge Gates",
+    "Scope Seal Proof",
+    "CodeQL Security Scan",
+    "Repository Sanitization",
+    "Agent Capability Proof",
+    "Agent Resilience Proof",
+    "Max Capacity Audit"
+  ],
+  "notes": [
+    "The semantic identity excludes SQLite revision numbering and physical storage metadata.",
+    "Legacy snapshot_id and snapshot_hash remain storage-identity compatibility fields.",
+    "New predictions and operator freezes can bind to the semantic data snapshot without rewriting legacy frozen artifacts."
+  ],
+  "proof_payload_hash_scope": "SHA-256 of canonical JSON for this object excluding proof_payload_sha256",
+  "proof_payload_sha256": "2b20de1e644490da13f40e678fd6c8e3388eee6355e4bb431359ff845570ddb2"
+}
