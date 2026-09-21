@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import time
 from typing import Iterable, Sequence
 
 from sare_lotofacil.domain.masks import normalize_numbers
@@ -15,6 +16,13 @@ from sare_lotofacil.portfolios.authority import (
     validate_card_artifact,
 )
 from sare_lotofacil.portfolios.core import UNPROVEN_LABEL
+from sare_lotofacil.resource_limits import (
+    MAX_OPERATOR_CARDS_PER_REQUEST,
+    MAX_GENERATION_ATTEMPTS,
+    ResourceLimitError,
+    require_artifact_size,
+    require_runtime,
+)
 
 POLICY_NAME = "operator-multi-freeze-v2"
 NUMBER_MIN = 1
@@ -318,8 +326,11 @@ def freeze_operator_cards(
     config_identity: str = POLICY_NAME,
     reserved_cards: Sequence[Iterable[int]] = (),
 ) -> tuple[dict[str, object], dict[str, object]]:
-    if requested_card_count <= 0:
-        raise ValueError("requested_card_count deve ser positivo")
+    if not 1 <= requested_card_count <= MAX_OPERATOR_CARDS_PER_REQUEST:
+        raise ValueError(
+            "requested_card_count deve estar entre 1 e "
+            f"{MAX_OPERATOR_CARDS_PER_REQUEST}"
+        )
     key = idempotency_key.strip()
     if not key:
         raise ValueError("idempotency_key obrigatório")
@@ -351,9 +362,18 @@ def freeze_operator_cards(
     cursor = int(previous[-1]["generation_index_next"]) if previous else 0
     start = cursor
     generated: list[dict[str, object]] = []
+    attempts = 0
+    started = time.monotonic()
     while len(generated) < requested_card_count:
         if cursor >= COMBINATION_SPACE:
             raise RuntimeError("OPERATOR_CARD_COMBINATION_SPACE_EXHAUSTED")
+        if attempts >= MAX_GENERATION_ATTEMPTS:
+            raise ResourceLimitError(
+                "OPERATOR_CARD_GENERATION_ATTEMPTS_LIMIT_EXCEEDED "
+                f"attempts={attempts} limit={MAX_GENERATION_ATTEMPTS}"
+            )
+        require_runtime(started)
+        attempts += 1
         card = card_for_generation_index(target_contest, cursor)
         generation_index = cursor
         cursor += 1
@@ -418,6 +438,8 @@ def freeze_operator_cards(
     )
     request["card_artifact"] = artifact.to_dict()
     request["request_sha256"] = _sha256(_request_hash_payload(request))
+    require_runtime(started)
+    require_artifact_size(request)
     requests.append(request)
     ledger["summary"] = _recompute_summary(ledger)
     validate_operator_card_ledger(ledger)

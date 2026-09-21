@@ -11,6 +11,12 @@ from typing import Any
 from sare_lotofacil.persistence.db import connect, initialize_database
 from sare_lotofacil.persistence.operations import canonical_json, persist_analysis, persist_uniform_portfolio
 from sare_lotofacil.persistence.workflows import execute_experiment
+from sare_lotofacil.resource_limits import (
+    MAX_JOB_ATTEMPTS,
+    MAX_PENDING_JOBS,
+    ResourceLimitError,
+    require_job_payload_size,
+)
 
 
 class StaleLeaseError(RuntimeError):
@@ -45,13 +51,32 @@ def enqueue_job(path: str | Path, job_type: str, payload: dict[str, Any]) -> Job
     normalized_type = job_type.strip().upper()
     if normalized_type not in {"ANALYSIS", "PORTFOLIO", "EXPERIMENT"}:
         raise ValueError("job_type inválido")
+    require_job_payload_size(payload)
     digest = _identity(normalized_type, payload)
     job_id = f"job-{digest[:24]}"
+    request_json = canonical_json(payload)
     with connect(path) as connection:
-        connection.execute(
-            "INSERT OR IGNORE INTO jobs(job_id, job_type, request_json, request_hash, state) VALUES (?, ?, ?, ?, 'QUEUED')",
-            (job_id, normalized_type, canonical_json(payload), digest),
-        )
+        connection.execute("BEGIN IMMEDIATE")
+        existing = connection.execute(
+            "SELECT 1 FROM jobs WHERE job_id=?",
+            (job_id,),
+        ).fetchone()
+        if existing is None:
+            pending = int(
+                connection.execute(
+                    "SELECT COUNT(*) FROM jobs WHERE state IN ('QUEUED','LEASED')"
+                ).fetchone()[0]
+            )
+            if pending >= MAX_PENDING_JOBS:
+                raise ResourceLimitError(
+                    "PENDING_JOB_LIMIT_EXCEEDED "
+                    f"pending={pending} limit={MAX_PENDING_JOBS}"
+                )
+            connection.execute(
+                "INSERT INTO jobs(job_id, job_type, request_json, request_hash, state) "
+                "VALUES (?, ?, ?, ?, 'QUEUED')",
+                (job_id, normalized_type, request_json, digest),
+            )
     return get_job(path, job_id)
 
 
@@ -97,11 +122,26 @@ def claim_next_job(
     expires = current + timedelta(seconds=lease_seconds)
     with connect(path) as connection:
         connection.execute("BEGIN IMMEDIATE")
+        exhausted_error = canonical_json(
+            {
+                "type": "ResourceLimitError",
+                "message": "JOB_ATTEMPT_LIMIT_EXCEEDED",
+                "limit": MAX_JOB_ATTEMPTS,
+            }
+        )
+        connection.execute(
+            "UPDATE jobs SET state='FAILED', error_json=?, lease_owner=NULL, "
+            "lease_expires_at=NULL, lease_heartbeat_at=NULL, updated_at=CURRENT_TIMESTAMP, "
+            "finished_at=CURRENT_TIMESTAMP "
+            "WHERE state='LEASED' AND lease_expires_at<=? AND attempts>=?",
+            (exhausted_error, current.isoformat(), MAX_JOB_ATTEMPTS),
+        )
         row = connection.execute(
             "SELECT job_id, lease_token FROM jobs "
-            "WHERE cancel_requested=0 AND (state='QUEUED' OR (state='LEASED' AND lease_expires_at<=?)) "
+            "WHERE cancel_requested=0 AND attempts<? "
+            "AND (state='QUEUED' OR (state='LEASED' AND lease_expires_at<=?)) "
             "ORDER BY created_at, job_id LIMIT 1",
-            (current.isoformat(),),
+            (MAX_JOB_ATTEMPTS, current.isoformat()),
         ).fetchone()
         if not row:
             return None
