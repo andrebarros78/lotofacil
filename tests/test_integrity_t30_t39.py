@@ -153,11 +153,14 @@ def test_t39_same_portfolio_and_contest_revision_audit_is_idempotent(tmp_path) -
     assert first.json() == second.json()
     assert first.json()["contest_id"] == 500
     assert first.json()["revision"] == 1
+    assert first.json()["evaluation_class"] == "CANONICAL_EVALUATION"
+    assert first.json()["evidence_eligible"] is True
+    assert first.json()["source_class"] == "SINTETICO"
 
     with connect(db) as connection:
         evaluations = connection.execute("SELECT COUNT(*) FROM revision_evaluations").fetchone()[0]
         audit_events = connection.execute(
-            "SELECT COUNT(*) FROM audit_events WHERE action='PORTFOLIO_REVISION_EVALUATED'"
+            "SELECT COUNT(*) FROM audit_events WHERE action='PORTFOLIO_CANONICAL_EVALUATED'"
         ).fetchone()[0]
     assert evaluations == 1
     assert audit_events == 1
