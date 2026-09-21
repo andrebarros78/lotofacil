@@ -401,7 +401,13 @@ def _migrate_portfolios_to_v9(connection: sqlite3.Connection) -> None:
             ).fetchall()
         )
         if len(cards) != int(card_count):
-            raise RuntimeError(f"portfolio card count mismatch while migrating v9: {portfolio_id}")
+            connection.execute(
+                "UPDATE portfolios SET artifact_status='INVALIDATED', "
+                "artifact_schema_version='card-artifact-v1', policy_id='LEGACY_UNVERIFIED_PORTFOLIO' "
+                "WHERE portfolio_id=?",
+                (portfolio_id,),
+            )
+            continue
 
         storage_snapshot_hash = None
         data_snapshot_hash = None
