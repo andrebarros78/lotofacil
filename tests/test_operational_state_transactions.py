@@ -395,13 +395,15 @@ def test_operational_cycle_replay_without_new_state_is_noop(
     )
 
     first = cycle.run_cycle(state, tmp_path / "runtime-first")
+    second = cycle.run_cycle(state, tmp_path / "runtime-second")
     before_commit = (state / STATE_COMMIT_FILE).read_bytes()
     before_latest = (state / "latest.json").read_bytes()
-    second = cycle.run_cycle(state, tmp_path / "runtime-second")
+    third = cycle.run_cycle(state, tmp_path / "runtime-third")
 
     assert first["state_transaction"]["replay_noop"] is False
-    assert second["state_transaction"]["replay_noop"] is True
-    assert second["state_transaction"]["generation_id"] == first["state_transaction"]["generation_id"]
+    assert second["state_transaction"]["commit_status"] == "STATE_COMMIT_VERIFIED"
+    assert third["state_transaction"]["replay_noop"] is True
+    assert third["state_transaction"]["generation_id"] == second["state_transaction"]["generation_id"]
     assert (state / STATE_COMMIT_FILE).read_bytes() == before_commit
     assert (state / "latest.json").read_bytes() == before_latest
     assert verify_state_commit(state, allow_legacy=False)["status"] == "STATE_COMMIT_VERIFIED"
