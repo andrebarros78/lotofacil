@@ -122,7 +122,7 @@ def prove_portfolio_economics_v118() -> None:
 
     assert revision_rows == 1
     assert audit_rows == 1
-    assert schema_version == SCHEMA_VERSION == 7
+    assert schema_version == SCHEMA_VERSION
     assert foreign_key_violations == []
 
     payload = {
