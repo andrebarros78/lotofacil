@@ -1,0 +1,102 @@
+{
+  "schema_version": 1,
+  "status": "F8_CHAOS_RESTART_REPLAY_ENDURANCE_PROOF_PASS",
+  "phase": "F8_CHAOS_RESTART_REPLAY_ENDURANCE",
+  "repository": "andrebarros78/lotofacil",
+  "implementation": {
+    "pull_request": 113,
+    "base_main_sha": "f811762727ab28b76b7509330054c74bf3dbc6c7",
+    "candidate_head_sha": "a54f91e02e3067ed60cbcdf1c5ff72b7b8a1c9c7",
+    "tested_pull_request_merge_sha": "50e851b79ad3a90279b35a98df38d94f0e1bbced",
+    "merged_main_sha": "f151131afd6e4b6afc7e13f383d19ebedb5fad50"
+  },
+  "resilience_contract": {
+    "exact_current_generation_replay": "NOOP",
+    "same_generation_different_bytes": "FAIL_CLOSED",
+    "unchanged_operational_cycle": "NOOP",
+    "unchanged_canonical_prizes": "NOOP",
+    "self_parent_generation_forbidden": true,
+    "cycle_generation_preserved_across_auxiliary_generations": true
+  },
+  "process_level_proof": {
+    "workflow_run_id": 35675244300,
+    "operations_state_commit_used": "66445d12e80dba3142050c6ef508e1d17246dbca",
+    "iterations": 80,
+    "summary": {
+      "committed_generations": 65,
+      "precommit_rollbacks": 16,
+      "postcommit_rollforwards": 16,
+      "exact_replay_noops": 16,
+      "generation_collisions_blocked": 16,
+      "process_restart_recoveries": 136,
+      "real_state_restart_rounds": 24
+    },
+    "invariants": {
+      "no_hybrid_generation_observed": true,
+      "precommit_crash_rolls_back": true,
+      "postcommit_crash_rolls_forward": true,
+      "recovery_is_restart_idempotent": true,
+      "exact_replay_is_noop": true,
+      "generation_id_collision_is_fail_closed": true,
+      "no_self_parent_generation": true,
+      "cycle_generation_id_preserved_across_auxiliary_generations": true,
+      "real_state_is_restart_stable": true
+    },
+    "real_operational_state_generation_id": "prizes-3785-3bddc48bc40b15bb",
+    "verified_files": 8
+  },
+  "regression": {
+    "python_3_12": "368 passed, 1 skipped, 2 warnings",
+    "python_3_13": "368 passed, 1 skipped, 2 warnings",
+    "f7_crash_consistency_regression": "PASS"
+  },
+  "artifacts": {
+    "implementation_pr": {
+      "artifact_id": 10672797796,
+      "digest": "sha256:cd4f01be1517583756e16a568ae1236b082ed0f52ae008f19d02191dc83c9637"
+    },
+    "main_post_merge": {
+      "workflow_run_id": 35675356375,
+      "artifact_id": 10672753228,
+      "digest": "sha256:0217b843304a683fdade45374a595395810da7d8dc6d080b0f6625c6a5d7d90f"
+    }
+  },
+  "real_replay": {
+    "workflow_run_id": 35675356426,
+    "operations_state_before": "66445d12e80dba3142050c6ef508e1d17246dbca",
+    "operations_state_after": "66445d12e80dba3142050c6ef508e1d17246dbca",
+    "cycle_replay_noop": true,
+    "canonical_prizes_replay_noop": true,
+    "git_persistence_result": "STATE_UNCHANGED",
+    "state_commit_status": "STATE_COMMIT_VERIFIED",
+    "generation_id": "prizes-3785-3bddc48bc40b15bb",
+    "cycle_generation_id": "cycle-3785-a8c22694eb2c7428",
+    "official_latest_contest": 3785,
+    "next_prediction_target": 3786,
+    "predictive_evidence": "NOT_ESTABLISHED"
+  },
+  "scientific_state": {
+    "predictive_evidence": "NOT_ESTABLISHED",
+    "interpretation": "Chaos, restart, replay, endurance and operational idempotency do not establish predictive advantage."
+  },
+  "checks": [
+    "F8 Chaos Restart Replay Endurance Proof",
+    "F7 Crash Consistency Proof",
+    "Operational State Integrity Proof",
+    "Semantic Snapshot Proof",
+    "Card Authority Proof",
+    "F4 Concurrency Fencing Proof",
+    "F5 Resource Boundary Proof",
+    "F6 Evaluation Isolation Proof",
+    "CI Python 3.12",
+    "CI Python 3.13",
+    "SARE Stable Merge Gates",
+    "Scope Seal Proof",
+    "CodeQL Security Scan",
+    "Repository Sanitization",
+    "Agent Capability Proof",
+    "Agent Resilience Proof"
+  ],
+  "proof_payload_hash_scope": "SHA-256 of canonical JSON for this object excluding proof_payload_sha256",
+  "proof_payload_sha256": "075456673a8440d8d67ad188829fd1c5b0ae96d079a5b81ac95e8a0bddbd2f36"
+}
