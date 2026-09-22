@@ -1,0 +1,81 @@
+{
+  "schema": "f8-terminal-proof-v1",
+  "phase": "F8",
+  "status": "F8_PROVEN",
+  "terminal_main_sha": "53cb14047a765780d6d2e740fa343d49f1ba5da4",
+  "implementation": {
+    "pull_request": 113,
+    "implementation_merge_sha": "b2830348c6d7444c487a5a797aea6ebb18eb3565",
+    "proof_candidate_sha": "a54f91e02e3067ed60cbcdf1c5ff72b7b8a1c9c7"
+  },
+  "f8_evidence": {
+    "workflow": "F8 Chaos Restart Replay Endurance Proof",
+    "workflow_run_id": 35675244300,
+    "artifact_id": 10672797796,
+    "artifact_digest": "sha256:cd4f01be1517583756e16a568ae1236b082ed0f52ae008f19d02191dc83c9637",
+    "invariants": [
+      "no_hybrid_generation_observed",
+      "precommit_crash_rolls_back",
+      "postcommit_crash_rolls_forward",
+      "recovery_is_restart_idempotent",
+      "exact_replay_is_noop",
+      "generation_id_collision_is_fail_closed",
+      "no_self_parent_generation",
+      "cycle_generation_id_preserved_across_auxiliary_generations",
+      "real_state_is_restart_stable"
+    ]
+  },
+  "postmerge_hardening": [
+    {
+      "pull_request": 115,
+      "merge_sha": "ce05c856e5b65e88b27494025f102d068f9fcd92",
+      "purpose": "align release audit action and checkpoint SQLite WAL before runtime DB hash"
+    },
+    {
+      "pull_request": 116,
+      "merge_sha": "53cb14047a765780d6d2e740fa343d49f1ba5da4",
+      "purpose": "remove stale hardcoded persistence schema version from release proof"
+    }
+  ],
+  "terminal_gates": [
+    {
+      "name": "Repository Sanitization",
+      "run_id": 35676223791,
+      "status": "success"
+    },
+    {
+      "name": "Release Proof",
+      "run_id": 35676223801,
+      "status": "success"
+    },
+    {
+      "name": "Scope Seal Proof",
+      "run_id": 35676223851,
+      "status": "success"
+    },
+    {
+      "name": "SARE Stable Merge Gates",
+      "run_id": 35676223799,
+      "status": "success"
+    },
+    {
+      "name": "CodeQL Security Scan",
+      "run_id": 35676223762,
+      "status": "success"
+    },
+    {
+      "name": "CI",
+      "run_id": 35676223777,
+      "status": "success"
+    },
+    {
+      "name": "GitHub Operational Cycle",
+      "run_id": 35676223814,
+      "status": "success"
+    }
+  ],
+  "scientific_state": {
+    "predictive_evidence": "NOT_ESTABLISHED"
+  },
+  "next_phase": "F9"
+}
