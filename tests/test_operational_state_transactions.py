@@ -324,3 +324,51 @@ def test_operational_cycle_migrates_legacy_state_to_committed_transaction(
         audit["state_transaction"]["metadata"]["runtime_db_sha256"]
         == hashlib.sha256((tmp_path / "runtime" / "sare.db").read_bytes()).hexdigest()
     )
+
+
+
+def test_exact_replay_of_current_generation_is_a_noop(tmp_path: Path) -> None:
+    state = tmp_path / "operations"
+    files = _baseline_state(state)
+    before_commit = (state / STATE_COMMIT_FILE).read_bytes()
+    before_hashes = {
+        relative: hashlib.sha256((state / relative).read_bytes()).hexdigest()
+        for relative in files
+    }
+
+    replay = publish_state_transaction(
+        state,
+        files,
+        generation_id="cycle-baseline",
+        metadata={"source": "github_operational_cycle", "ignored_on_replay": True},
+    )
+
+    assert replay["generation_id"] == "cycle-baseline"
+    assert (state / STATE_COMMIT_FILE).read_bytes() == before_commit
+    assert {
+        relative: hashlib.sha256((state / relative).read_bytes()).hexdigest()
+        for relative in files
+    } == before_hashes
+    verified = verify_state_commit(state, allow_legacy=False)
+    assert verified["generation_id"] == "cycle-baseline"
+    assert verified["metadata"].get("parent_generation_id") is None
+
+
+def test_same_generation_with_different_bytes_fails_closed(tmp_path: Path) -> None:
+    state = tmp_path / "operations"
+    _baseline_state(state)
+    before_commit = (state / STATE_COMMIT_FILE).read_bytes()
+
+    with pytest.raises(
+        StateTransactionError,
+        match="generation id collision with different state",
+    ):
+        publish_state_transaction(
+            state,
+            {"latest.json": b'{"version":"collision"}\n'},
+            generation_id="cycle-baseline",
+            metadata={"source": "github_operational_cycle"},
+        )
+
+    assert (state / STATE_COMMIT_FILE).read_bytes() == before_commit
+    assert verify_state_commit(state, allow_legacy=False)["generation_id"] == "cycle-baseline"
