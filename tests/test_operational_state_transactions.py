@@ -143,6 +143,85 @@ def test_auxiliary_transaction_preserves_cycle_ancestry(tmp_path: Path) -> None:
     assert verified["metadata"]["cycle_generation_id"] == "cycle-baseline"
 
 
+def test_missing_committed_file_is_rejected(tmp_path: Path) -> None:
+    state = tmp_path / "operations"
+    _baseline_state(state)
+    (state / "latest.json").unlink()
+
+    with pytest.raises(StateTransactionError, match="file set mismatch"):
+        verify_state_commit(state, allow_legacy=False)
+
+
+def test_recovery_is_idempotent_after_precommit_crash(tmp_path: Path) -> None:
+    state = tmp_path / "operations"
+    _baseline_state(state)
+    new = {
+        "canonical_history.json": b'{"version":"new-history"}\n',
+        "prospective_ledger.json": b'{"version":"new-ledger"}\n',
+        "latest.json": b'{"version":"new-latest"}\n',
+    }
+    with pytest.raises(StateTransactionError, match="INJECTED_CRASH_AFTER_REPLACE"):
+        publish_state_transaction(
+            state,
+            new,
+            generation_id="cycle-idempotent-recovery",
+            metadata={"source": "github_operational_cycle"},
+            crash_after_replace=2,
+        )
+
+    assert recover_state_transaction(state) == "PREPARED_ROLLED_BACK"
+    assert recover_state_transaction(state) == "CLEAN"
+
+
+def test_generation_chain_advances_parent_generation(tmp_path: Path) -> None:
+    state = tmp_path / "operations"
+    _baseline_state(state)
+    publish_state_transaction(
+        state,
+        {"latest.json": b'{"version":"b"}\n'},
+        generation_id="cycle-b",
+        metadata={"source": "github_operational_cycle"},
+    )
+    publish_state_transaction(
+        state,
+        {"latest.json": b'{"version":"c"}\n'},
+        generation_id="cycle-c",
+        metadata={"source": "github_operational_cycle"},
+    )
+
+    verified = verify_state_commit(state, allow_legacy=False)
+    assert verified["generation_id"] == "cycle-c"
+    assert verified["metadata"]["parent_generation_id"] == "cycle-b"
+    assert verified["metadata"]["cycle_generation_id"] == "cycle-c"
+
+
+def test_orphan_staging_and_atomic_temporaries_are_cleaned(tmp_path: Path) -> None:
+    state = tmp_path / "operations"
+    state.mkdir(parents=True)
+    orphan = state / ".state-txn" / "abandoned" / "new"
+    orphan.mkdir(parents=True)
+    (orphan / "latest.json").write_bytes(b"orphan\n")
+    temp = state / ".latest.json.deadbeef.tmp"
+    temp.write_bytes(b"temporary\n")
+
+    assert recover_state_transaction(state) == "ORPHAN_STAGING_REMOVED"
+    assert not (state / ".state-txn").exists()
+    assert not temp.exists()
+    assert recover_state_transaction(state) == "CLEAN"
+
+
+def test_transactional_state_cannot_silently_regress_to_legacy(tmp_path: Path) -> None:
+    state = tmp_path / "operations"
+    _baseline_state(state)
+    (state / STATE_COMMIT_FILE).unlink()
+
+    with pytest.raises(
+        StateTransactionError,
+        match="state commit missing for transactional state",
+    ):
+        verify_state_commit(state, allow_legacy=True)
+
+
 def _cycle_fixture(root: Path) -> tuple[Path, tuple]:
     state = root / "operations"
     state.mkdir(parents=True)
@@ -226,6 +305,17 @@ def test_operational_cycle_migrates_legacy_state_to_committed_transaction(
     )
     assert result["state_transaction"]["commit_status"] == "STATE_COMMIT_VERIFIED"
     assert (state / STATE_COMMIT_FILE).exists()
+
+    persisted_latest = json.loads((state / "latest.json").read_text(encoding="utf-8"))
+    assert persisted_latest["state_transaction"] == {
+        "schema": "operational-state-transaction-v1",
+        "generation_id": result["state_transaction"]["generation_id"],
+        "recovery_before_cycle": result["state_transaction"]["recovery_before_cycle"],
+        "previous_commit_status": "LEGACY_STATE_WITHOUT_TRANSACTION_COMMIT",
+    }
+    assert "commit_status" not in persisted_latest["state_transaction"]
+    assert "committed_files" not in persisted_latest["state_transaction"]
+    assert "state_commit_generation_id" not in persisted_latest["state_transaction"]
 
     audit = verify(state)
     assert audit["status"] == "GITHUB_OPERATIONAL_AUDIT_PASS"
