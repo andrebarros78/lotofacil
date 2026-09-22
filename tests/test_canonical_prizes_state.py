@@ -46,11 +46,16 @@ def test_canonical_prizes_initial_capture_is_idempotent_and_auditable(tmp_path):
     contest = _contest()
 
     first = updater.update_state(state, fetcher=lambda contest_id: contest)
+    first_prizes = (state / "canonical_prizes.json").read_bytes()
+    first_commit = (state / "state_commit.json").read_bytes()
     second = updater.update_state(state, fetcher=lambda contest_id: contest)
 
     payload = json.loads((state / "canonical_prizes.json").read_text(encoding="utf-8"))
     assert first["changed_contests"] == [10]
     assert second["changed_contests"] == []
+    assert second["state_transaction"]["replay_noop"] is True
+    assert (state / "canonical_prizes.json").read_bytes() == first_prizes
+    assert (state / "state_commit.json").read_bytes() == first_commit
     assert payload["contest_count"] == 1
     assert len(payload["contests"][0]["revisions"]) == 1
     assert verify(state)["status"] == "CANONICAL_PRIZE_AUDIT_PASS"
