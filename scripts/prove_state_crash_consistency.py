@@ -1,16 +1,20 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import shutil
 from pathlib import Path
 
+from scripts import github_operational_cycle as operational_cycle
 from sare_lotofacil.operational_state import (
     StateTransactionError,
     publish_state_transaction,
     recover_state_transaction,
     verify_state_commit,
 )
+from sare_lotofacil.persistence.backup import database_integrity
+from sare_lotofacil.persistence.repository import create_latest_snapshot
 
 
 def _seed_toy_state(path: Path) -> dict[str, bytes]:
@@ -29,6 +33,63 @@ def _seed_toy_state(path: Path) -> dict[str, bytes]:
         metadata={"source": "github_operational_cycle"},
     )
     return files
+
+
+def _prove_runtime_db_binding(
+    state_dir: Path,
+    work_dir: Path,
+) -> dict[str, object]:
+    latest = json.loads((state_dir / "latest.json").read_text(encoding="utf-8"))
+    expected_data_hash = latest.get("data_snapshot_hash")
+    if not isinstance(expected_data_hash, str) or not expected_data_hash:
+        raise RuntimeError("operational latest.json missing data_snapshot_hash")
+
+    rebuilds: list[dict[str, object]] = []
+    for name in ("first", "restart"):
+        runtime_dir = work_dir / f"runtime-{name}"
+        runtime_dir.mkdir(parents=True, exist_ok=False)
+        db_path, _, _, records, bootstrap_patches = operational_cycle._prepare_database_from_state(
+            state_dir,
+            runtime_dir,
+        )
+        if bootstrap_patches:
+            raise RuntimeError("runtime rebuild unexpectedly required bootstrap patches")
+        integrity = database_integrity(db_path)
+        if integrity != "ok":
+            raise RuntimeError(f"runtime database integrity failed: {name}: {integrity}")
+        snapshot = create_latest_snapshot(db_path)
+        if snapshot.data_snapshot_hash != expected_data_hash:
+            raise RuntimeError(
+                f"runtime semantic identity mismatch: {name}: "
+                f"{snapshot.data_snapshot_hash} != {expected_data_hash}"
+            )
+        rebuilds.append(
+            {
+                "name": name,
+                "runtime_db_sha256": hashlib.sha256(db_path.read_bytes()).hexdigest(),
+                "database_integrity": integrity,
+                "contest_count": len(records),
+                "storage_snapshot_hash": snapshot.storage_snapshot_hash,
+                "data_snapshot_hash": snapshot.data_snapshot_hash,
+            }
+        )
+
+    if rebuilds[0]["data_snapshot_hash"] != rebuilds[1]["data_snapshot_hash"]:
+        raise RuntimeError("runtime restart changed scientific identity")
+    if rebuilds[0]["contest_count"] != rebuilds[1]["contest_count"]:
+        raise RuntimeError("runtime restart changed canonical contest count")
+
+    return {
+        "runtime_db_sha256": rebuilds[0]["runtime_db_sha256"],
+        "database_integrity": "ok",
+        "expected_data_snapshot_hash": expected_data_hash,
+        "rebuild_data_snapshot_hash": rebuilds[0]["data_snapshot_hash"],
+        "restart_data_snapshot_hash": rebuilds[1]["data_snapshot_hash"],
+        "contest_count": rebuilds[0]["contest_count"],
+        "projection_matches_persisted_scientific_identity": True,
+        "restart_preserves_scientific_identity": True,
+        "rebuilds": rebuilds,
+    }
 
 
 def prove(source_state: Path, work_dir: Path) -> dict[str, object]:
@@ -115,6 +176,8 @@ def prove(source_state: Path, work_dir: Path) -> dict[str, object]:
     if after["status"] != "STATE_COMMIT_VERIFIED":
         raise RuntimeError("real operational state could not be transactionally sealed")
 
+    runtime_db_binding = _prove_runtime_db_binding(real_state, work_dir)
+
     tamper_state = work_dir / "tamper-state"
     shutil.copytree(real_state, tamper_state)
     (tamper_state / "latest.json").write_bytes(b'{"tampered":true}\n')
@@ -139,12 +202,16 @@ def prove(source_state: Path, work_dir: Path) -> dict[str, object]:
             "verified_files": after["verified_files"],
             "tamper_blocked": tamper_blocked,
         },
+        "runtime_db_binding": runtime_db_binding,
         "invariants": {
             "precommit_crash_restores_all_old": True,
             "postcommit_crash_preserves_all_new": True,
             "mixed_generation_after_recovery": False,
             "commit_receipt_covers_complete_file_set": True,
             "tamper_detection": True,
+            "runtime_db_integrity": True,
+            "runtime_projection_matches_persisted_scientific_identity": True,
+            "runtime_restart_preserves_scientific_identity": True,
         },
     }
 
