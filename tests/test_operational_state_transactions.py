@@ -324,3 +324,86 @@ def test_operational_cycle_migrates_legacy_state_to_committed_transaction(
         audit["state_transaction"]["metadata"]["runtime_db_sha256"]
         == hashlib.sha256((tmp_path / "runtime" / "sare.db").read_bytes()).hexdigest()
     )
+
+
+
+def test_exact_replay_of_current_generation_is_a_noop(tmp_path: Path) -> None:
+    state = tmp_path / "operations"
+    files = _baseline_state(state)
+    before_commit = (state / STATE_COMMIT_FILE).read_bytes()
+    before_hashes = {
+        relative: hashlib.sha256((state / relative).read_bytes()).hexdigest()
+        for relative in files
+    }
+
+    replay = publish_state_transaction(
+        state,
+        files,
+        generation_id="cycle-baseline",
+        metadata={"source": "github_operational_cycle", "ignored_on_replay": True},
+    )
+
+    assert replay["generation_id"] == "cycle-baseline"
+    assert (state / STATE_COMMIT_FILE).read_bytes() == before_commit
+    assert {
+        relative: hashlib.sha256((state / relative).read_bytes()).hexdigest()
+        for relative in files
+    } == before_hashes
+    verified = verify_state_commit(state, allow_legacy=False)
+    assert verified["generation_id"] == "cycle-baseline"
+    assert verified["metadata"].get("parent_generation_id") is None
+
+
+def test_same_generation_with_different_bytes_fails_closed(tmp_path: Path) -> None:
+    state = tmp_path / "operations"
+    _baseline_state(state)
+    before_commit = (state / STATE_COMMIT_FILE).read_bytes()
+
+    with pytest.raises(
+        StateTransactionError,
+        match="generation id collision with different state",
+    ):
+        publish_state_transaction(
+            state,
+            {"latest.json": b'{"version":"collision"}\n'},
+            generation_id="cycle-baseline",
+            metadata={"source": "github_operational_cycle"},
+        )
+
+    assert (state / STATE_COMMIT_FILE).read_bytes() == before_commit
+    assert verify_state_commit(state, allow_legacy=False)["generation_id"] == "cycle-baseline"
+
+
+
+def test_operational_cycle_replay_without_new_state_is_noop(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    state, records = _cycle_fixture(tmp_path)
+    official = CaixaContest(
+        record=records[-1],
+        prize_tiers=(),
+        source_url="fixture://official/6",
+        captured_at=datetime(2026, 9, 21, tzinfo=timezone.utc),
+        raw_payload={"numero": 6, "listaDezenas": list(records[-1].numbers)},
+    )
+    monkeypatch.setattr(cycle, "_resolve_official_latest", lambda current_last: official)
+    monkeypatch.setattr(
+        cycle,
+        "analyze_core",
+        lambda draws: SimpleNamespace(to_dict=lambda: {"fixture": True}),
+    )
+
+    first = cycle.run_cycle(state, tmp_path / "runtime-first")
+    second = cycle.run_cycle(state, tmp_path / "runtime-second")
+    before_commit = (state / STATE_COMMIT_FILE).read_bytes()
+    before_latest = (state / "latest.json").read_bytes()
+    third = cycle.run_cycle(state, tmp_path / "runtime-third")
+
+    assert first["state_transaction"]["replay_noop"] is False
+    assert second["state_transaction"]["commit_status"] == "STATE_COMMIT_VERIFIED"
+    assert third["state_transaction"]["replay_noop"] is True
+    assert third["state_transaction"]["generation_id"] == second["state_transaction"]["generation_id"]
+    assert (state / STATE_COMMIT_FILE).read_bytes() == before_commit
+    assert (state / "latest.json").read_bytes() == before_latest
+    assert verify_state_commit(state, allow_legacy=False)["status"] == "STATE_COMMIT_VERIFIED"

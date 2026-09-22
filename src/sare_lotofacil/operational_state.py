@@ -380,6 +380,21 @@ def publish_state_transaction(
     previous_commit = _read_commit(state_dir)
     normalized = _normalize_files(files)
     generation = generation_id or f"state-{uuid.uuid4().hex}"
+
+    if isinstance(previous_commit, dict) and previous_commit.get("generation_id") == generation:
+        previous_files = previous_commit.get("files")
+        if not isinstance(previous_files, dict):
+            raise StateTransactionError("state commit file map missing")
+        replay_hashes = _current_state_hashes(state_dir)
+        for relative, content in normalized.items():
+            replay_hashes[relative] = _sha256_bytes(content)
+        if replay_hashes != previous_files:
+            raise StateTransactionError(
+                f"generation id collision with different state: {generation}"
+            )
+        verify_state_commit(state_dir, allow_legacy=False)
+        return previous_commit
+
     manifest = _stage_transaction(state_dir, generation, normalized)
     entries = manifest["files"]
     assert isinstance(entries, dict)

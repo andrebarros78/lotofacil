@@ -489,13 +489,19 @@ def run_cycle(state_dir: Path, runtime_dir: Path) -> dict[str, object]:
     if records[-1].contest_id != official_latest.record.contest_id:
         raise RuntimeError("operational snapshot did not reach official latest contest")
 
-    canonical_payload = {
-        "schema_version": 1,
-        "created_at_utc": json.loads(canonical_path.read_text(encoding="utf-8")).get("created_at_utc", _utcnow()),
-        "updated_at_utc": _utcnow(),
-        "records": _serialize_records(records),
-    }
-    canonical_path.write_text(json.dumps(canonical_payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    current_canonical_payload = json.loads(canonical_path.read_text(encoding="utf-8"))
+    serialized_records = _serialize_records(records)
+    if current_canonical_payload.get("records") != serialized_records:
+        canonical_payload = {
+            "schema_version": 1,
+            "created_at_utc": current_canonical_payload.get("created_at_utc", _utcnow()),
+            "updated_at_utc": _utcnow(),
+            "records": serialized_records,
+        }
+        canonical_path.write_text(
+            json.dumps(canonical_payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
 
     ledger = _load_ledger(ledger_path)
     evaluated_this_cycle: list[int] = []
@@ -564,6 +570,20 @@ def run_cycle(state_dir: Path, runtime_dir: Path) -> dict[str, object]:
         **report_files,
     }
     runtime_db_sha256 = hashlib.sha256(db_path.read_bytes()).hexdigest()
+    previous_metadata = commit_before.get("metadata", {})
+    previous_cycle_generation = (
+        previous_metadata.get("cycle_generation_id")
+        if isinstance(previous_metadata, dict)
+        else None
+    )
+    if previous_cycle_generation == generation_id:
+        verified_commit = verify_state_commit(state_dir, allow_legacy=False)
+        result["state_transaction"]["commit_status"] = verified_commit["status"]
+        result["state_transaction"]["committed_files"] = verified_commit["verified_files"]
+        result["state_transaction"]["state_commit_generation_id"] = verified_commit["generation_id"]
+        result["state_transaction"]["replay_noop"] = True
+        return result
+
     commit = publish_state_transaction(
         state_dir,
         state_files,
@@ -583,6 +603,7 @@ def run_cycle(state_dir: Path, runtime_dir: Path) -> dict[str, object]:
     result["state_transaction"]["commit_status"] = verified_commit["status"]
     result["state_transaction"]["committed_files"] = verified_commit["verified_files"]
     result["state_transaction"]["state_commit_generation_id"] = commit["generation_id"]
+    result["state_transaction"]["replay_noop"] = False
     return result
 
 
