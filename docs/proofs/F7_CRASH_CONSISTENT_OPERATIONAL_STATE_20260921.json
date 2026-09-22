@@ -1,0 +1,141 @@
+{
+  "schema_version": 1,
+  "status": "CRASH_CONSISTENT_STATE_PROOF_PASS",
+  "phase": "F7_CRASH_CONSISTENT_OPERATIONAL_STATE",
+  "repository": "andrebarros78/lotofacil",
+  "implementation": {
+    "pull_request": 111,
+    "candidate_head_sha": "f835aa770f59729d75e50ec89705257f49d5ab65",
+    "tested_pull_request_merge_sha": "6b638e7e8db48d6b2ba17ff903ea875258081254",
+    "merged_main_sha": "94b666b4395d82bc1f37782765b72c14320c0a3e",
+    "base_main_sha": "d4936f5f665a1ad637e7569674cd316e25ba49ce"
+  },
+  "transaction_contract": {
+    "authority": "operational-state-transaction-v1",
+    "commit_schema": "operational-state-commit-v1",
+    "commit_point": "state_commit.json",
+    "transaction_pointer": ".state_transaction.json",
+    "staging_root": ".state-txn/<generation_id>",
+    "legacy_bootstrap_only": true,
+    "transactional_to_legacy_regression_blocked": true
+  },
+  "crash_consistency_proof": {
+    "workflow_run_id": 35673965008,
+    "operations_state_commit_used": "67e155f372b1b5c9c582db73793de966c073ad1f",
+    "status": "F7_CRASH_CONSISTENCY_PROOF_PASS",
+    "precommit_crash_matrix": [
+      {
+        "crash_after_replace": 1,
+        "recovery": "PREPARED_ROLLED_BACK",
+        "generation_after_recovery": "f7-baseline"
+      },
+      {
+        "crash_after_replace": 2,
+        "recovery": "PREPARED_ROLLED_BACK",
+        "generation_after_recovery": "f7-baseline"
+      },
+      {
+        "crash_after_replace": 3,
+        "recovery": "PREPARED_ROLLED_BACK",
+        "generation_after_recovery": "f7-baseline"
+      }
+    ],
+    "postcommit_crash": {
+      "recovery": "COMMITTED_COMPLETED",
+      "generation_after_recovery": "f7-postcommit"
+    },
+    "invariants": {
+      "precommit_crash_restores_all_old": true,
+      "postcommit_crash_preserves_all_new": true,
+      "mixed_generation_after_recovery": false,
+      "commit_receipt_covers_complete_file_set": true,
+      "tamper_detection": true,
+      "orphan_staging_cleanup": true,
+      "orphan_atomic_temporary_cleanup": true,
+      "recovery_idempotent": true
+    }
+  },
+  "runtime_db_binding": {
+    "runtime_db_sha256": "e3ba06536f7dbba337dee3c1c5f01b43660ce276abb54c5cee2d5defc5b970aa",
+    "database_integrity": "ok",
+    "contest_count": 3784,
+    "expected_data_snapshot_hash": "7f6afa0bc3718e2f34bd08340b795124e6fbd56c1fca56c10da7a11f50fde94b",
+    "rebuild_data_snapshot_hash": "7f6afa0bc3718e2f34bd08340b795124e6fbd56c1fca56c10da7a11f50fde94b",
+    "restart_data_snapshot_hash": "7f6afa0bc3718e2f34bd08340b795124e6fbd56c1fca56c10da7a11f50fde94b",
+    "storage_snapshot_hash": "e6598926af3d0ed82b61dd1bb34c2a3db783d52c01ce8607bd85ed99b982ae78",
+    "projection_matches_persisted_scientific_identity": true,
+    "restart_preserves_scientific_identity": true
+  },
+  "regression": {
+    "python_3_13": "364 passed, 1 skipped, 2 warnings",
+    "python_3_12": "364 passed, 1 skipped, 2 warnings"
+  },
+  "proof_artifact": {
+    "artifact_id": 10671843637,
+    "name": "f7-crash-consistency-proof",
+    "digest": "sha256:a8b86f548f77f88b2149a92bc37bd922d8f3a9dcd06fbd6cd3e19a270ed973ee"
+  },
+  "real_state_migration": {
+    "workflow_run_id": 35674059590,
+    "engine_sha": "94b666b4395d82bc1f37782765b72c14320c0a3e",
+    "operations_state_before": "67e155f372b1b5c9c582db73793de966c073ad1f",
+    "operations_state_after": "66445d12e80dba3142050c6ef508e1d17246dbca",
+    "previous_commit_status": "LEGACY_STATE_WITHOUT_TRANSACTION_COMMIT",
+    "cycle_generation_id": "cycle-3785-a8c22694eb2c7428",
+    "current_generation_id": "prizes-3785-3bddc48bc40b15bb",
+    "parent_generation_id": "cycle-3785-a8c22694eb2c7428",
+    "current_commit_status": "STATE_COMMIT_VERIFIED",
+    "verified_files": 8,
+    "official_latest_contest": 3785,
+    "next_prediction_target": 3786,
+    "data_snapshot_hash": "98643161eed3869e84e05f97c47b6da168dffdd51b6c78abffb2faf969728de4",
+    "storage_snapshot_hash": "7f630b366038aaca29c6da8452c6b3d7a078762798bd74730b832a7b737dd884",
+    "predictive_evidence": "NOT_ESTABLISHED",
+    "artifacts": [
+      {
+        "artifact_id": 10672700971,
+        "name": "github-operational-cycle",
+        "digest": "sha256:e040c82132f388b0c99e4c7ea5c93cb090ddb46402d9fc1163686b576b8bd44c"
+      },
+      {
+        "artifact_id": 10672655978,
+        "name": "github-committed-state-audit",
+        "digest": "sha256:a8db747216d38fa6635154fceaa24aa3909a6343fad0aa43fa8741bb8cf1ddab"
+      },
+      {
+        "artifact_id": 10671873710,
+        "name": "github-economic-state-proof",
+        "digest": "sha256:729b7856bf7858cc3a51a748316427b6346994b388c46a4df286e724afac2dd7"
+      }
+    ]
+  },
+  "scientific_state": {
+    "predictive_evidence": "NOT_ESTABLISHED",
+    "interpretation": "Crash consistency, integrity and operational reproducibility do not establish predictive advantage."
+  },
+  "checks": [
+    "F7 Crash Consistency Proof",
+    "Operational State Integrity Proof",
+    "Semantic Snapshot Proof",
+    "Card Authority Proof",
+    "Concurrency Fencing Proof",
+    "F5 Resource Boundary Proof",
+    "F6 Evaluation Isolation Proof",
+    "CI",
+    "SARE Stable Merge Gates",
+    "Scope Seal Proof",
+    "CodeQL Security Scan",
+    "Repository Sanitization",
+    "Agent Capability Proof",
+    "Agent Resilience Proof"
+  ],
+  "notes": [
+    "The first real F7 operational mutation migrated operations/state from legacy mode to a verified transactional state.",
+    "Auxiliary prize publication advanced parent_generation_id while preserving cycle_generation_id.",
+    "latest.json persists only transaction fields known before commit; post-commit verification fields remain command/workflow output.",
+    "Release Proof has a pre-existing unrelated failure on the pre-F7 main baseline and is not an F7 acceptance gate.",
+    "SARE Operator Console Proof currently contains a stale expectation for portfolio preview status and is not an F7 acceptance gate."
+  ],
+  "proof_payload_hash_scope": "SHA-256 of canonical JSON for this object excluding proof_payload_sha256",
+  "proof_payload_sha256": "0fc592f4a8f67903d701420b221f94f3ca22201a5b8744693ab21b84c058dd8d"
+}
