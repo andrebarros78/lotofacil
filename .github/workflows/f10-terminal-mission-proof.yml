@@ -1,0 +1,96 @@
+name: F10 Terminal Mission Proof
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/f10-terminal-mission-proof.yml"
+      - "scripts/prove_f10_terminal_mission.py"
+      - "governance/terminal-hardening.json"
+      - "docs/MISSION_PROVEN_1_1_10.md"
+      - "README.md"
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/f10-terminal-mission-proof.yml"
+      - "scripts/prove_f10_terminal_mission.py"
+      - "governance/terminal-hardening.json"
+      - "docs/MISSION_PROVEN_1_1_10.md"
+      - "README.md"
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  terminal-mission:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout candidate
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          path: app
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: "3.13"
+
+      - name: Download latest successful F9 evidence
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd
+        with:
+          script: |
+            const runs = await github.rest.actions.listWorkflowRuns({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'f9-clean-room-disaster-recovery-proof.yml',
+              status: 'success',
+              per_page: 20
+            });
+            if (!runs.data.workflow_runs.length) core.setFailed('F10_REQUIRES_SUCCESSFUL_F9_RUN');
+            const run = runs.data.workflow_runs[0];
+            const arts = await github.rest.actions.listWorkflowRunArtifacts({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: run.id,
+              per_page: 100
+            });
+            const artifact = arts.data.artifacts.find(a => a.name === 'f9-clean-room-disaster-recovery-proof' && !a.expired);
+            if (!artifact) core.setFailed('F10_F9_ARTIFACT_MISSING');
+            const zip = await github.rest.actions.downloadArtifact({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              artifact_id: artifact.id,
+              archive_format: 'zip'
+            });
+            const fs = require('fs');
+            fs.mkdirSync('f9-evidence', {recursive: true});
+            fs.writeFileSync('f9-evidence/f9.zip', Buffer.from(zip.data));
+
+      - name: Extract F9 evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          unzip -q f9-evidence/f9.zip -d f9-evidence/unpacked
+          test -s f9-evidence/unpacked/f9_clean_room_disaster_recovery_proof.json
+
+      - name: Run terminal mission proof
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          python app/scripts/prove_f10_terminal_mission.py             --repo app             --f9-proof f9-evidence/unpacked/f9_clean_room_disaster_recovery_proof.json             --out artifacts/f10_terminal_mission_proof.json
+          grep -q '"status": "F10_TERMINAL_MISSION_PROOF_PASS"' artifacts/f10_terminal_mission_proof.json
+          grep -q '"mission_state": "MISSION_PROVEN"' artifacts/f10_terminal_mission_proof.json
+          grep -q '"predictive_evidence": "NOT_ESTABLISHED"' artifacts/f10_terminal_mission_proof.json
+
+      - name: Upload F10 evidence
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: f10-terminal-mission-proof
+          path: artifacts/f10_terminal_mission_proof.json
+          if-no-files-found: error
+          retention-days: 90
