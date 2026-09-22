@@ -4,9 +4,10 @@ import argparse
 import hashlib
 import json
 import shutil
+from datetime import date, datetime, timezone
 from pathlib import Path
 
-from scripts import github_operational_cycle as operational_cycle
+from sare_lotofacil.ingestion.validation import validate_contest
 from sare_lotofacil.operational_state import (
     StateTransactionError,
     publish_state_transaction,
@@ -14,7 +15,7 @@ from sare_lotofacil.operational_state import (
     verify_state_commit,
 )
 from sare_lotofacil.persistence.backup import database_integrity
-from sare_lotofacil.persistence.repository import create_latest_snapshot
+from sare_lotofacil.persistence.repository import create_latest_snapshot, persist_history_records
 
 
 def _seed_toy_state(path: Path) -> dict[str, bytes]:
@@ -48,12 +49,32 @@ def _prove_runtime_db_binding(
     for name in ("first", "restart"):
         runtime_dir = work_dir / f"runtime-{name}"
         runtime_dir.mkdir(parents=True, exist_ok=False)
-        db_path, _, _, records, bootstrap_patches = operational_cycle._prepare_database_from_state(
-            state_dir,
-            runtime_dir,
+        canonical_path = state_dir / "canonical_history.json"
+        manifest_path = state_dir / "bootstrap_manifest.json"
+        if not canonical_path.exists() or not manifest_path.exists():
+            raise RuntimeError("operational state missing canonical history or bootstrap manifest")
+        canonical_payload = json.loads(canonical_path.read_text(encoding="utf-8"))
+        raw_records = canonical_payload.get("records")
+        if not isinstance(raw_records, list) or not raw_records:
+            raise RuntimeError("canonical history records missing")
+        records = tuple(
+            validate_contest(
+                int(item["contest_id"]),
+                date.fromisoformat(str(item["draw_date"])),
+                tuple(int(number) for number in item["numbers"]),
+            )
+            for item in raw_records
         )
-        if bootstrap_patches:
-            raise RuntimeError("runtime rebuild unexpectedly required bootstrap patches")
+        db_path = runtime_dir / "sare.db"
+        persist_history_records(
+            db_path,
+            records,
+            source_url="github://operations/state/operations/canonical_history.json",
+            raw_bytes=canonical_path.read_bytes(),
+            captured_at=datetime.now(timezone.utc),
+            source_class="CANONICAL_GITHUB_STATE",
+            media_type="application/json",
+        )
         integrity = database_integrity(db_path)
         if integrity != "ok":
             raise RuntimeError(f"runtime database integrity failed: {name}: {integrity}")
