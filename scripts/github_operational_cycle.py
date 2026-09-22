@@ -564,6 +564,20 @@ def run_cycle(state_dir: Path, runtime_dir: Path) -> dict[str, object]:
         **report_files,
     }
     runtime_db_sha256 = hashlib.sha256(db_path.read_bytes()).hexdigest()
+    previous_metadata = commit_before.get("metadata", {})
+    previous_cycle_generation = (
+        previous_metadata.get("cycle_generation_id")
+        if isinstance(previous_metadata, dict)
+        else None
+    )
+    if previous_cycle_generation == generation_id:
+        verified_commit = verify_state_commit(state_dir, allow_legacy=False)
+        result["state_transaction"]["commit_status"] = verified_commit["status"]
+        result["state_transaction"]["committed_files"] = verified_commit["verified_files"]
+        result["state_transaction"]["state_commit_generation_id"] = verified_commit["generation_id"]
+        result["state_transaction"]["replay_noop"] = True
+        return result
+
     commit = publish_state_transaction(
         state_dir,
         state_files,
@@ -583,6 +597,7 @@ def run_cycle(state_dir: Path, runtime_dir: Path) -> dict[str, object]:
     result["state_transaction"]["commit_status"] = verified_commit["status"]
     result["state_transaction"]["committed_files"] = verified_commit["verified_files"]
     result["state_transaction"]["state_commit_generation_id"] = commit["generation_id"]
+    result["state_transaction"]["replay_noop"] = False
     return result
 
 
