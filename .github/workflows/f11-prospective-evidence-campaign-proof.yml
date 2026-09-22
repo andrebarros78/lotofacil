@@ -41,6 +41,12 @@ jobs:
         with:
           python-version: "3.13"
 
+      - name: Install candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check ./app
+
       - name: Verify committed operational state
         shell: bash
         run: |
@@ -52,7 +58,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p artifacts
-          python app/scripts/prove_f11_prospective_campaign.py             --state-dir state-store/operations             --out artifacts/f11_prospective_evidence_campaign_proof.json
+          python app/scripts/prove_f11_prospective_campaign.py --state-dir state-store/operations --out artifacts/f11_prospective_evidence_campaign_proof.json
           grep -q '"status": "F11_PROSPECTIVE_EVIDENCE_CAMPAIGN_PROOF_PASS"' artifacts/f11_prospective_evidence_campaign_proof.json
           grep -q '"prospective_state": "UNDER_TEST_COHORT_A"' artifacts/f11_prospective_evidence_campaign_proof.json
           grep -q '"predictive_evidence": "NOT_ESTABLISHED"' artifacts/f11_prospective_evidence_campaign_proof.json
