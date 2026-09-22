@@ -67,7 +67,7 @@ jobs:
         run: |
           set -euo pipefail
           python -m pip install -c app/requirements.lock.txt -e 'app[dev]'
-          python -m pytest -q app/tests/test_f9_clean_room_recovery.py | tee artifacts/f9-focused-tests.txt
+          (cd app && python -m pytest -q tests/test_f9_clean_room_recovery.py) | tee artifacts/f9-focused-tests.txt
 
       - name: Clean-room runtime reconstruction one
         shell: bash
