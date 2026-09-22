@@ -80,6 +80,10 @@ jobs:
           grep -q '"status": "F7_CRASH_CONSISTENCY_PROOF_PASS"' artifacts/f7_crash_consistency.json
           grep -q '"mixed_generation_after_recovery": false' artifacts/f7_crash_consistency.json
           grep -q '"tamper_detection": true' artifacts/f7_crash_consistency.json
+          grep -q '"database_integrity": "ok"' artifacts/f7_crash_consistency.json
+          grep -q '"projection_matches_persisted_scientific_identity": true' artifacts/f7_crash_consistency.json
+          grep -q '"restart_preserves_scientific_identity": true' artifacts/f7_crash_consistency.json
+          grep -Eq '"runtime_db_sha256": "[0-9a-f]{64}"' artifacts/f7_crash_consistency.json
 
       - name: Verify sealed copy remains operationally valid
         run: |
