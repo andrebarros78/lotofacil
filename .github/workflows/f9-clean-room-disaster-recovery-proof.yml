@@ -74,7 +74,7 @@ jobs:
         run: |
           set -euo pipefail
           python -m venv /tmp/sare-f9-runtime-1
-          /tmp/sare-f9-runtime-1/bin/python -m pip install -c app/requirements.lock.txt app
+          /tmp/sare-f9-runtime-1/bin/python -m pip install -c app/requirements.lock.txt ./app
           /tmp/sare-f9-runtime-1/bin/python -m sare_lotofacil doctor
           /tmp/sare-f9-runtime-1/bin/python app/scripts/verify_github_operational_state.py --state-dir state-store/operations --out artifacts/f9_state_audit_runtime1.json
           grep -q '"status": "GITHUB_OPERATIONAL_AUDIT_PASS"' artifacts/f9_state_audit_runtime1.json
@@ -103,7 +103,7 @@ jobs:
         run: |
           set -euo pipefail
           python -m venv /tmp/sare-f9-runtime-2
-          /tmp/sare-f9-runtime-2/bin/python -m pip install -c app/requirements.lock.txt app
+          /tmp/sare-f9-runtime-2/bin/python -m pip install -c app/requirements.lock.txt ./app
           /tmp/sare-f9-runtime-2/bin/python -m sare_lotofacil doctor
           /tmp/sare-f9-runtime-2/bin/python app/scripts/verify_github_operational_state.py --state-dir state-store/operations --out artifacts/f9_state_audit_runtime2.json
           grep -q '"status": "GITHUB_OPERATIONAL_AUDIT_PASS"' artifacts/f9_state_audit_runtime2.json
