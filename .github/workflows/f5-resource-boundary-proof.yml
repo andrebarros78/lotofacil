@@ -91,3 +91,5 @@ jobs:
             artifacts/operations_state_commit.txt
           if-no-files-found: error
           retention-days: 90
+
+# F7 terminal evidence replay trigger; workflow semantics unchanged.
