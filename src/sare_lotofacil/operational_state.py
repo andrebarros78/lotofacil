@@ -90,6 +90,16 @@ def _load_json(path: Path) -> dict[str, object]:
     return payload
 
 
+def _cleanup_orphan_temporaries(state_dir: Path) -> bool:
+    removed = False
+    for path in sorted(state_dir.rglob(".*.tmp")):
+        if not path.is_file():
+            continue
+        path.unlink()
+        _fsync_dir(path.parent)
+        removed = True
+    return removed
+
 
 def _current_state_hashes(state_dir: Path) -> dict[str, str]:
     hashes: dict[str, str] = {}
@@ -271,6 +281,7 @@ def _complete_new(state_dir: Path, manifest: Mapping[str, object]) -> None:
 
 def recover_state_transaction(state_dir: Path) -> str:
     state_dir.mkdir(parents=True, exist_ok=True)
+    removed_temp = _cleanup_orphan_temporaries(state_dir)
     pointer = _transaction_pointer_path(state_dir)
     if not pointer.exists():
         txn_parent = state_dir / TXN_DIR
@@ -278,6 +289,9 @@ def recover_state_transaction(state_dir: Path) -> str:
             shutil.rmtree(txn_parent, ignore_errors=False)
             _fsync_dir(state_dir)
             return "ORPHAN_STAGING_REMOVED"
+        if removed_temp:
+            _fsync_dir(state_dir)
+            return "ORPHAN_TEMPORARIES_REMOVED"
         return "CLEAN"
 
     pointer_payload = _load_json(pointer)
