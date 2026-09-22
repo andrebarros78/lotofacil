@@ -119,6 +119,25 @@ def update_state(state_dir: Path, *, fetcher=fetch_caixa_contest) -> dict[str, o
         if _upsert_contest(state, contest):
             changed_ids.append(contest_id)
 
+    if not changed_ids and path.exists():
+        content = path.read_bytes()
+        digest = hashlib.sha256(content).hexdigest()
+        state_commit_after = verify_state_commit(state_dir, allow_legacy=False)
+        return {
+            "status": "CANONICAL_PRIZE_STATE_PASS",
+            "latest_contest": latest_contest,
+            "prize_contests": len(state.get("contests", [])),
+            "changed_contests": [],
+            "canonical_prizes_sha256": digest,
+            "state_transaction": {
+                "generation_id": state_commit_after["generation_id"],
+                "previous_commit_status": state_commit_before["status"],
+                "commit_status": state_commit_after["status"],
+                "verified_files": state_commit_after["verified_files"],
+                "replay_noop": True,
+            },
+        }
+
     state["updated_at_utc"] = _utcnow()
     state["latest_contest"] = latest_contest
     state["contest_count"] = len(state.get("contests", []))
