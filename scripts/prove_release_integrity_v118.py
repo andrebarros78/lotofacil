@@ -113,7 +113,7 @@ def prove_portfolio_economics_v118() -> None:
     with connect(db) as connection:
         revision_rows = connection.execute("SELECT COUNT(*) FROM revision_evaluations").fetchone()[0]
         audit_rows = connection.execute(
-            "SELECT COUNT(*) FROM audit_events WHERE action='PORTFOLIO_REVISION_EVALUATED'"
+            "SELECT COUNT(*) FROM audit_events WHERE action='PORTFOLIO_CANONICAL_EVALUATED'"
         ).fetchone()[0]
         schema_version = int(
             connection.execute("SELECT value FROM schema_meta WHERE key='schema_version'").fetchone()[0]
