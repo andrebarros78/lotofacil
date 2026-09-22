@@ -7,9 +7,11 @@ from datetime import date
 from pathlib import Path
 
 from sare_lotofacil.ingestion.validation import validate_contest
+from sare_lotofacil.operational_state import verify_state_commit
 
 
 def verify(state_dir: Path) -> dict[str, object]:
+    state_commit = verify_state_commit(state_dir, allow_legacy=True)
     history_path = state_dir / "canonical_history.json"
     prizes_path = state_dir / "canonical_prizes.json"
     latest_path = state_dir / "latest.json"
@@ -78,6 +80,7 @@ def verify(state_dir: Path) -> dict[str, object]:
         "status": "CANONICAL_PRIZE_AUDIT_PASS",
         "latest_contest": latest_contest,
         "prize_contests": len(seen),
+        "state_transaction": state_commit,
         "prize_revisions": revision_count,
         "canonical_prizes_sha256": hashlib.sha256(prizes_path.read_bytes()).hexdigest(),
     }

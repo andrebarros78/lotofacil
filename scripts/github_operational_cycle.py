@@ -19,6 +19,11 @@ from sare_lotofacil.experiments.models import exponential_update, frequency_regu
 from sare_lotofacil.ingestion.caixa import fetch_caixa_contest
 from sare_lotofacil.ingestion.csv_history import parse_history_csv
 from sare_lotofacil.ingestion.validation import validate_contest
+from sare_lotofacil.operational_state import (
+    publish_state_transaction,
+    recover_state_transaction,
+    verify_state_commit,
+)
 from sare_lotofacil.persistence.backup import database_integrity
 from sare_lotofacil.persistence.repository import (
     create_latest_snapshot,
@@ -49,6 +54,12 @@ def _utcnow() -> str:
 
 def _canonical(payload: object) -> str:
     return json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+
+
+def _pretty_json_bytes(payload: object) -> bytes:
+    return (
+        json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
+    ).encode("utf-8")
 
 
 def _sha256(payload: object) -> str:
@@ -397,12 +408,21 @@ def _bootstrap_history(db_path: Path, canonical_path: Path, manifest_path: Path)
 
 
 def _prepare_database_from_state(state_dir: Path, runtime_dir: Path):
-    canonical_path = state_dir / "canonical_history.json"
-    manifest_path = state_dir / "bootstrap_manifest.json"
+    state_canonical_path = state_dir / "canonical_history.json"
+    state_manifest_path = state_dir / "bootstrap_manifest.json"
+    canonical_path = runtime_dir / "canonical_history.next.json"
+    manifest_path = runtime_dir / "bootstrap_manifest.next.json"
     db_path = runtime_dir / "sare.db"
     db_path.unlink(missing_ok=True)
+    canonical_path.unlink(missing_ok=True)
+    manifest_path.unlink(missing_ok=True)
+
     bootstrap_patches: list[int] = []
-    if canonical_path.exists():
+    if state_canonical_path.exists():
+        canonical_path.write_bytes(state_canonical_path.read_bytes())
+        if not state_manifest_path.exists():
+            raise RuntimeError("bootstrap manifest missing from operational state")
+        manifest_path.write_bytes(state_manifest_path.read_bytes())
         records, _ = _load_canonical_history(canonical_path)
         raw = canonical_path.read_bytes()
         persist_history_records(
@@ -415,37 +435,36 @@ def _prepare_database_from_state(state_dir: Path, runtime_dir: Path):
             media_type="application/json",
         )
     else:
-        records, bootstrap_patches = _bootstrap_history(db_path, canonical_path, manifest_path)
+        records, bootstrap_patches = _bootstrap_history(
+            db_path,
+            canonical_path,
+            manifest_path,
+        )
     return db_path, canonical_path, manifest_path, records, bootstrap_patches
 
 
-def _write_post_contest_report_state(
-    state_dir: Path,
+def _build_post_contest_report_files(
     ledger: dict[str, object],
-) -> dict[str, object]:
+) -> tuple[dict[str, object], dict[str, bytes]]:
     report_state = build_post_contest_reports(ledger)
-    (state_dir / "post_contest_reports.json").write_text(
-        json.dumps(report_state, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
-        encoding="utf-8",
-    )
+    files = {
+        "post_contest_reports.json": _pretty_json_bytes(report_state),
+    }
     latest_report = report_state["latest_report"]
     if latest_report is not None:
-        (state_dir / "latest_post_contest_report.json").write_text(
-            json.dumps(latest_report, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
-            encoding="utf-8",
-        )
-        (state_dir / "latest_post_contest_report.md").write_text(
-            render_post_contest_report_markdown(latest_report) + "\n",
-            encoding="utf-8",
-        )
-    return report_state
+        files["latest_post_contest_report.json"] = _pretty_json_bytes(latest_report)
+        files["latest_post_contest_report.md"] = (
+            render_post_contest_report_markdown(latest_report) + "\n"
+        ).encode("utf-8")
+    return report_state, files
 
 
 def run_cycle(state_dir: Path, runtime_dir: Path) -> dict[str, object]:
     state_dir.mkdir(parents=True, exist_ok=True)
     runtime_dir.mkdir(parents=True, exist_ok=True)
+    recovery_outcome = recover_state_transaction(state_dir)
+    commit_before = verify_state_commit(state_dir, allow_legacy=True)
     ledger_path = state_dir / "prospective_ledger.json"
-    latest_path = state_dir / "latest.json"
 
     db_path, canonical_path, manifest_path, records, bootstrap_patches = _prepare_database_from_state(state_dir, runtime_dir)
     if database_integrity(db_path) != "ok":
@@ -500,7 +519,7 @@ def run_cycle(state_dir: Path, runtime_dir: Path) -> dict[str, object]:
     verify_prediction_hashes(ledger)
     ledger["summary"] = summarize_ledger(ledger)
 
-    report_state = _write_post_contest_report_state(state_dir, ledger)
+    report_state, report_files = _build_post_contest_report_files(ledger)
 
     core = analyze_core(tuple(record.numbers for record in records)).to_dict()
     result = {
@@ -527,8 +546,43 @@ def run_cycle(state_dir: Path, runtime_dir: Path) -> dict[str, object]:
             "emitted_for_contests": evaluated_this_cycle,
         },
     }
-    ledger_path.write_text(json.dumps(ledger, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    latest_path.write_text(json.dumps(result, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    generation_id = (
+        f"cycle-{official_latest.record.contest_id}-"
+        f"{_sha256({'canonical': result['canonical_history_sha256'], 'ledger': ledger['summary'], 'next': next_target})[:16]}"
+    )
+    result["state_transaction"] = {
+        "schema": "operational-state-transaction-v1",
+        "generation_id": generation_id,
+        "recovery_before_cycle": recovery_outcome,
+        "previous_commit_status": commit_before["status"],
+    }
+    state_files: dict[str, bytes] = {
+        "bootstrap_manifest.json": manifest_path.read_bytes(),
+        "canonical_history.json": canonical_path.read_bytes(),
+        "prospective_ledger.json": _pretty_json_bytes(ledger),
+        "latest.json": _pretty_json_bytes(result),
+        **report_files,
+    }
+    runtime_db_sha256 = hashlib.sha256(db_path.read_bytes()).hexdigest()
+    commit = publish_state_transaction(
+        state_dir,
+        state_files,
+        generation_id=generation_id,
+        metadata={
+            "source": "github_operational_cycle",
+            "official_latest_contest": official_latest.record.contest_id,
+            "next_prediction_target": next_target,
+            "snapshot_id": snapshot.snapshot_id,
+            "storage_snapshot_hash": snapshot.storage_snapshot_hash,
+            "data_snapshot_hash": snapshot.data_snapshot_hash,
+            "runtime_db_sha256": runtime_db_sha256,
+            "database_integrity": result["database_integrity"],
+        },
+    )
+    verified_commit = verify_state_commit(state_dir, allow_legacy=False)
+    result["state_transaction"]["commit_status"] = verified_commit["status"]
+    result["state_transaction"]["committed_files"] = verified_commit["verified_files"]
+    result["state_transaction"]["state_commit_generation_id"] = commit["generation_id"]
     return result
 
 
