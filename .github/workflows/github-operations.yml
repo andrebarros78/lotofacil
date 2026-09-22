@@ -71,6 +71,8 @@ jobs:
             --state-dir state-store/operations \
             --out artifacts/github_operational_audit_precommit.json
           grep -q '"status": "GITHUB_OPERATIONAL_AUDIT_PASS"' artifacts/github_operational_audit_precommit.json
+          python -c 'import json; from pathlib import Path; from sare_lotofacil.operational_state import verify_state_commit; print(json.dumps(verify_state_commit(Path("state-store/operations"), allow_legacy=False), sort_keys=True))' | tee artifacts/state_commit_verification_precommit.json
+          grep -q '"status": "STATE_COMMIT_VERIFIED"' artifacts/state_commit_verification_precommit.json
           python app/scripts/verify_canonical_prizes.py \
             --state-dir state-store/operations \
             --out artifacts/canonical_prize_audit_precommit.json
@@ -96,7 +98,9 @@ jobs:
             artifacts/github_operational_audit_precommit.json
             artifacts/canonical_prize_state.json
             artifacts/canonical_prize_audit_precommit.json
+            artifacts/state_commit_verification_precommit.json
             artifacts/github-runtime/sare.db
+            state-store/operations/state_commit.json
             state-store/operations/*.json
             state-store/operations/*.md
           if-no-files-found: error
@@ -132,6 +136,8 @@ jobs:
             --state-dir state-store/operations \
             --out artifacts/github_operational_audit_committed.json
           grep -q '"status": "GITHUB_OPERATIONAL_AUDIT_PASS"' artifacts/github_operational_audit_committed.json
+          python -c 'import json; from pathlib import Path; from sare_lotofacil.operational_state import verify_state_commit; print(json.dumps(verify_state_commit(Path("state-store/operations"), allow_legacy=False), sort_keys=True))' | tee artifacts/state_commit_verification_committed.json
+          grep -q '"status": "STATE_COMMIT_VERIFIED"' artifacts/state_commit_verification_committed.json
           python app/scripts/verify_canonical_prizes.py \
             --state-dir state-store/operations \
             --out artifacts/canonical_prize_audit_committed.json
@@ -144,8 +150,10 @@ jobs:
           name: github-committed-state-audit
           path: |
             artifacts/github_operational_audit_committed.json
+            artifacts/state_commit_verification_committed.json
             artifacts/canonical_prize_audit_committed.json
             artifacts/operational_git_history.txt
+            state-store/operations/state_commit.json
           if-no-files-found: error
 
   economic-state-proof:
