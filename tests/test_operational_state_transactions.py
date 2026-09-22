@@ -372,3 +372,36 @@ def test_same_generation_with_different_bytes_fails_closed(tmp_path: Path) -> No
 
     assert (state / STATE_COMMIT_FILE).read_bytes() == before_commit
     assert verify_state_commit(state, allow_legacy=False)["generation_id"] == "cycle-baseline"
+
+
+
+def test_operational_cycle_replay_without_new_state_is_noop(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    state, records = _cycle_fixture(tmp_path)
+    official = CaixaContest(
+        record=records[-1],
+        prize_tiers=(),
+        source_url="fixture://official/6",
+        captured_at=datetime(2026, 9, 21, tzinfo=timezone.utc),
+        raw_payload={"numero": 6, "listaDezenas": list(records[-1].numbers)},
+    )
+    monkeypatch.setattr(cycle, "_resolve_official_latest", lambda current_last: official)
+    monkeypatch.setattr(
+        cycle,
+        "analyze_core",
+        lambda draws: SimpleNamespace(to_dict=lambda: {"fixture": True}),
+    )
+
+    first = cycle.run_cycle(state, tmp_path / "runtime-first")
+    before_commit = (state / STATE_COMMIT_FILE).read_bytes()
+    before_latest = (state / "latest.json").read_bytes()
+    second = cycle.run_cycle(state, tmp_path / "runtime-second")
+
+    assert first["state_transaction"]["replay_noop"] is False
+    assert second["state_transaction"]["replay_noop"] is True
+    assert second["state_transaction"]["generation_id"] == first["state_transaction"]["generation_id"]
+    assert (state / STATE_COMMIT_FILE).read_bytes() == before_commit
+    assert (state / "latest.json").read_bytes() == before_latest
+    assert verify_state_commit(state, allow_legacy=False)["status"] == "STATE_COMMIT_VERIFIED"
