@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Mapping
 
 STATE_COMMIT_FILE = "state_commit.json"
+STATE_COMMIT_REQUIRED_FILE = ".state_commit_required"
 TXN_POINTER_FILE = ".state_transaction.json"
 TXN_DIR = ".state-txn"
 STATE_TXN_SCHEMA = "operational-state-transaction-v1"
@@ -107,7 +108,7 @@ def _current_state_hashes(state_dir: Path) -> dict[str, str]:
         if not path.is_file():
             continue
         relative = path.relative_to(state_dir).as_posix()
-        if relative in {STATE_COMMIT_FILE, TXN_POINTER_FILE}:
+        if relative in {STATE_COMMIT_FILE, STATE_COMMIT_REQUIRED_FILE, TXN_POINTER_FILE}:
             continue
         if relative.startswith(f"{TXN_DIR}/"):
             continue
@@ -143,7 +144,7 @@ def _normalize_files(files: Mapping[str, bytes]) -> dict[str, bytes]:
         if path.is_absolute() or ".." in path.parts:
             raise ValueError(f"invalid operational state path: {relative}")
         key = path.as_posix()
-        if key in {STATE_COMMIT_FILE, TXN_POINTER_FILE} or key.startswith(f"{TXN_DIR}/"):
+        if key in {STATE_COMMIT_FILE, STATE_COMMIT_REQUIRED_FILE, TXN_POINTER_FILE} or key.startswith(f"{TXN_DIR}/"):
             raise ValueError(f"reserved operational state path: {relative}")
         normalized[key] = bytes(content)
     if not normalized:
@@ -214,6 +215,13 @@ def _read_commit(state_dir: Path) -> dict[str, object] | None:
     if not path.exists():
         return None
     return _load_json(path)
+
+
+def _mark_transactional_state(state_dir: Path) -> None:
+    atomic_write_bytes(
+        state_dir / STATE_COMMIT_REQUIRED_FILE,
+        b"operational-state-commit-required-v1\n",
+    )
 
 
 def _committed_generation(state_dir: Path) -> str | None:
@@ -303,6 +311,7 @@ def recover_state_transaction(state_dir: Path) -> str:
 
     if committed == generation_id:
         _complete_new(state_dir, manifest)
+        _mark_transactional_state(state_dir)
         outcome = "COMMITTED_COMPLETED"
     else:
         _restore_old(state_dir, manifest)
@@ -321,6 +330,8 @@ def verify_state_commit(state_dir: Path, *, allow_legacy: bool = True) -> dict[s
     recover_state_transaction(state_dir)
     commit = _read_commit(state_dir)
     if commit is None:
+        if (state_dir / STATE_COMMIT_REQUIRED_FILE).exists():
+            raise StateTransactionError("state commit missing for transactional state")
         if allow_legacy:
             return {
                 "status": "LEGACY_STATE_WITHOUT_TRANSACTION_COMMIT",
@@ -410,6 +421,7 @@ def publish_state_transaction(
         commit_metadata.setdefault("cycle_generation_id", previous_cycle_generation)
     commit = StateCommit(generation, hashes, commit_metadata)
     atomic_write_json(state_dir / STATE_COMMIT_FILE, commit.to_dict())
+    _mark_transactional_state(state_dir)
 
     if crash_after_commit:
         raise StateTransactionError("INJECTED_CRASH_AFTER_COMMIT")
