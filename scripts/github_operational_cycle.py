@@ -4,6 +4,7 @@ import argparse
 import hashlib
 import json
 import math
+import sqlite3
 from datetime import date, datetime, timezone
 from pathlib import Path
 from statistics import stdev
@@ -569,6 +570,10 @@ def run_cycle(state_dir: Path, runtime_dir: Path) -> dict[str, object]:
         "latest.json": _pretty_json_bytes(result),
         **report_files,
     }
+    with sqlite3.connect(db_path, timeout=30.0) as checkpoint_connection:
+        checkpoint = checkpoint_connection.execute("PRAGMA wal_checkpoint(TRUNCATE)").fetchone()
+        if checkpoint is None or int(checkpoint[0]) != 0:
+            raise RuntimeError(f"operational database WAL checkpoint failed: {checkpoint}")
     runtime_db_sha256 = hashlib.sha256(db_path.read_bytes()).hexdigest()
     previous_metadata = commit_before.get("metadata", {})
     previous_cycle_generation = (
