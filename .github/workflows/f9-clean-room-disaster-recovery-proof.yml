@@ -1,0 +1,134 @@
+name: F9 Clean Room Disaster Recovery Proof
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/f9-clean-room-disaster-recovery-proof.yml"
+      - "scripts/prove_f9_clean_room_recovery.py"
+      - "tests/test_f9_clean_room_recovery.py"
+      - "scripts/verify_github_operational_state.py"
+      - "src/sare_lotofacil/**"
+      - "requirements.lock.txt"
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/f9-clean-room-disaster-recovery-proof.yml"
+      - "scripts/prove_f9_clean_room_recovery.py"
+      - "tests/test_f9_clean_room_recovery.py"
+      - "scripts/verify_github_operational_state.py"
+      - "src/sare_lotofacil/**"
+      - "requirements.lock.txt"
+
+permissions:
+  contents: read
+
+jobs:
+  clean-room-disaster-recovery:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Checkout candidate control plane
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          path: app
+          fetch-depth: 0
+
+      - name: Checkout canonical operational state
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          ref: operations/state
+          path: state-store
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: "3.13"
+
+      - name: Capture immutable state identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          python - <<'PY' > artifacts/state_tree_before.txt
+          import sys
+          from pathlib import Path
+          sys.path.insert(0, "app")
+          from scripts.prove_f9_clean_room_recovery import tree_digest
+          print(tree_digest(Path("state-store/operations")))
+          PY
+          git -C app rev-parse HEAD > artifacts/candidate_code_commit.txt
+          git -C state-store rev-parse HEAD > artifacts/operations_state_commit.txt
+
+      - name: Focused F9 fail-closed tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install -c app/requirements.lock.txt -e 'app[dev]'
+          (cd app && python -m pytest -q tests/test_f9_clean_room_recovery.py) | tee artifacts/f9-focused-tests.txt
+
+      - name: Clean-room runtime reconstruction one
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m venv /tmp/sare-f9-runtime-1
+          /tmp/sare-f9-runtime-1/bin/python -m pip install -c app/requirements.lock.txt ./app
+          /tmp/sare-f9-runtime-1/bin/python -m sare_lotofacil doctor
+          /tmp/sare-f9-runtime-1/bin/python app/scripts/verify_github_operational_state.py --state-dir state-store/operations --out artifacts/f9_state_audit_runtime1.json
+          grep -q '"status": "GITHUB_OPERATIONAL_AUDIT_PASS"' artifacts/f9_state_audit_runtime1.json
+          printf 'PASS\n' > artifacts/runtime1.marker
+
+      - name: Rebuild and restore derivable SQLite
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f /tmp/f9.db /tmp/f9.backup.db /tmp/f9.restored.db
+          /tmp/sare-f9-runtime-1/bin/python -m sare_lotofacil init-db --path /tmp/f9.db
+          /tmp/sare-f9-runtime-1/bin/python -m sare_lotofacil backup-db --db /tmp/f9.db --out /tmp/f9.backup.db
+          /tmp/sare-f9-runtime-1/bin/python -m sare_lotofacil restore-db --backup /tmp/f9.backup.db --out /tmp/f9.restored.db
+          test -s /tmp/f9.restored.db
+
+      - name: Simulate total ephemeral runtime loss
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/sare-f9-runtime-1
+          rm -f /tmp/f9.db /tmp/f9.backup.db /tmp/f9.restored.db
+          test ! -e /tmp/sare-f9-runtime-1
+
+      - name: Clean-room runtime reconstruction two after loss
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m venv /tmp/sare-f9-runtime-2
+          /tmp/sare-f9-runtime-2/bin/python -m pip install -c app/requirements.lock.txt ./app
+          /tmp/sare-f9-runtime-2/bin/python -m sare_lotofacil doctor
+          /tmp/sare-f9-runtime-2/bin/python app/scripts/verify_github_operational_state.py --state-dir state-store/operations --out artifacts/f9_state_audit_runtime2.json
+          grep -q '"status": "GITHUB_OPERATIONAL_AUDIT_PASS"' artifacts/f9_state_audit_runtime2.json
+          printf 'PASS\n' > artifacts/runtime2.marker
+
+      - name: Seal F9 proof
+        shell: bash
+        run: |
+          set -euo pipefail
+          BEFORE="$(cat artifacts/state_tree_before.txt)"
+          python app/scripts/prove_f9_clean_room_recovery.py             --code-dir app             --state-dir state-store             --before-digest "$BEFORE"             --runtime1-marker artifacts/runtime1.marker             --runtime2-marker artifacts/runtime2.marker             --out artifacts/f9_clean_room_disaster_recovery_proof.json
+          grep -q '"status": "F9_CLEAN_ROOM_DISASTER_RECOVERY_PROOF_PASS"' artifacts/f9_clean_room_disaster_recovery_proof.json
+          grep -q '"predictive_evidence": "NOT_ESTABLISHED"' artifacts/f9_clean_room_disaster_recovery_proof.json
+
+      - name: Upload F9 evidence
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: f9-clean-room-disaster-recovery-proof
+          path: |
+            artifacts/f9_clean_room_disaster_recovery_proof.json
+            artifacts/f9_state_audit_runtime1.json
+            artifacts/f9_state_audit_runtime2.json
+            artifacts/f9-focused-tests.txt
+            artifacts/candidate_code_commit.txt
+            artifacts/operations_state_commit.txt
+            artifacts/state_tree_before.txt
+          if-no-files-found: error
+          retention-days: 90
