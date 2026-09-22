@@ -1,0 +1,121 @@
+name: F8 Chaos Restart Replay Endurance Proof
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/f8-chaos-restart-replay-endurance-proof.yml"
+      - "scripts/prove_state_resilience.py"
+      - "scripts/github_operational_cycle.py"
+      - "scripts/update_canonical_prizes.py"
+      - "scripts/github_operator_freeze_cards.py"
+      - "src/sare_lotofacil/operational_state.py"
+      - "tests/test_operational_state_transactions.py"
+      - "tests/test_canonical_prizes_state.py"
+      - "tests/test_operator_card_freeze.py"
+      - "tests/test_state_resilience_proof.py"
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/f8-chaos-restart-replay-endurance-proof.yml"
+      - "scripts/prove_state_resilience.py"
+      - "scripts/github_operational_cycle.py"
+      - "scripts/update_canonical_prizes.py"
+      - "scripts/github_operator_freeze_cards.py"
+      - "src/sare_lotofacil/operational_state.py"
+      - "tests/test_operational_state_transactions.py"
+      - "tests/test_canonical_prizes_state.py"
+      - "tests/test_operator_card_freeze.py"
+      - "tests/test_state_resilience_proof.py"
+
+permissions:
+  contents: read
+
+jobs:
+  chaos-restart-replay-endurance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout candidate engine
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          path: app
+
+      - name: Checkout canonical operational state
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          ref: operations/state
+          fetch-depth: 0
+          path: state-store
+
+      - name: Setup Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: "3.13"
+
+      - name: Install locked candidate environment
+        run: |
+          cd app
+          python -m pip install -c requirements.lock.txt -e '.[dev]'
+
+      - name: Focused F8 regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd app
+          python -m pytest -q \
+            tests/test_operational_state_transactions.py \
+            tests/test_canonical_prizes_state.py \
+            tests/test_operator_card_freeze.py \
+            tests/test_state_resilience_proof.py | tee ../artifacts-f8-focused-tests.txt
+
+      - name: Execute process-level chaos restart replay endurance matrix
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          python app/scripts/prove_state_resilience.py \
+            --source-state state-store/operations \
+            --work-dir artifacts/f8-runtime \
+            --iterations 80 \
+            --out artifacts/f8_resilience_proof.json
+          grep -q '"status": "F8_CHAOS_RESTART_REPLAY_ENDURANCE_PROOF_PASS"' artifacts/f8_resilience_proof.json
+          grep -q '"no_hybrid_generation_observed": true' artifacts/f8_resilience_proof.json
+          grep -q '"precommit_crash_rolls_back": true' artifacts/f8_resilience_proof.json
+          grep -q '"postcommit_crash_rolls_forward": true' artifacts/f8_resilience_proof.json
+          grep -q '"recovery_is_restart_idempotent": true' artifacts/f8_resilience_proof.json
+          grep -q '"exact_replay_is_noop": true' artifacts/f8_resilience_proof.json
+          grep -q '"generation_id_collision_is_fail_closed": true' artifacts/f8_resilience_proof.json
+          grep -q '"no_self_parent_generation": true' artifacts/f8_resilience_proof.json
+          grep -q '"cycle_generation_id_preserved_across_auxiliary_generations": true' artifacts/f8_resilience_proof.json
+          grep -q '"real_state_is_restart_stable": true' artifacts/f8_resilience_proof.json
+
+      - name: Verify real committed state after endurance proof
+        shell: bash
+        run: |
+          set -euo pipefail
+          python app/scripts/verify_github_operational_state.py \
+            --state-dir state-store/operations \
+            --out artifacts/f8_real_state_audit.json
+          grep -q '"status": "GITHUB_OPERATIONAL_AUDIT_PASS"' artifacts/f8_real_state_audit.json
+          grep -q '"status": "STATE_COMMIT_VERIFIED"' artifacts/f8_real_state_audit.json
+
+      - name: Record provenance
+        run: |
+          git -C app rev-parse HEAD | tee artifacts/candidate_code_commit.txt
+          git -C state-store rev-parse HEAD | tee artifacts/operations_state_commit.txt
+          cp artifacts-f8-focused-tests.txt artifacts/f8-focused-tests.txt
+
+      - name: Upload F8 evidence
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: f8-chaos-restart-replay-endurance-proof
+          path: |
+            artifacts/f8_resilience_proof.json
+            artifacts/f8_real_state_audit.json
+            artifacts/f8-focused-tests.txt
+            artifacts/candidate_code_commit.txt
+            artifacts/operations_state_commit.txt
+          if-no-files-found: error
+          retention-days: 90
