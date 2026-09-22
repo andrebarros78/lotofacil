@@ -107,3 +107,5 @@ jobs:
           retention-days: 90
 
 # F7 terminal evidence replay trigger; workflow semantics unchanged.
+
+# F8 terminal evidence replay trigger; workflow semantics unchanged.
