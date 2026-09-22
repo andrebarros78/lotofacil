@@ -1,5 +1,5 @@
 {
-  "contest_number": 3784,
+  "contest_number": 3785,
   "generated_card": [
     1,
     2,
@@ -23,58 +23,59 @@
     "NO_SINGLE_CONTEST_RETUNING",
     "CHALLENGER_REQUIRES_PREDECLARED_VALIDATION"
   ],
-  "hits": 10,
+  "hits": 9,
   "matched_numbers": [
     1,
-    2,
-    10,
+    4,
     11,
     12,
+    14,
     15,
-    20,
     22,
     24,
     25
   ],
   "omitted_winners": [
+    7,
     8,
-    16,
+    17,
     18,
     19,
-    21
+    23
   ],
-  "primary_delta_brier_vs_uniform": 0.0018128083156510044,
+  "primary_delta_brier_vs_uniform": -0.0010305714325108961,
   "report_version": "constructive-post-contest-v1",
   "result": [
     1,
-    2,
+    4,
+    7,
     8,
-    10,
     11,
     12,
+    14,
     15,
-    16,
+    17,
     18,
     19,
-    20,
-    21,
     22,
+    23,
     24,
     25
   ],
-  "result_display": "01 02 08 10 11 12 15 16 18 19 20 21 22 24 25",
+  "result_display": "01 04 07 08 11 12 14 15 17 18 19 22 23 24 25",
   "schema_version": 1,
   "selected_misses": [
+    2,
     3,
-    4,
     5,
+    10,
     13,
-    14
+    20
   ],
   "self_analysis": {
     "adjustments_suggested": [
       "Examinar a recorrência das dezenas selecionadas que não saíram e das sorteadas que ficaram fora em uma janela prospectiva; um único concurso não deve virar regra de seleção.",
-      "Registrar o ganho sem promover o modelo; aguardar evidência prospectiva acumulada."
+      "Se a perda para o baseline persistir na coorte, abrir challenger predeclarado e compará-lo sem alterar retroativamente o champion."
     ],
     "corrections_required": [
       "Nenhuma correção de integridade obrigatória foi identificada neste ciclo."
@@ -85,8 +86,8 @@
     ],
     "process_errors": [],
     "process_findings": [
-      "Cartão obteve 10 acertos; 5 selecionadas não saíram e 5 sorteadas ficaram fora.",
-      "O modelo primário superou o baseline uniforme neste concurso isolado."
+      "Cartão obteve 9 acertos; 6 selecionadas não saíram e 6 sorteadas ficaram fora.",
+      "O modelo primário ficou abaixo do baseline uniforme neste concurso."
     ]
   },
   "status": "POST_CONTEST_REPORT_PASS"
