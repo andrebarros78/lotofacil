@@ -489,13 +489,19 @@ def run_cycle(state_dir: Path, runtime_dir: Path) -> dict[str, object]:
     if records[-1].contest_id != official_latest.record.contest_id:
         raise RuntimeError("operational snapshot did not reach official latest contest")
 
-    canonical_payload = {
-        "schema_version": 1,
-        "created_at_utc": json.loads(canonical_path.read_text(encoding="utf-8")).get("created_at_utc", _utcnow()),
-        "updated_at_utc": _utcnow(),
-        "records": _serialize_records(records),
-    }
-    canonical_path.write_text(json.dumps(canonical_payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    current_canonical_payload = json.loads(canonical_path.read_text(encoding="utf-8"))
+    serialized_records = _serialize_records(records)
+    if current_canonical_payload.get("records") != serialized_records:
+        canonical_payload = {
+            "schema_version": 1,
+            "created_at_utc": current_canonical_payload.get("created_at_utc", _utcnow()),
+            "updated_at_utc": _utcnow(),
+            "records": serialized_records,
+        }
+        canonical_path.write_text(
+            json.dumps(canonical_payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
 
     ledger = _load_ledger(ledger_path)
     evaluated_this_cycle: list[int] = []
