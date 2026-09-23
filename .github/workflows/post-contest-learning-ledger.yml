@@ -1,0 +1,65 @@
+name: Post Contest Learning Ledger
+
+on:
+  workflow_run:
+    workflows: ["GitHub Operational Cycle"]
+    types: [completed]
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: sare-post-contest-learning-ledger
+  cancel-in-progress: false
+
+jobs:
+  learn:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout engine
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          ref: main
+          path: app
+      - name: Checkout committed operational state
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          ref: operations/state
+          path: state-store
+      - name: Setup Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: "3.13"
+      - name: Install engine and test learning contract
+        run: |
+          python -m pip install './app[dev]'
+          cd app
+          python -m pytest tests/test_learning_ledger.py
+      - name: Build auditable learning ledger
+        run: |
+          python app/scripts/build_learning_ledger.py --state-dir state-store/operations | tee learning-proof.json
+          grep -q '"status": "LEARNING_LEDGER_PASS"' learning-proof.json
+      - name: Persist learning into canonical operational state
+        working-directory: state-store
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add operations/learning_ledger.json
+          if git diff --cached --quiet; then
+            echo "LEARNING_STATE_UNCHANGED"
+          else
+            git commit -m "ops: persist post-contest learning ledger"
+            git push origin HEAD:operations/state
+          fi
+      - name: Upload learning proof
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: post-contest-learning-ledger
+          path: |
+            learning-proof.json
+            state-store/operations/learning_ledger.json
+          if-no-files-found: error
