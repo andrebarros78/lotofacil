@@ -1,0 +1,51 @@
+name: Post Contest Flow Contract
+
+on:
+  workflow_run:
+    workflows: ["GitHub Operational Cycle"]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sare-post-contest-flow-contract
+  cancel-in-progress: false
+
+jobs:
+  contract:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout engine
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          ref: main
+          path: app
+      - name: Checkout committed operational state
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          ref: operations/state
+          path: state-store
+      - name: Setup Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: "3.13"
+      - name: Verify mandatory ingest-audit-report-delivery contract
+        run: |
+          mkdir -p artifacts
+          python app/scripts/verify_post_contest_flow_contract.py \
+            --state-dir state-store/operations \
+            --out artifacts/post_contest_flow_contract.json
+          grep -q '"status": "POST_CONTEST_FLOW_CONTRACT_PASS"' artifacts/post_contest_flow_contract.json
+      - name: Upload contract proof
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: post-contest-flow-contract
+          path: |
+            artifacts/post_contest_flow_contract.json
+            state-store/operations/latest_post_contest_report.json
+            state-store/operations/latest_post_contest_report.md
+          if-no-files-found: error
