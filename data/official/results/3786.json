@@ -1,0 +1,8 @@
+{
+  "contest": 3786,
+  "draw_date": "2026-09-22",
+  "numbers": [1, 3, 6, 7, 8, 9, 12, 13, 14, 16, 18, 21, 23, 24, 25],
+  "source": "CAIXA",
+  "source_url": "https://loterias.caixa.gov.br/Paginas/Lotofacil.aspx?modalConcurso=3786",
+  "ingested_at": "2026-09-23T08:42:15-03:00"
+}
