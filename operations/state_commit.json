@@ -1,5 +1,5 @@
 {
-  "committed_at_utc": "2026-09-24T08:23:52.858383+00:00",
+  "committed_at_utc": "2026-09-24T20:27:34.081486+00:00",
   "files": {
     "bootstrap_manifest.json": "716feea67b3b5a2ee712a498adcd9975578b9bc6837431584578ba1e7b7aefe5",
     "canonical_history.json": "f2882abbe71a7fe92b14a23876e81a379ed898eb97196890369a1d48df7fe3e4",
@@ -7,16 +7,19 @@
     "latest.json": "182e9b875c196ebc43c8c1aba4b4194b98346059ff3d816e0f400fb5d6957779",
     "latest_post_contest_report.json": "b393a731b8b8deba324c2faa4152bd336755ca27a4e50222c2d48500f9a18ecb",
     "latest_post_contest_report.md": "9c923cb6b9dd8679737af72c0d47075812d5655c2ddc64e29c1d75a442132c09",
+    "operator_card_ledger.json": "254a3d82e23e388426d9f48a6f3ec53b9953d56d4d014921b9066c793f7ba154",
     "post_contest_reports.json": "7873b5a36c1c020f14550f11e7fdb19fe7c8eb00f691fa301a1d33d06823706f",
     "prospective_ledger.json": "5af9a9459718fe9cd3e8b62678441098529893e83ac57218d8dc0acdbe295b4a"
   },
-  "generation_id": "prizes-3787-f98b1b16076b4690",
+  "generation_id": "operator-3788-b988209484342dc8",
   "metadata": {
-    "canonical_prizes_sha256": "f98b1b16076b46903bd8edb692cb4706ed789c46fd3366f3c8f79494238b25da",
     "cycle_generation_id": "cycle-3787-2662e7dcc36a865b",
-    "latest_contest": 3787,
-    "parent_generation_id": "cycle-3787-2662e7dcc36a865b",
-    "source": "canonical_prize_update"
+    "idempotency_key": "workflow-36054971865",
+    "parent_generation_id": "prizes-3787-f98b1b16076b4690",
+    "source": "operator_card_freeze",
+    "source_commit": "02f41794b7f8250a523851bc7c188a7856331b45",
+    "target_contest": 3788,
+    "workflow_run_id": "36054971865"
   },
   "schema": "operational-state-commit-v1"
 }
