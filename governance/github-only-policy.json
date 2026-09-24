@@ -9,7 +9,8 @@
   "write_workflows": [
     ".github/workflows/github-operations.yml",
     ".github/workflows/operator-freeze-cards.yml",
-    ".github/workflows/agent-pr-pipeline-proof.yml"
+    ".github/workflows/agent-pr-pipeline-proof.yml",
+    ".github/workflows/post-contest-learning-ledger.yml"
   ],
   "required_workflows": [
     ".github/workflows/ci.yml",
@@ -23,7 +24,8 @@
     ".github/workflows/release-proof.yml",
     ".github/workflows/agent-pr-pipeline-proof.yml",
     ".github/workflows/disaster-recovery-proof.yml",
-    ".github/workflows/r6-integrated-construction-proof.yml"
+    ".github/workflows/r6-integrated-construction-proof.yml",
+    ".github/workflows/post-contest-learning-ledger.yml"
   ],
   "pinned_actions": {
     "actions/checkout": "fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
@@ -50,7 +52,8 @@
       "block_deletion": true,
       "expected_writers": [
         "GitHub Operational Cycle",
-        "SARE Operator Card Freeze"
+        "SARE Operator Card Freeze",
+        "Post Contest Learning Ledger"
       ]
     }
   }
