@@ -109,14 +109,112 @@
       "state_snapshot_hash": "6524c89e750b58ef6e403493318de824a78ad85bb44e89e66f32f200ce1fd263",
       "target_contest": 3788,
       "workflow_run_id": "36054971865"
+    },
+    {
+      "card_artifact": {
+        "artifact_id": "card-621fd3958ce59526b72a4e6f",
+        "artifact_sha256": "621fd3958ce59526b72a4e6f097d4178780e6d1526110afb61783c28ee6f4d2d",
+        "authority_id": "CARD_GENERATION_SERVICE_V1",
+        "card_count": 1,
+        "cards": [
+          [
+            1,
+            4,
+            6,
+            8,
+            10,
+            12,
+            13,
+            14,
+            15,
+            16,
+            19,
+            21,
+            22,
+            23,
+            25
+          ]
+        ],
+        "cards_sha256": "b35b5924d06e71cb84d981a1e37a977793ef96af9897353afa726aa172afc636",
+        "cost_cents": 350,
+        "data_snapshot_hash": "7e5e7f10699ce69cc89382d75843cdc3816d4ca3de01098b32266cba5073b89a",
+        "evidence_label": "CARTEIRA COMBINATÓRIA — SEM VANTAGEM PREDITIVA COMPROVADA",
+        "metadata": {
+          "request_fingerprint": "a4f216b028dc9af8d035b796be6ccc03d7cd01cd24f99d956257081b2bffce1b",
+          "surface": "OPERATOR_FREEZE"
+        },
+        "operational_use_allowed": true,
+        "policy_id": "OPERATOR_MULTI_FREEZE_V2",
+        "policy_version": "2",
+        "predictive_evidence": "NOT_ESTABLISHED",
+        "schema_version": "card-artifact-v1",
+        "seed": null,
+        "status": "FROZEN",
+        "storage_snapshot_hash": "6524c89e750b58ef6e403493318de824a78ad85bb44e89e66f32f200ce1fd263",
+        "storage_snapshot_id": "snap-6524c89e750b58ef6e40",
+        "target_contest": 3788,
+        "training_last_contest": null
+      },
+      "cards": [
+        {
+          "card": [
+            1,
+            4,
+            6,
+            8,
+            10,
+            12,
+            13,
+            14,
+            15,
+            16,
+            19,
+            21,
+            22,
+            23,
+            25
+          ],
+          "card_sha256": "ab90dda564df13f4b6d3ae647334df68b923e5648f051624b50fc48d77c4940b",
+          "config_identity": "operator-multi-freeze-v2",
+          "created_at_utc": "2026-09-24T20:27:52.425314+00:00",
+          "freeze_id": "freeze-b755fc5109804038cbdee16ffeaf977b",
+          "generation_index": 1,
+          "idempotency_key": "workflow-36054992641",
+          "model_identity": "COMBINATORIAL_UNIFORM_DETERMINISTIC",
+          "payload_hash": "ab90dda564df13f4b6d3ae647334df68b923e5648f051624b50fc48d77c4940b",
+          "source_commit": "02f41794b7f8250a523851bc7c188a7856331b45",
+          "state_ref": "operations/state",
+          "target_contest": 3788,
+          "type": "OPERATOR_CARD",
+          "workflow_run_id": "36054992641"
+        }
+      ],
+      "config_identity": "operator-multi-freeze-v2",
+      "created_at_utc": "2026-09-24T20:27:52.425314+00:00",
+      "evidence_label": "CARTEIRA COMBINATÓRIA — SEM VANTAGEM PREDITIVA COMPROVADA",
+      "generated_card_count": 1,
+      "generation_index_next": 2,
+      "generation_index_start": 1,
+      "idempotency_key": "workflow-36054992641",
+      "model_identity": "COMBINATORIAL_UNIFORM_DETERMINISTIC",
+      "request_fingerprint": "a4f216b028dc9af8d035b796be6ccc03d7cd01cd24f99d956257081b2bffce1b",
+      "request_sequence": 2,
+      "request_sha256": "cf9a6cf558db409b42a6eeb0da2c32b97d0a9a6deda0c2c060e520ee3468f2a2",
+      "requested_card_count": 1,
+      "source_commit": "02f41794b7f8250a523851bc7c188a7856331b45",
+      "state_data_snapshot_hash": "7e5e7f10699ce69cc89382d75843cdc3816d4ca3de01098b32266cba5073b89a",
+      "state_ref": "operations/state",
+      "state_snapshot_hash": "6524c89e750b58ef6e403493318de824a78ad85bb44e89e66f32f200ce1fd263",
+      "target_contest": 3788,
+      "workflow_run_id": "36054992641"
     }
   ],
   "schema_version": 2,
   "summary": {
     "by_target": {
       "3788": {
-        "operator_frozen_cards": 1,
-        "requests": 1
+        "operator_frozen_cards": 2,
+        "requests": 2
       }
     }
   }
