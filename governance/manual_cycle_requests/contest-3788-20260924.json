@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "request_type": "MANUAL_OPERATIONAL_REFRESH",
+  "requested_at_brt": "2026-09-24T22:24:27-03:00",
+  "requested_contest": 3788,
+  "operator_observation": {
+    "source": "CAIXA_LOTERIAS_APP_SCREENSHOT_USER_SUPPLIED",
+    "contest_number": 3788,
+    "draw_date": "2026-09-24",
+    "numbers": [1, 4, 5, 7, 8, 9, 12, 16, 17, 18, 20, 21, 22, 23, 24],
+    "prize_observation": {
+      "15_hits": {
+        "winners": 0
+      },
+      "14_hits": {
+        "winners": 197,
+        "prize_brl": "2929.06"
+      },
+      "13_hits": {
+        "winners": 8721,
+        "prize_brl": null
+      }
+    }
+  },
+  "canonicalization_policy": "Do not promote the operator observation directly to canonical state. Merge this request only to trigger the GitHub Operational Cycle, which must retrieve and reconcile the contest from CAIXA as OFICIAL_DIRETA before operations/state changes."
+}
