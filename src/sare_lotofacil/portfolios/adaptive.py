@@ -83,24 +83,28 @@ def _normalized(draws: Sequence[Iterable[int]]) -> tuple[tuple[int, ...], ...]:
     return tuple(normalize_numbers(draw) for draw in draws)
 
 
+def _probabilities_from_counts(counts: Sequence[int], n: int, lam: float) -> tuple[float, ...]:
+    if lam < 0:
+        raise ValueError("lam must be non-negative")
+    denominator = n + lam
+    if denominator <= 0:
+        return (UNIFORM_PROBABILITY,) * 25
+    return tuple(
+        (count + UNIFORM_PROBABILITY * lam) / denominator
+        for count in counts
+    )
+
+
 def _frequency_probabilities(
     draws: Sequence[tuple[int, ...]],
     *,
     lam: float,
 ) -> tuple[float, ...]:
-    if lam < 0:
-        raise ValueError("lam must be non-negative")
-    if not draws:
-        return (UNIFORM_PROBABILITY,) * 25
     counts = [0] * 25
     for draw in draws:
         for number in draw:
             counts[number - 1] += 1
-    n = len(draws)
-    return tuple(
-        (count + UNIFORM_PROBABILITY * lam) / (n + lam)
-        for count in counts
-    )
+    return _probabilities_from_counts(counts, len(draws), lam)
 
 
 def _rolling_probabilities(
@@ -115,6 +119,19 @@ def _rolling_probabilities(
     return _frequency_probabilities(recent, lam=shrink)
 
 
+def _exponential_update(
+    probabilities: Sequence[float],
+    draw: Sequence[int],
+    *,
+    alpha: float,
+) -> tuple[float, ...]:
+    observed = set(draw)
+    return tuple(
+        (1.0 - alpha) * float(probability) + alpha * (1.0 if number in observed else 0.0)
+        for number, probability in enumerate(probabilities, start=1)
+    )
+
+
 def _exponential_probabilities(
     draws: Sequence[tuple[int, ...]],
     *,
@@ -122,14 +139,10 @@ def _exponential_probabilities(
 ) -> tuple[float, ...]:
     if not 0.0 < alpha <= 1.0:
         raise ValueError("alpha must be in (0, 1]")
-    probabilities = [UNIFORM_PROBABILITY] * 25
+    probabilities: tuple[float, ...] = (UNIFORM_PROBABILITY,) * 25
     for draw in draws:
-        observed = set(draw)
-        probabilities = [
-            (1.0 - alpha) * probability + alpha * (1.0 if number in observed else 0.0)
-            for number, probability in enumerate(probabilities, start=1)
-        ]
-    return tuple(probabilities)
+        probabilities = _exponential_update(probabilities, draw, alpha=alpha)
+    return probabilities
 
 
 def _blend_probabilities(
@@ -218,6 +231,132 @@ def _brier(probabilities: Sequence[float], draw: Sequence[int]) -> float:
     ) / 25.0
 
 
+def _record_outcome(
+    probabilities: Sequence[float],
+    draw: Sequence[int],
+    hits: list[int],
+    briers: list[float],
+) -> None:
+    card = set(_rank(probabilities)[:15])
+    observed = set(draw)
+    hits.append(len(card.intersection(observed)))
+    briers.append(_brier(probabilities, draw))
+
+
+def _evaluate_global(
+    draws: tuple[tuple[int, ...], ...],
+    spec: AdaptiveCandidateSpec,
+    *,
+    start: int,
+    hits: list[int],
+    briers: list[float],
+) -> None:
+    counts = [0] * 25
+    for draw in draws[:start]:
+        for number in draw:
+            counts[number - 1] += 1
+    n = start
+    for target_index in range(start, len(draws)):
+        probabilities = _probabilities_from_counts(counts, n, spec.parameter)
+        target = draws[target_index]
+        _record_outcome(probabilities, target, hits, briers)
+        for number in target:
+            counts[number - 1] += 1
+        n += 1
+
+
+def _evaluate_rolling(
+    draws: tuple[tuple[int, ...], ...],
+    spec: AdaptiveCandidateSpec,
+    *,
+    start: int,
+    hits: list[int],
+    briers: list[float],
+) -> None:
+    if spec.window is None:
+        raise ValueError("rolling model requires window")
+    window = spec.window
+    recent_start = max(0, start - window)
+    counts = [0] * 25
+    for draw in draws[recent_start:start]:
+        for number in draw:
+            counts[number - 1] += 1
+    n = start - recent_start
+    for target_index in range(start, len(draws)):
+        probabilities = _probabilities_from_counts(counts, n, spec.parameter)
+        target = draws[target_index]
+        _record_outcome(probabilities, target, hits, briers)
+        for number in target:
+            counts[number - 1] += 1
+        n += 1
+        expired_index = target_index - window
+        if expired_index >= 0:
+            for number in draws[expired_index]:
+                counts[number - 1] -= 1
+            n -= 1
+
+
+def _evaluate_exponential(
+    draws: tuple[tuple[int, ...], ...],
+    spec: AdaptiveCandidateSpec,
+    *,
+    start: int,
+    hits: list[int],
+    briers: list[float],
+) -> None:
+    probabilities = _exponential_probabilities(draws[:start], alpha=spec.parameter)
+    for target_index in range(start, len(draws)):
+        target = draws[target_index]
+        _record_outcome(probabilities, target, hits, briers)
+        probabilities = _exponential_update(probabilities, target, alpha=spec.parameter)
+
+
+def _evaluate_blend(
+    draws: tuple[tuple[int, ...], ...],
+    spec: AdaptiveCandidateSpec,
+    *,
+    start: int,
+    hits: list[int],
+    briers: list[float],
+) -> None:
+    if spec.window is None or spec.recent_weight is None:
+        raise ValueError("blend model requires window and recent_weight")
+    global_counts = [0] * 25
+    for draw in draws[:start]:
+        for number in draw:
+            global_counts[number - 1] += 1
+    global_n = start
+
+    window = spec.window
+    recent_start = max(0, start - window)
+    recent_counts = [0] * 25
+    for draw in draws[recent_start:start]:
+        for number in draw:
+            recent_counts[number - 1] += 1
+    recent_n = start - recent_start
+
+    for target_index in range(start, len(draws)):
+        global_scores = _probabilities_from_counts(global_counts, global_n, 100.0)
+        recent_scores = _probabilities_from_counts(recent_counts, recent_n, 25.0)
+        probabilities = tuple(
+            (1.0 - spec.recent_weight) * global_score + spec.recent_weight * recent_score
+            for global_score, recent_score in zip(global_scores, recent_scores)
+        )
+        target = draws[target_index]
+        _record_outcome(probabilities, target, hits, briers)
+
+        for number in target:
+            global_counts[number - 1] += 1
+            recent_counts[number - 1] += 1
+        global_n += 1
+        recent_n += 1
+        expired_index = target_index - window
+        if expired_index >= 0:
+            for number in draws[expired_index]:
+                recent_counts[number - 1] -= 1
+            recent_n -= 1
+
+
 def _evaluate_spec(
     draws: tuple[tuple[int, ...], ...],
     spec: AdaptiveCandidateSpec,
@@ -226,13 +365,16 @@ def _evaluate_spec(
 ) -> AdaptiveCandidateMetrics:
     hits: list[int] = []
     briers: list[float] = []
-    for target_index in range(start, len(draws)):
-        history = draws[:target_index]
-        probabilities = _predict(spec, history)
-        card = set(_rank(probabilities)[:15])
-        observed = set(draws[target_index])
-        hits.append(len(card.intersection(observed)))
-        briers.append(_brier(probabilities, draws[target_index]))
+    if spec.family == "global":
+        _evaluate_global(draws, spec, start=start, hits=hits, briers=briers)
+    elif spec.family == "rolling":
+        _evaluate_rolling(draws, spec, start=start, hits=hits, briers=briers)
+    elif spec.family == "exponential":
+        _evaluate_exponential(draws, spec, start=start, hits=hits, briers=briers)
+    elif spec.family == "blend":
+        _evaluate_blend(draws, spec, start=start, hits=hits, briers=briers)
+    else:
+        raise ValueError(f"unsupported adaptive family: {spec.family}")
     if not hits:
         raise ValueError("adaptive evaluation requires at least one validation window")
     mean_brier = fmean(briers)
