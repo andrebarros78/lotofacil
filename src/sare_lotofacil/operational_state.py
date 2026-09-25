@@ -16,6 +16,12 @@ TXN_POINTER_FILE = ".state_transaction.json"
 TXN_DIR = ".state-txn"
 STATE_TXN_SCHEMA = "operational-state-transaction-v1"
 STATE_COMMIT_SCHEMA = "operational-state-commit-v1"
+DERIVED_STATE_FILES = frozenset(
+    {
+        "learning_ledger.json",
+        "adaptive_challenger.json",
+    }
+)
 
 
 class StateTransactionError(RuntimeError):
@@ -110,12 +116,15 @@ def _current_state_hashes(state_dir: Path) -> dict[str, str]:
         relative = path.relative_to(state_dir).as_posix()
         if relative in {STATE_COMMIT_FILE, STATE_COMMIT_REQUIRED_FILE, TXN_POINTER_FILE}:
             continue
+        if relative in DERIVED_STATE_FILES:
+            continue
         if relative.startswith(f"{TXN_DIR}/"):
             continue
         if path.name.startswith(".") and path.name.endswith(".tmp"):
             continue
         hashes[relative] = _sha256_bytes(path.read_bytes())
     return hashes
+
 
 def _transaction_pointer_path(state_dir: Path) -> Path:
     return state_dir / TXN_POINTER_FILE
@@ -146,6 +155,8 @@ def _normalize_files(files: Mapping[str, bytes]) -> dict[str, bytes]:
         key = path.as_posix()
         if key in {STATE_COMMIT_FILE, STATE_COMMIT_REQUIRED_FILE, TXN_POINTER_FILE} or key.startswith(f"{TXN_DIR}/"):
             raise ValueError(f"reserved operational state path: {relative}")
+        if key in DERIVED_STATE_FILES:
+            raise ValueError(f"derived operational state path is non-transactional: {relative}")
         normalized[key] = bytes(content)
     if not normalized:
         raise ValueError("state transaction requires at least one file")
