@@ -81,7 +81,9 @@ jobs:
           grep -q '"status": "GITHUB_OPERATOR_PRIMARY_CARD_PASS"' artifacts/operator-proof/primary-card/primary_card.json
           grep -q '"card_count": 1' artifacts/operator-proof/primary-card/primary_card.json
           grep -q '"selection_method": "M1_TOP15_M2_TIEBREAK_V1"' artifacts/operator-proof/primary-card/primary_card.json
-          grep -q '"status": "GITHUB_OPERATOR_PORTFOLIO_PASS"' artifacts/operator-proof/portfolio/portfolio.json
+          grep -q '"status": "GITHUB_OPERATOR_PORTFOLIO_PREVIEW_PASS"' artifacts/operator-proof/portfolio/portfolio.json
+          grep -q '"artifact_status": "PREVIEW"' artifacts/operator-proof/portfolio/portfolio.json
+          grep -q '"operational_use_allowed": false' artifacts/operator-proof/portfolio/portfolio.json
           grep -q '"card_count": 1' artifacts/operator-proof/portfolio/portfolio.json
           grep -q 'CARTEIRA COMBINATÓRIA — SEM VANTAGEM PREDITIVA COMPROVADA' artifacts/operator-proof/portfolio/portfolio.json
           grep -q '"status": "GITHUB_OPERATOR_EXPORT_PASS"' artifacts/operator-proof/export/operational_report.json
@@ -91,10 +93,13 @@ jobs:
           from pathlib import Path
           status = json.loads(Path('artifacts/operator-proof/status/status.json').read_text(encoding='utf-8'))
           primary = json.loads(Path('artifacts/operator-proof/primary-card/primary_card.json').read_text(encoding='utf-8'))
+          portfolio = json.loads(Path('artifacts/operator-proof/portfolio/portfolio.json').read_text(encoding='utf-8'))
           assert primary['target_contest'] == status['next_prediction_target']
           assert primary['training_last_contest'] == primary['target_contest'] - 1
           assert len(primary['card']) == len(set(primary['card'])) == 15
           assert len(primary['decision_sha256']) == 64
+          assert portfolio['artifact_status'] == 'PREVIEW'
+          assert portfolio['operational_use_allowed'] is False
           PY
       - name: Resolve state SHA
         id: state
@@ -109,6 +114,7 @@ jobs:
           import json, os
           from pathlib import Path
           primary = json.loads(Path('artifacts/operator-proof/primary-card/primary_card.json').read_text(encoding='utf-8'))
+          portfolio = json.loads(Path('artifacts/operator-proof/portfolio/portfolio.json').read_text(encoding='utf-8'))
           payload = {
               "status": "SARE_OPERATOR_CONSOLE_PROOF_PASS",
               "source_sha": os.environ["SOURCE_SHA"],
@@ -122,6 +128,11 @@ jobs:
                   "decision_sha256": primary["decision_sha256"],
                   "decision_source": primary["decision_source"],
                   "selection_method": primary["selection_method"],
+              },
+              "portfolio_preview": {
+                  "status": portfolio["status"],
+                  "artifact_status": portfolio["artifact_status"],
+                  "operational_use_allowed": portfolio["operational_use_allowed"],
               },
               "regime_calibration_required": True,
               "write_capability": False,
