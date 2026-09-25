@@ -23,3 +23,14 @@ def test_learning_ledger_tracks_target_gap_and_recurring_errors():
     assert ledger["summary"]["selected_miss_frequency"][0] == {"number": 2, "count": 2}
     assert ledger["learning_policy"]["single_contest_retuning_allowed"] is False
     assert ledger["learning_policy"]["challenger_requires_predeclared_prospective_validation"] is True
+
+
+def test_learning_ledger_excludes_unevaluable_process_gap_report():
+    reports = {"reports": [
+        _report(3780, None, [], []),
+        _report(3781, 8, [1, 2], [6, 7]),
+    ]}
+    ledger = build_learning_ledger(reports)
+    assert ledger["entry_count"] == 1
+    assert ledger["latest_entry"]["contest_number"] == 3781
+    assert ledger["latest_entry"]["hits"] == 8
