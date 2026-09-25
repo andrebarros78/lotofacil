@@ -1,154 +1,176 @@
-# SARE Lotofácil 1.1.8 — Contrato de MISSION_PROVEN
+# SARE Lotofácil 1.1.10 — Contrato canônico de MISSION_PROVEN e SCOPE_SEAL
 
-## Autoridade canônica
+## Autoridade
 
-O SARE Lotofácil permanece **GitHub-only**.
+O SARE Lotofácil é **GitHub-only**.
 
-- código, testes, protocolos e workflows: `main`;
+- código, testes, documentação, protocolos e workflows: `main`;
 - estado operacional persistente: `operations/state`;
-- executor canônico: GitHub Actions;
-- evidência transitória: GitHub Artifacts;
-- proveniência: Git history;
-- alias imutável da release: `release/v1.1.8`, criado somente depois dos gates pós-merge.
+- execução canônica: GitHub Actions;
+- evidência de execução: GitHub Artifacts;
+- proveniência: Git history.
 
-A release 1.1.8 é incremental sobre a 1.1.7. Todos os contratos T20–T39 e demais guardrails da 1.1.7 permanecem válidos conforme `release/v1.1.7:docs/MISSION_PROVEN.md`, exceto a evolução deliberada de T30: carteira opcional passa de `3–100` para `1–100` cartões.
+Este documento descreve o estado operacional vigente da linha 1.1.10. Documentos históricos `MISSION_PROVEN_1_1_x.md` permanecem como registros das respectivas etapas e não substituem este contrato atual.
 
-## Objetivo 1.1.8 — PRIMARY_CARD
+## Objetivo de engenharia
 
-A saída principal para um concurso passa a ser um único `PRIMARY_CARD` de 15 dezenas.
+O objetivo do escopo é operar autonomamente o ciclo Lotofácil com integridade temporal e rastreabilidade:
 
-O contrato é:
+`ingestão oficial -> avaliação da previsão congelada -> relatório pós-concurso -> aprendizado persistente -> challenger isolado -> próxima previsão prospectiva`
 
-`1 concurso -> 1 PRIMARY_CARD -> 15 dezenas`
+O alvo operacional de otimização do cartão primário é **15 acertos em 15 dezenas**. Esse alvo não constitui, por si só, prova de capacidade preditiva.
 
-Carteira múltipla continua disponível como função opcional de cobertura e não substitui o `PRIMARY_CARD`.
+## PRIMARY_CARD e integridade temporal
 
-## P-PRIMARY-CARD — seleção canônica
+A decisão principal continua sendo um `PRIMARY_CARD` de 15 dezenas para o próximo concurso canônico. A previsão para N deve ser congelada usando somente dados disponíveis até N-1.
 
-Implementação: `sare_lotofacil.portfolios.primary`.
+São proibidos:
 
-A regra canônica é `M1_TOP15_M2_TIEBREAK_V1`:
+- reconstrução retroativa de cartão depois do resultado;
+- alteração de payload congelado sem invalidar sua identidade;
+- uso do resultado N para fabricar a previsão de N;
+- promoção de conclusão científica a partir de um único concurso.
 
-1. M1 `M1_frequency_regularized_lambda_100` fornece o ranking primário das 25 dezenas;
-2. M2 `M2_exponential_alpha_0.05` é usado somente para desempate de escores M1;
-3. persistindo empate, o menor número é o desempate determinístico final;
-4. as 15 primeiras posições formam o `PRIMARY_CARD`;
-5. o cartão é armazenado ordenado crescentemente para representação;
-6. nenhuma seed aleatória participa da seleção do `PRIMARY_CARD`.
+Carteiras múltiplas continuam sendo capacidade secundária e não substituem o `PRIMARY_CARD`.
 
-A identidade da decisão inclui SHA-256 sobre alvo, último concurso de treino, cartão, ranking, nomes dos modelos, método e vetores de escores.
+## Contrato obrigatório de ingestão e auditoria
 
-## P-TEMPORAL — somente N-1 para prever N
+A ingestão de um resultado oficial só é considerada operacionalmente completa quando o fluxo produz e persiste a auditoria correspondente.
 
-`target_contest` deve ser exatamente:
+O `Post Contest Flow Contract` deve verificar, de forma fail-closed:
 
-`training_last_contest + 1`
+- resultado oficial canônico;
+- previsão prospectiva correspondente quando existente;
+- avaliação do concurso;
+- relatório pós-concurso persistido;
+- análise e sugestões de melhoria;
+- entrega em JSON e Markdown do relatório mais recente;
+- ausência de reconstrução retrospectiva de evidência.
 
-Qualquer outro alvo é rejeitado com:
+Relatórios de lacuna de processo permanecem registrados como lacunas, sem fabricar `hits` ausentes.
 
-`PRIMARY_CARD_TARGET_MUST_EQUAL_TRAINING_LAST_PLUS_ONE`
+## Learning Ledger
 
-O cartão para o concurso N não pode usar resultado, variável ou transformação disponível somente em N ou depois de N.
+`learning_ledger.json` é a memória estruturada de aprendizado pós-concurso baseada exclusivamente em relatórios avaliáveis.
 
-## P-FREEZE — congelamento prospectivo
+Cada entrada registra:
 
-Para novas previsões geradas a partir da 1.1.8, o `primary_card` é armazenado dentro da previsão prospectiva e entra no `prediction_sha256`.
+- concurso;
+- `hits`;
+- `target_hits = 15`;
+- `gap_to_15`;
+- selecionadas que falharam;
+- sorteadas omitidas;
+- métricas e achados do relatório.
 
-Alterar posteriormente o cartão, ranking, modelos ou metadados cobertos pelo hash invalida a previsão.
+O ledger acumula recorrências para orientar hipóteses e challengers, porém preserva:
 
-A avaliação posterior não altera o objeto congelado. O número de acertos é registrado separadamente em `primary_card_evaluation`.
+- `single_contest_retuning_allowed = false`;
+- `retroactive_rewrite_allowed = false`;
+- `champion_auto_promotion_allowed = false`;
+- validação prospectiva predeclarada para challengers.
 
-## P-LEGACY — previsão 3780 e previsões anteriores
+## Challenger adaptativo
 
-Previsões congeladas antes da 1.1.8 não são reescritas para adicionar campos novos.
+O challenger adaptativo permanece isolado do champion e segue a sequência temporal:
 
-Quando uma previsão legada já possui vetores M1/M2 congelados, o Operator Console pode derivar o `PRIMARY_CARD` de forma read-only usando exclusivamente esses vetores. Nesse caso a origem é registrada como:
+`freeze N -> observar N -> avaliar N -> freeze N+1`
 
-`DERIVED_FROM_FROZEN_LEGACY_MODEL_SCORES`
+Replay para o mesmo alvo deve ser idempotente. Um challenger pode produzir hipótese de melhoria, mas não pode substituir automaticamente o champion nem reclassificar evidência retrospectiva como preditiva.
 
-O hash histórico original continua verificável sob seu contrato original.
+## Estado científico
 
-## P-PORTFOLIO — modo secundário
+`MISSION_PROVEN` e `SCOPE_SEALED` são estados de engenharia, operação, segurança e reprodutibilidade.
 
-`generate_uniform_portfolio` aceita `1 <= card_count <= 100`.
+Eles **não** significam que 15/15 seja atingível de forma consistente nem que exista vantagem preditiva demonstrada.
 
-Esse modo permanece separado do `PRIMARY_CARD`:
-
-- `PRIMARY_CARD`: decisão técnica determinística dos modelos;
-- `PORTFOLIO`: expansão combinatória opcional, com seed e cartões uniformes.
-
-Aceitar um cartão em `PORTFOLIO` não transforma o algoritmo uniforme em seletor principal.
-
-## P-CONSOLE — operação direta no GitHub
-
-`SARE Operator Console` expõe:
-
-`generate-primary-card`
-
-A ação é read-only, audita `operations/state` antes da execução e produz `primary_card.json` em GitHub Artifact.
-
-A prova operacional exige, entre outros:
-
-- `GITHUB_OPERATOR_PRIMARY_CARD_PASS`;
-- `card_count = 1`;
-- `selection_method = M1_TOP15_M2_TIEBREAK_V1`;
-- alvo igual ao próximo concurso canônico;
-- treino terminando no concurso imediatamente anterior;
-- `decision_sha256` registrado;
-- proveniência do estado `operations/state` registrada.
-
-## P-RELEASE — wheel instalado
-
-`Release Proof` deve instalar o wheel 1.1.8 em ambiente limpo e produzir o Artifact:
-
-`primary-card-release-proof`
-
-O marcador obrigatório é:
-
-`PRIMARY_CARD_RELEASE_PROOF_PASS`
-
-A prova verifica materialmente:
-
-- exatamente 15 dezenas únicas;
-- uma única decisão principal;
-- determinismo para mesma entrada;
-- M1 como ranking primário;
-- M2 apenas como desempate;
-- identidade SHA-256;
-- bloqueio de alvo diferente de N+1;
-- seleção a partir de histórico;
-- carteira opcional de um cartão suportada separadamente.
-
-## Gates finais do mesmo SHA
-
-Antes de declarar 1.1.8 `MISSION_PROVEN`, o SHA de `main` precisa ter todos os seguintes gates em `completed/success`:
-
-- `CI` em Python 3.12 e 3.13, incluindo testes, doctor, governance e console smoke;
-- `Release Proof` com `RELEASE_VERSION=1.1.8`, todas as provas preservadas da 1.1.7 e `PRIMARY_CARD_RELEASE_PROOF_PASS`;
-- `Real History Check` com integridade e roundtrip aprovados;
-- `GitHub Operational Cycle`, incluindo `cycle`, `committed-state-audit` e `economic-state-proof`;
-- `SARE Operator Console Proof`, incluindo a ação `primary-card` sobre o estado canônico;
-- governance gate em PASS;
-- `main` e `release/v1.1.8` apontando para o mesmo SHA após criação do alias.
-
-O manifesto permanente da release precisa registrar IDs dos runs, IDs/digests dos Artifacts, SHA do estado operacional e a decisão real de `PRIMARY_CARD` observada no Operator Console Proof.
-
-## Sincronização final dos gates
-
-O fechamento da 1.1.8 usa este próprio contrato como ponto de sincronização dos cinco workflows obrigatórios. A alteração de fechamento em `docs/MISSION_PROVEN.md` deve passar por PR/CI e, após merge em `main`, disparar no mesmo SHA final `CI`, `Release Proof`, `Real History Check`, `GitHub Operational Cycle` e `SARE Operator Console Proof`. O alias `release/v1.1.8` só pode ser criado depois de todos concluírem com `success` no mesmo SHA.
-
-## Resultado científico
-
-`MISSION_PROVEN` continua sendo exclusivamente status de engenharia.
-
-O estado científico pode permanecer:
+Até evidência prospectiva suficiente e promoção científica formal:
 
 `predictive_evidence = NOT_ESTABLISHED`
 
-A qualidade do `PRIMARY_CARD` é medida prospectivamente pelo número de acertos após cada resultado oficial, sem reescrever o cartão congelado.
+Essa condição é compatível com um escopo de engenharia completamente selado.
 
-## Hardening administrativo
+## Gates obrigatórios
 
-Rulesets nativos do GitHub são hardening administrativo adicional. Sua ausência não bloqueia operação nem MISSION_PROVEN de engenharia sob o contrato atual, mas permanece registrada como pendência externa:
+O SHA final de `main` precisa concluir com sucesso os gates aplicáveis ao fechamento, incluindo:
 
-`P0_LOGICAL_HARDENING_COMPLETE_NATIVE_RULESET_PENDING`
+- CI e suíte de regressão;
+- `SARE Stable Merge Gates`;
+- CodeQL e Repository Sanitization;
+- Release Proof;
+- GitHub Operational Cycle e auditoria do estado commitado;
+- Post Contest Flow Contract;
+- Post Contest Learning Ledger;
+- Adaptive Primary Challenger quando disparado pelo ciclo;
+- SARE Operator Console Proof;
+- Scope Seal Proof.
+
+Required checks nunca podem ser contornados para fechar o escopo.
+
+## Persistência e recuperação
+
+O estado canônico em `operations/state` deve permanecer íntegro e verificável, incluindo histórico, ledgers, relatórios e challenger derivados aplicáveis.
+
+O fechamento terminal exige prova material de:
+
+- integridade de persistência;
+- idempotência/replay;
+- backup e restore;
+- restart e endurance proporcional ao escopo;
+- rollback/reconstrução da baseline;
+- readiness baseada em dependências reais.
+
+## Segurança e supply chain
+
+O fechamento terminal exige:
+
+- repositório sanitizado sem segredo detectado indevidamente;
+- credenciais somente por mecanismos autorizados da plataforma;
+- actions externas pinadas;
+- permissões mínimas e writers autorizados;
+- auditoria de vulnerabilidades de dependências;
+- SBOM;
+- build e instalação limpa do wheel correspondente à fonte selada.
+
+## MISSION_PROVEN
+
+`MISSION_PROVEN` pode ser declarado somente quando o objetivo funcional do escopo estiver comprovado no SHA final, com integrações, persistência e gates aplicáveis em `success` e sem falha crítica conhecida.
+
+Depois de `MISSION_PROVEN`, o fechamento não termina: inicia-se imediatamente `SCOPE_SEAL`.
+
+## SCOPE_SEAL
+
+O Scope Seal é auditoria terminal independente e deve assumir que as provas anteriores podem estar erradas.
+
+Ele revalida, no SHA final:
+
+- identidade e limpeza da baseline;
+- instalação bloqueada e compilação;
+- suíte completa;
+- sanitização/secret policy;
+- vulnerabilidades e SBOM;
+- build e hash do wheel;
+- instalação limpa e identidade de release;
+- persistência, backup e restore;
+- health, readiness, restart e endurance;
+- rollback/reconstrução;
+- Evidence Manifest.
+
+Falha no Scope Seal revoga `MISSION_PROVEN` até correção e nova execução completa.
+
+## Critério terminal
+
+Somente pode ser declarado `SCOPE_SEALED` quando:
+
+1. o SHA final de `main` é identificado e protegido pelos gates;
+2. o objetivo operacional foi comprovado;
+3. contratos pós-concurso e aprendizado estão operacionais;
+4. `operations/state` contém o estado persistente esperado;
+5. testes, segurança, dependências e supply chain estão aprovados;
+6. backup, restore, restart, recovery e rollback estão comprovados quando aplicáveis;
+7. documentação corresponde ao runtime;
+8. o Scope Seal independente termina em `success`;
+9. o Evidence Manifest referencia exatamente o SHA, árvore, artefato e execução selados;
+10. não existe falha crítica conhecida aberta.
+
+O estado científico continua reportado separadamente e sem inflação de claims.

@@ -4,79 +4,126 @@
 
 O GitHub é o único ambiente operacional canônico do produto.
 
-Não existe requisito de instalação, execução, persistência, recuperação ou aceitação em PC local, VPS ou servidor externo. Nenhum desses ambientes pode ser condição para continuidade do SARE.
-
-Execuções fora do GitHub são estritamente não canônicas: podem servir para desenvolvimento ou diagnóstico, mas não podem alterar `operations/state`, produzir evidência oficial, promover readiness, fechar gaps ou sustentar `MISSION_PROVEN`.
+Não existe requisito de instalação, execução, persistência, recuperação ou aceitação em PC local, VPS ou servidor externo. Execuções fora do GitHub podem servir a desenvolvimento ou diagnóstico, mas não podem alterar `operations/state`, produzir evidência oficial, promover readiness, fechar gaps ou sustentar `MISSION_PROVEN`.
 
 ## Separação de responsabilidades
 
-- `main`: código, testes, protocolos e workflows.
-- `release/v1.1.0`: baseline comprovada da release 1.1.0.
+- `main`: código, testes, protocolos, documentação e workflows.
+- `release/v1.1.10`: alias imutável da baseline formal da release 1.1.10 quando aplicável ao fechamento de release.
 - `operations/state`: estado operacional persistente e auditável.
-- GitHub Actions: executor do ciclo automático e das provas.
-- GitHub Artifacts: SQLite reconstruído, relatórios e evidências de cada execução.
+- GitHub Actions: executor do ciclo automático, auditorias e provas.
+- GitHub Artifacts: bancos reconstruídos, relatórios, SBOM e evidências de execução.
 - Git history: trilha temporal e de proveniência.
 
-O banco SQLite não é usado como memória permanente do Git. A memória canônica persistida é textual e versionável: `canonical_history.json`, `bootstrap_manifest.json`, `prospective_ledger.json` e `latest.json`. Cada execução reconstrói um SQLite a partir desse estado, exige `integrity_check=ok` e publica o banco como artefato de prova.
+O SQLite é reconstruído a partir do estado canônico e não é usado como memória permanente do Git. O estado persistente atual inclui, conforme aplicável ao ciclo:
 
-## Ciclo automático
+- `canonical_history.json` e `canonical_prizes.json`;
+- `bootstrap_manifest.json`;
+- `prospective_ledger.json`;
+- `operator_card_ledger.json`;
+- `post_contest_reports.json`, `latest_post_contest_report.json` e `latest_post_contest_report.md`;
+- `learning_ledger.json`;
+- `adaptive_challenger.json`;
+- `latest.json` e `state_commit.json`.
 
-`GitHub Operational Cycle` roda diariamente às 03:15 UTC e também aceita execução manual. Antes de alterar qualquer estado, executa a suíte completa e `sare_lotofacil doctor`. Se qualquer gate falhar, o branch `operations/state` não é modificado.
+O estado derivado pós-ciclo permanece separado do recibo transacional do estado base quando necessário para preservar integridade e recuperação.
 
-Quando os gates passam, o ciclo:
+## Ciclo operacional canônico
 
-1. inicializa o histórico canônico a partir da fonte histórica corroborada e completa lacunas somente pela CAIXA;
-2. nas execuções seguintes, usa o histórico canônico já commitado e busca diretamente na CAIXA apenas concursos novos;
-3. publica um snapshot reproduzível e executa o Core retrospectivo;
-4. avalia previsões prospectivas antigas cujo resultado oficial já exista;
-5. congela uma única previsão para `último_concurso + 1`;
-6. grava SHA-256 do payload da previsão antes de qualquer avaliação;
-7. atualiza o ledger e o relatório, valida tudo novamente e faz commit em `operations/state`;
-8. um segundo job faz novo checkout do estado já commitado e recalcula scores/hashes independentemente.
+`GitHub Operational Cycle` roda por agendamento, aceita execução manual e também pode ser disparado por alterações canônicas previstas no workflow. Antes de persistir estado, instala o ambiente, executa a suíte completa, `doctor` e gates de governança. Falha de gate impede mutação canônica.
 
-## Protocolo prospectivo congelado
+O ciclo:
 
-O protocolo `prospective-m1-v1` não pode ser alterado depois de o ledger existir.
+1. reconstrói o banco a partir do estado GitHub e exige integridade do SQLite;
+2. consulta a CAIXA para reconciliar somente concursos oficiais novos;
+3. atualiza histórico e snapshot reproduzível;
+4. avalia previsões prospectivas já congeladas cujo resultado oficial passou a existir;
+5. congela a previsão do próximo concurso usando somente dados até N-1;
+6. mantém hashes e identidades de decisão verificáveis;
+7. produz o relatório pós-concurso para toda avaliação disponível;
+8. persiste o estado transacional e realiza auditoria independente do estado já commitado.
 
-- baseline: M0 uniforme, Brier 0,24;
-- modelo primário: M1 frequência regularizada, lambda 100;
-- modelo secundário: M2 exponencial, alpha 0,05;
-- métrica primária: `Delta Brier = Brier(M0) - Brier(M1)`;
-- efeito mínimo registrado: `0.0005`;
-- coorte A: 100 previsões realmente futuras;
-- coorte B de replicação: 100 previsões realmente futuras adicionais;
-- cada previsão de concurso N só pode usar concursos até N-1;
-- as duas coortes precisam, separadamente, ter média acima do efeito mínimo e limite inferior do IC95% acima do efeito mínimo.
+## Contrato obrigatório pós-concurso
 
-Mesmo se as duas coortes passarem, o sistema retorna `PROSPECTIVE_REPLICATION_CRITERIA_MET_REVIEW_REQUIRED`: não há promoção preditiva automática. Isso preserva a regra científica original de revisão antes de declarar vantagem.
+Resultado oficial ingerido não encerra o ciclo por si só. O contrato operacional é:
 
-## O que o GitHub prova
+`resultado oficial -> validação -> auditoria da previsão congelada -> relatório pós-concurso -> aprendizado estruturado -> challenger isolado -> próximo ciclo prospectivo`
 
-O histórico de commits do branch `operations/state` fornece marca temporal independente do código da previsão. Uma previsão congelada em um commit anterior ao resultado não pode ser recalculada retrospectivamente sem deixar rastro no Git.
+O `Post Contest Flow Contract` verifica de forma fail-closed que o resultado oficial mais recente possui auditoria e relatório compatíveis com o ledger prospectivo, sem reconstrução retroativa de cartão.
 
-`verify_github_operational_state.py` recalcula hashes, Brier e deltas a partir do histórico canônico e recusa:
+O relatório pós-concurso registra, quando existe cartão prospectivamente congelado:
 
-- alteração de protocolo;
-- vazamento temporal (`training_last_contest >= target_contest`);
-- modificação do payload previsto;
-- score divergente do resultado canônico;
-- previsão pendente para concurso cujo resultado já esteja no histórico;
-- divergência entre ledger e relatório operacional.
+- cartão avaliado e resultado oficial;
+- número de acertos;
+- dezenas acertadas;
+- selecionadas que não saíram;
+- sorteadas omitidas;
+- delta Brier contra o baseline uniforme;
+- achados, correções e sugestões de melhoria.
 
-## Estados de eficácia prospectiva
+Relatórios de lacuna de processo, como ausência histórica de cartão congelado, permanecem auditáveis, mas não são transformados artificialmente em aprendizado baseado em acertos.
 
-- `UNDER_TEST_COHORT_A`: menos de 100 previsões avaliadas.
-- `PRIMARY_NOT_REPLICATED_COHORT_A`: a primeira coorte terminou sem cumprir o gate.
-- `UNDER_TEST_COHORT_B`: primeira coorte passou; segunda ainda incompleta.
-- `PRIMARY_NOT_REPLICATED_COHORT_B`: a replicação não confirmou.
-- `PROSPECTIVE_REPLICATION_CRITERIA_MET_REVIEW_REQUIRED`: as duas coortes cumpriram o critério matemático; revisão independente ainda é obrigatória.
+## Learning Ledger — alvo operacional 15/15
 
-Até revisão e promoção formal, `predictive_evidence` permanece `NOT_ESTABLISHED` e as carteiras continuam sem alegação de vantagem preditiva comprovada.
+`Post Contest Learning Ledger` converte somente relatórios realmente avaliáveis em `learning_ledger.json`.
+
+Para cada concurso avaliável são persistidos:
+
+- `hits`;
+- `target_hits = 15`;
+- `gap_to_15 = 15 - hits`;
+- inclusões que falharam;
+- vencedoras omitidas;
+- delta Brier e achados do relatório.
+
+O ledger também acumula frequências de erros de seleção e omissão. O relatório é entrada formal de aprendizado do sistema, mas não autoriza overfitting.
+
+Guardrails obrigatórios:
+
+- nenhum retuning baseado em um único concurso;
+- nenhuma reescrita retroativa de previsão ou cartão congelado;
+- nenhuma autopromoção do champion;
+- challenger exige regra predeclarada e validação prospectiva.
+
+## Challenger adaptativo isolado
+
+`Adaptive Primary Challenger` é uma trilha experimental separada do champion. Ele pode aprender com o histórico canônico e com a sequência prospectiva já observada, mas não pode alterar retroativamente o champion nem converter ganho retrospectivo em evidência preditiva.
+
+O fluxo adaptativo preserva a ordem temporal:
+
+`freeze challenger N -> observar resultado oficial N -> avaliar challenger N -> freeze challenger N+1`
+
+Replays para o mesmo alvo são idempotentes. Mudanças de challenger permanecem isoladas até satisfazerem critérios prospectivos predeclarados e revisão exigida pelo protocolo.
+
+## Protocolo prospectivo e evidência científica
+
+O SARE preserva separação entre engenharia e eficácia científica. Previsões do concurso N só podem usar concursos até N-1. Hashes e proveniência são verificados antes da avaliação.
+
+A qualidade operacional pode ser otimizada em direção a 15 acertos, mas o estado científico continua sendo determinado por evidência prospectiva suficiente, e não pelo objetivo desejado.
+
+Enquanto os critérios científicos não forem estabelecidos e formalmente promovidos:
+
+`predictive_evidence = NOT_ESTABLISHED`
+
+Nenhum workflow, relatório, Learning Ledger ou challenger pode transformar `MISSION_PROVEN` de engenharia em alegação de vantagem preditiva comprovada.
+
+## Integridade, segurança e recuperação
+
+A operação canônica exige:
+
+- permissões de workflow mínimas e writers explicitamente autorizados pela governança;
+- actions externas pinadas por SHA;
+- branch `main` protegida por PR e required checks;
+- `operations/state` protegido contra deleção e non-fast-forward;
+- sanitização de repositório e bloqueio de material de credencial/secret;
+- verificação de dependências e SBOM nos gates terminais;
+- transação de estado recuperável, idempotência e replay controlado;
+- backup/restore, restart/endurance e rollback comprovados pelo Scope Seal quando o escopo é selado.
 
 ## Condição de aceitação
 
-A prova operacional válida deve permanecer integralmente no GitHub e ligar:
+A evidência operacional válida deve ligar:
 
 `commit -> workflow run -> artifact -> provenance -> operations/state -> auditoria`
 
-Quando houver dependências, recovery ou integração, a evidência correspondente também deve ser produzida em GitHub Actions. Prova obtida somente em máquina externa é informação auxiliar, nunca evidência canônica.
+Um fechamento terminal somente é válido quando o SHA final de `main` passa pelos gates aplicáveis, o ciclo operacional e os contratos pós-concurso são bem-sucedidos, o estado persistente é auditável, o Scope Seal independente passa e o Evidence Manifest corresponde exatamente à fonte e aos artefatos observados.
