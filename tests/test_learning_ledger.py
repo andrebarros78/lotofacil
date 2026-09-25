@@ -1,3 +1,5 @@
+import pytest
+
 from sare_lotofacil.analysis.learning_ledger import build_learning_ledger
 
 
@@ -34,3 +36,8 @@ def test_learning_ledger_excludes_unevaluable_process_gap_report():
     assert ledger["entry_count"] == 1
     assert ledger["latest_entry"]["contest_number"] == 3781
     assert ledger["latest_entry"]["hits"] == 8
+
+
+def test_learning_ledger_rejects_hits_outside_card_bounds():
+    with pytest.raises(ValueError, match="LEARNING_LEDGER_HITS_OUT_OF_RANGE"):
+        build_learning_ledger({"reports": [_report(3787, 16, [], [])]})
