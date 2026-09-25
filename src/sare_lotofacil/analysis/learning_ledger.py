@@ -16,8 +16,10 @@ def build_learning_ledger(reports: Mapping[str, Any]) -> dict[str, Any]:
         if not isinstance(report, Mapping):
             continue
         hits = report.get("hits")
-        if not isinstance(hits, int):
+        if type(hits) is not int:
             continue
+        if hits < 0 or hits > TARGET_HITS:
+            raise ValueError("LEARNING_LEDGER_HITS_OUT_OF_RANGE")
         selected_misses = [int(x) for x in report.get("selected_misses", [])]
         omitted_winners = [int(x) for x in report.get("omitted_winners", [])]
         for number in selected_misses:
