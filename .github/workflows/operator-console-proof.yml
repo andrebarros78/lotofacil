@@ -80,11 +80,11 @@ jobs:
           grep -q '"status": "GITHUB_OPERATOR_PRIMARY_CARD_PASS"' artifacts/operator-proof/primary-card/primary_card.json
           grep -q '"card_count": 1' artifacts/operator-proof/primary-card/primary_card.json
           grep -q '"selection_method": "M1_TOP15_M2_TIEBREAK_V1"' artifacts/operator-proof/primary-card/primary_card.json
-          grep -q '"status": "GITHUB_OPERATOR_PORTFOLIO_PREVIEW_PASS"' artifacts/operator-proof/portfolio/portfolio.json
-          grep -q '"artifact_status": "PREVIEW"' artifacts/operator-proof/portfolio/portfolio.json
-          grep -q '"operational_use_allowed": false' artifacts/operator-proof/portfolio/portfolio.json
-          grep -q '"card_count": 1' artifacts/operator-proof/portfolio/portfolio.json
-          grep -q 'CARTEIRA COMBINATÓRIA — SEM VANTAGEM PREDITIVA COMPROVADA' artifacts/operator-proof/portfolio/portfolio.json
+          grep -q '"status": "GITHUB_OPERATOR_PORTFOLIO_PREVIEW_PASS"' artifacts/operator-proof/portfolio/portfolio_preview.json
+          grep -q '"artifact_status": "PREVIEW"' artifacts/operator-proof/portfolio/portfolio_preview.json
+          grep -q '"operational_use_allowed": false' artifacts/operator-proof/portfolio/portfolio_preview.json
+          grep -q '"card_count": 1' artifacts/operator-proof/portfolio/portfolio_preview.json
+          grep -q 'CARTEIRA COMBINATÓRIA — SEM VANTAGEM PREDITIVA COMPROVADA' artifacts/operator-proof/portfolio/portfolio_preview.json
           grep -q '"status": "GITHUB_OPERATOR_EXPORT_PASS"' artifacts/operator-proof/export/operational_report.json
           test -s artifacts/operator-proof/export/operational_report.md
           python - <<'PY'
@@ -93,7 +93,7 @@ jobs:
           status = json.loads(Path('artifacts/operator-proof/status/status.json').read_text(encoding='utf-8'))
           ris = json.loads(Path('artifacts/operator-proof/ris/ris.json').read_text(encoding='utf-8'))
           primary = json.loads(Path('artifacts/operator-proof/primary-card/primary_card.json').read_text(encoding='utf-8'))
-          portfolio = json.loads(Path('artifacts/operator-proof/portfolio/portfolio.json').read_text(encoding='utf-8'))
+          portfolio = json.loads(Path('artifacts/operator-proof/portfolio/portfolio_preview.json').read_text(encoding='utf-8'))
           assert primary['target_contest'] == status['next_prediction_target']
           assert primary['training_last_contest'] == primary['target_contest'] - 1
           assert len(primary['card']) == len(set(primary['card'])) == 15
@@ -121,7 +121,7 @@ jobs:
           import json, os
           from pathlib import Path
           primary = json.loads(Path('artifacts/operator-proof/primary-card/primary_card.json').read_text(encoding='utf-8'))
-          portfolio = json.loads(Path('artifacts/operator-proof/portfolio/portfolio.json').read_text(encoding='utf-8'))
+          portfolio = json.loads(Path('artifacts/operator-proof/portfolio/portfolio_preview.json').read_text(encoding='utf-8'))
           ris = json.loads(Path('artifacts/operator-proof/ris/ris.json').read_text(encoding='utf-8'))
           regime = ris['dimensions']['regime']
           payload = {
