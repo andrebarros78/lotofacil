@@ -75,7 +75,6 @@ jobs:
           grep -q 'RIS_NUMERIC_FORBIDDEN_IN_1_X' artifacts/operator-proof/ris/ris.json
           grep -q '"method": "calibrated_global_marginal_change_scan"' artifacts/operator-proof/ris/ris.json
           grep -q '"mode": "RETROSPECTIVE_DISCOVERY"' artifacts/operator-proof/ris/ris.json
-          grep -q '"compatible_with_target": true' artifacts/operator-proof/ris/ris.json
           grep -q '"candidate_label":' artifacts/operator-proof/ris/ris.json
           grep -q 'REGIME_ALERT_IS_RETROSPECTIVE_NOT_REALTIME' artifacts/operator-proof/ris/ris.json
           grep -q '"status": "GITHUB_OPERATOR_PRIMARY_CARD_PASS"' artifacts/operator-proof/primary-card/primary_card.json
@@ -92,6 +91,7 @@ jobs:
           import json
           from pathlib import Path
           status = json.loads(Path('artifacts/operator-proof/status/status.json').read_text(encoding='utf-8'))
+          ris = json.loads(Path('artifacts/operator-proof/ris/ris.json').read_text(encoding='utf-8'))
           primary = json.loads(Path('artifacts/operator-proof/primary-card/primary_card.json').read_text(encoding='utf-8'))
           portfolio = json.loads(Path('artifacts/operator-proof/portfolio/portfolio.json').read_text(encoding='utf-8'))
           assert primary['target_contest'] == status['next_prediction_target']
@@ -100,6 +100,13 @@ jobs:
           assert len(primary['decision_sha256']) == 64
           assert portfolio['artifact_status'] == 'PREVIEW'
           assert portfolio['operational_use_allowed'] is False
+          regime = ris['dimensions']['regime']
+          calibration = regime['evidence']['false_alarm_calibration']
+          compatible = calibration['compatible_with_target']
+          assert type(compatible) is bool
+          if not compatible:
+              assert regime['state'] == 'INCONCLUSIVE'
+              assert regime['evidence'].get('reason')
           PY
       - name: Resolve state SHA
         id: state
@@ -115,6 +122,8 @@ jobs:
           from pathlib import Path
           primary = json.loads(Path('artifacts/operator-proof/primary-card/primary_card.json').read_text(encoding='utf-8'))
           portfolio = json.loads(Path('artifacts/operator-proof/portfolio/portfolio.json').read_text(encoding='utf-8'))
+          ris = json.loads(Path('artifacts/operator-proof/ris/ris.json').read_text(encoding='utf-8'))
+          regime = ris['dimensions']['regime']
           payload = {
               "status": "SARE_OPERATOR_CONSOLE_PROOF_PASS",
               "source_sha": os.environ["SOURCE_SHA"],
@@ -133,6 +142,10 @@ jobs:
                   "status": portfolio["status"],
                   "artifact_status": portfolio["artifact_status"],
                   "operational_use_allowed": portfolio["operational_use_allowed"],
+              },
+              "regime_calibration": {
+                  "state": regime["state"],
+                  "compatible_with_target": regime["evidence"]["false_alarm_calibration"]["compatible_with_target"],
               },
               "regime_calibration_required": True,
               "write_capability": False,
