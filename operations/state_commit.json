@@ -1,25 +1,23 @@
 {
-  "committed_at_utc": "2026-09-24T20:27:52.432572+00:00",
+  "committed_at_utc": "2026-09-25T01:32:50.667134+00:00",
   "files": {
     "bootstrap_manifest.json": "716feea67b3b5a2ee712a498adcd9975578b9bc6837431584578ba1e7b7aefe5",
-    "canonical_history.json": "f2882abbe71a7fe92b14a23876e81a379ed898eb97196890369a1d48df7fe3e4",
-    "canonical_prizes.json": "f98b1b16076b46903bd8edb692cb4706ed789c46fd3366f3c8f79494238b25da",
-    "latest.json": "182e9b875c196ebc43c8c1aba4b4194b98346059ff3d816e0f400fb5d6957779",
-    "latest_post_contest_report.json": "b393a731b8b8deba324c2faa4152bd336755ca27a4e50222c2d48500f9a18ecb",
-    "latest_post_contest_report.md": "9c923cb6b9dd8679737af72c0d47075812d5655c2ddc64e29c1d75a442132c09",
+    "canonical_history.json": "a6221e1be5e0fa859399f67840dfcef6a42b30ce2079ecf3739c36bbbd3a8f67",
+    "canonical_prizes.json": "98fe1e0ffddb2a444dec99ada7237b7a3a96cad2fa02b81988a7edbb6532dd48",
+    "latest.json": "19bc79b55bf9410f5e3285c14fbbf77969fe67c5f0425eea0cae2a7ca1eb7803",
+    "latest_post_contest_report.json": "3ffabe3b8f05111aa986711e9e19ec42fd3172d68434225f36e267d55e52f594",
+    "latest_post_contest_report.md": "4671c80c3ef228ddd9bb42b531bafcb3ff0bceb6fbb2a2c95b942689445bbb96",
     "operator_card_ledger.json": "f17774f97ccf12c8c974c0ee5404c3bb6f098b032d9dc62080255485eb94facd",
-    "post_contest_reports.json": "7873b5a36c1c020f14550f11e7fdb19fe7c8eb00f691fa301a1d33d06823706f",
-    "prospective_ledger.json": "5af9a9459718fe9cd3e8b62678441098529893e83ac57218d8dc0acdbe295b4a"
+    "post_contest_reports.json": "451f6319bc4d5e70dafff4c5766e6a3fcd2d36da787b3ced3be8d3448418b05a",
+    "prospective_ledger.json": "88fcdb7b08d9af89a7833bbc9757cf58900a0b2646a17d551333ae4acd469581"
   },
-  "generation_id": "operator-3788-cf9a6cf558db409b",
+  "generation_id": "prizes-3788-98fe1e0ffddb2a44",
   "metadata": {
-    "cycle_generation_id": "cycle-3787-2662e7dcc36a865b",
-    "idempotency_key": "workflow-36054992641",
-    "parent_generation_id": "operator-3788-b988209484342dc8",
-    "source": "operator_card_freeze",
-    "source_commit": "02f41794b7f8250a523851bc7c188a7856331b45",
-    "target_contest": 3788,
-    "workflow_run_id": "36054992641"
+    "canonical_prizes_sha256": "98fe1e0ffddb2a444dec99ada7237b7a3a96cad2fa02b81988a7edbb6532dd48",
+    "cycle_generation_id": "cycle-3788-8858a8dd8b03d3d5",
+    "latest_contest": 3788,
+    "parent_generation_id": "cycle-3788-8858a8dd8b03d3d5",
+    "source": "canonical_prize_update"
   },
   "schema": "operational-state-commit-v1"
 }
