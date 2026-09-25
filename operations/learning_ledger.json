@@ -1,0 +1,428 @@
+{
+  "entries": [
+    {
+      "adjustments_suggested": [
+        "Examinar a recorrência das dezenas selecionadas que não saíram e das sorteadas que ficaram fora em uma janela prospectiva; um único concurso não deve virar regra de seleção.",
+        "Se a perda para o baseline persistir na coorte, abrir challenger predeclarado e compará-lo sem alterar retroativamente o champion."
+      ],
+      "contest_number": 3781,
+      "gap_to_15": 7,
+      "hits": 8,
+      "omitted_winners": [
+        6,
+        7,
+        8,
+        16,
+        19,
+        21,
+        22
+      ],
+      "primary_delta_brier_vs_uniform": -0.002311233924965461,
+      "process_findings": [
+        "Cartão obteve 8 acertos; 7 selecionadas não saíram e 7 sorteadas ficaram fora.",
+        "O modelo primário ficou abaixo do baseline uniforme neste concurso."
+      ],
+      "selected_misses": [
+        1,
+        2,
+        4,
+        10,
+        14,
+        15,
+        20
+      ],
+      "target_hits": 15
+    },
+    {
+      "adjustments_suggested": [
+        "Examinar a recorrência das dezenas selecionadas que não saíram e das sorteadas que ficaram fora em uma janela prospectiva; um único concurso não deve virar regra de seleção.",
+        "Se a perda para o baseline persistir na coorte, abrir challenger predeclarado e compará-lo sem alterar retroativamente o champion."
+      ],
+      "contest_number": 3782,
+      "gap_to_15": 8,
+      "hits": 7,
+      "omitted_winners": [
+        7,
+        8,
+        16,
+        17,
+        18,
+        19,
+        22,
+        23
+      ],
+      "primary_delta_brier_vs_uniform": -0.002516191401751744,
+      "process_findings": [
+        "Cartão obteve 7 acertos; 8 selecionadas não saíram e 8 sorteadas ficaram fora.",
+        "O modelo primário ficou abaixo do baseline uniforme neste concurso."
+      ],
+      "selected_misses": [
+        1,
+        2,
+        9,
+        10,
+        12,
+        13,
+        14,
+        24
+      ],
+      "target_hits": 15
+    },
+    {
+      "adjustments_suggested": [
+        "Examinar a recorrência das dezenas selecionadas que não saíram e das sorteadas que ficaram fora em uma janela prospectiva; um único concurso não deve virar regra de seleção.",
+        "Se a perda para o baseline persistir na coorte, abrir challenger predeclarado e compará-lo sem alterar retroativamente o champion."
+      ],
+      "contest_number": 3783,
+      "gap_to_15": 6,
+      "hits": 9,
+      "omitted_winners": [
+        6,
+        16,
+        17,
+        19,
+        22,
+        23
+      ],
+      "primary_delta_brier_vs_uniform": -0.002082144541671216,
+      "process_findings": [
+        "Cartão obteve 9 acertos; 6 selecionadas não saíram e 6 sorteadas ficaram fora.",
+        "O modelo primário ficou abaixo do baseline uniforme neste concurso."
+      ],
+      "selected_misses": [
+        2,
+        9,
+        10,
+        11,
+        13,
+        20
+      ],
+      "target_hits": 15
+    },
+    {
+      "adjustments_suggested": [
+        "Examinar a recorrência das dezenas selecionadas que não saíram e das sorteadas que ficaram fora em uma janela prospectiva; um único concurso não deve virar regra de seleção.",
+        "Registrar o ganho sem promover o modelo; aguardar evidência prospectiva acumulada."
+      ],
+      "contest_number": 3784,
+      "gap_to_15": 5,
+      "hits": 10,
+      "omitted_winners": [
+        8,
+        16,
+        18,
+        19,
+        21
+      ],
+      "primary_delta_brier_vs_uniform": 0.0018128083156510044,
+      "process_findings": [
+        "Cartão obteve 10 acertos; 5 selecionadas não saíram e 5 sorteadas ficaram fora.",
+        "O modelo primário superou o baseline uniforme neste concurso isolado."
+      ],
+      "selected_misses": [
+        3,
+        4,
+        5,
+        13,
+        14
+      ],
+      "target_hits": 15
+    },
+    {
+      "adjustments_suggested": [
+        "Examinar a recorrência das dezenas selecionadas que não saíram e das sorteadas que ficaram fora em uma janela prospectiva; um único concurso não deve virar regra de seleção.",
+        "Se a perda para o baseline persistir na coorte, abrir challenger predeclarado e compará-lo sem alterar retroativamente o champion."
+      ],
+      "contest_number": 3785,
+      "gap_to_15": 6,
+      "hits": 9,
+      "omitted_winners": [
+        7,
+        8,
+        17,
+        18,
+        19,
+        23
+      ],
+      "primary_delta_brier_vs_uniform": -0.0010305714325108961,
+      "process_findings": [
+        "Cartão obteve 9 acertos; 6 selecionadas não saíram e 6 sorteadas ficaram fora.",
+        "O modelo primário ficou abaixo do baseline uniforme neste concurso."
+      ],
+      "selected_misses": [
+        2,
+        3,
+        5,
+        10,
+        13,
+        20
+      ],
+      "target_hits": 15
+    },
+    {
+      "adjustments_suggested": [
+        "Examinar a recorrência das dezenas selecionadas que não saíram e das sorteadas que ficaram fora em uma janela prospectiva; um único concurso não deve virar regra de seleção.",
+        "Se a perda para o baseline persistir na coorte, abrir challenger predeclarado e compará-lo sem alterar retroativamente o champion."
+      ],
+      "contest_number": 3786,
+      "gap_to_15": 8,
+      "hits": 7,
+      "omitted_winners": [
+        6,
+        7,
+        8,
+        9,
+        16,
+        18,
+        21,
+        23
+      ],
+      "primary_delta_brier_vs_uniform": -0.0036864275196321628,
+      "process_findings": [
+        "Cartão obteve 7 acertos; 8 selecionadas não saíram e 8 sorteadas ficaram fora.",
+        "O modelo primário ficou abaixo do baseline uniforme neste concurso."
+      ],
+      "selected_misses": [
+        2,
+        4,
+        5,
+        10,
+        11,
+        15,
+        20,
+        22
+      ],
+      "target_hits": 15
+    },
+    {
+      "adjustments_suggested": [
+        "Examinar a recorrência das dezenas selecionadas que não saíram e das sorteadas que ficaram fora em uma janela prospectiva; um único concurso não deve virar regra de seleção.",
+        "Registrar o ganho sem promover o modelo; aguardar evidência prospectiva acumulada."
+      ],
+      "contest_number": 3787,
+      "gap_to_15": 5,
+      "hits": 10,
+      "omitted_winners": [
+        6,
+        8,
+        17,
+        19,
+        23
+      ],
+      "primary_delta_brier_vs_uniform": 0.0010298128679724072,
+      "process_findings": [
+        "Cartão obteve 10 acertos; 5 selecionadas não saíram e 5 sorteadas ficaram fora.",
+        "O modelo primário superou o baseline uniforme neste concurso isolado."
+      ],
+      "selected_misses": [
+        1,
+        2,
+        5,
+        14,
+        25
+      ],
+      "target_hits": 15
+    },
+    {
+      "adjustments_suggested": [
+        "Examinar a recorrência das dezenas selecionadas que não saíram e das sorteadas que ficaram fora em uma janela prospectiva; um único concurso não deve virar regra de seleção.",
+        "Se a perda para o baseline persistir na coorte, abrir challenger predeclarado e compará-lo sem alterar retroativamente o champion."
+      ],
+      "contest_number": 3788,
+      "gap_to_15": 8,
+      "hits": 7,
+      "omitted_winners": [
+        7,
+        8,
+        9,
+        16,
+        17,
+        18,
+        21,
+        23
+      ],
+      "primary_delta_brier_vs_uniform": -0.004363066243186331,
+      "process_findings": [
+        "Cartão obteve 7 acertos; 8 selecionadas não saíram e 8 sorteadas ficaram fora.",
+        "O modelo primário ficou abaixo do baseline uniforme neste concurso."
+      ],
+      "selected_misses": [
+        2,
+        3,
+        10,
+        11,
+        13,
+        14,
+        15,
+        25
+      ],
+      "target_hits": 15
+    }
+  ],
+  "entry_count": 8,
+  "latest_entry": {
+    "adjustments_suggested": [
+      "Examinar a recorrência das dezenas selecionadas que não saíram e das sorteadas que ficaram fora em uma janela prospectiva; um único concurso não deve virar regra de seleção.",
+      "Se a perda para o baseline persistir na coorte, abrir challenger predeclarado e compará-lo sem alterar retroativamente o champion."
+    ],
+    "contest_number": 3788,
+    "gap_to_15": 8,
+    "hits": 7,
+    "omitted_winners": [
+      7,
+      8,
+      9,
+      16,
+      17,
+      18,
+      21,
+      23
+    ],
+    "primary_delta_brier_vs_uniform": -0.004363066243186331,
+    "process_findings": [
+      "Cartão obteve 7 acertos; 8 selecionadas não saíram e 8 sorteadas ficaram fora.",
+      "O modelo primário ficou abaixo do baseline uniforme neste concurso."
+    ],
+    "selected_misses": [
+      2,
+      3,
+      10,
+      11,
+      13,
+      14,
+      15,
+      25
+    ],
+    "target_hits": 15
+  },
+  "learning_ledger_version": "post-contest-learning-v1",
+  "learning_policy": {
+    "challenger_requires_predeclared_prospective_validation": true,
+    "champion_auto_promotion_allowed": false,
+    "report_is_learning_input": true,
+    "retroactive_rewrite_allowed": false,
+    "single_contest_retuning_allowed": false
+  },
+  "objective": {
+    "metric": "hits_on_frozen_15_number_card",
+    "target": 15
+  },
+  "schema_version": 1,
+  "summary": {
+    "best_hits": 10,
+    "latest_gap_to_15": 8,
+    "mean_hits": 8.375,
+    "omitted_winner_frequency": [
+      {
+        "count": 7,
+        "number": 8
+      },
+      {
+        "count": 6,
+        "number": 16
+      },
+      {
+        "count": 6,
+        "number": 19
+      },
+      {
+        "count": 6,
+        "number": 23
+      },
+      {
+        "count": 5,
+        "number": 7
+      },
+      {
+        "count": 5,
+        "number": 17
+      },
+      {
+        "count": 5,
+        "number": 18
+      },
+      {
+        "count": 4,
+        "number": 6
+      },
+      {
+        "count": 4,
+        "number": 21
+      },
+      {
+        "count": 3,
+        "number": 22
+      },
+      {
+        "count": 2,
+        "number": 9
+      }
+    ],
+    "selected_miss_frequency": [
+      {
+        "count": 7,
+        "number": 2
+      },
+      {
+        "count": 6,
+        "number": 10
+      },
+      {
+        "count": 5,
+        "number": 13
+      },
+      {
+        "count": 5,
+        "number": 14
+      },
+      {
+        "count": 4,
+        "number": 5
+      },
+      {
+        "count": 4,
+        "number": 20
+      },
+      {
+        "count": 3,
+        "number": 1
+      },
+      {
+        "count": 3,
+        "number": 3
+      },
+      {
+        "count": 3,
+        "number": 4
+      },
+      {
+        "count": 3,
+        "number": 11
+      },
+      {
+        "count": 3,
+        "number": 15
+      },
+      {
+        "count": 2,
+        "number": 9
+      },
+      {
+        "count": 2,
+        "number": 25
+      },
+      {
+        "count": 1,
+        "number": 12
+      },
+      {
+        "count": 1,
+        "number": 22
+      },
+      {
+        "count": 1,
+        "number": 24
+      }
+    ]
+  }
+}
