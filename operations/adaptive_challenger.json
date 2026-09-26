@@ -935,7 +935,7 @@
   },
   "generated_at_utc": "2026-09-26T01:37:07.193938+00:00",
   "global_certified_portfolio": {
-    "artifact_sha256": "931734a6b4c326a2c6086a86664f123eb3c9311c3605e69f5f0a18392b6917eb",
+    "artifact_sha256": "87adf4c5ee8dfd80321718f54627d16feb8695dd8220ba2c3070f9e9e65688a5",
     "budget_frontier": [
       {
         "budget_cents": 350,
@@ -1402,7 +1402,7 @@
     "evidence_label": "OTIMO COMBINATORIO GLOBAL CERTIFICADO — SEM VANTAGEM PREDITIVA COMPROVADA",
     "full_card_space": 3268760,
     "full_result_space": 3268760,
-    "generated_at_utc": "2026-09-26T10:33:45.382031+00:00",
+    "generated_at_utc": "2026-09-26T10:43:53.195381+00:00",
     "max_budget_cents": 1400,
     "max_budget_independent_enumeration": {
       "11": {
@@ -1500,7 +1500,7 @@
       },
       "card_count": 4,
       "coverage13_optimal_class_histograms": 14856,
-      "elapsed_seconds": 25.7462,
+      "elapsed_seconds": 24.7696,
       "feasible_membership_histograms": 1977452,
       "floor_ge_10_histograms": 0,
       "floor_ge_9_histograms": 54520,
