@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "program_id": "SARE-P15-ONE-CARD-SCIENCE-V1",
   "objective": "Maximize the prospectively estimated joint probability of the exact next 15-number Lotofacil outcome and emit exactly one MAP card.",
   "null_model": {
@@ -34,7 +34,7 @@
       "role": "PREDICTIVE_CANDIDATE",
       "mechanism": "Regularized unequal inclusion propensities conditioned on exactly 15 selected numbers.",
       "required_data": ["canonical_results_history"],
-      "status": "IMPLEMENTING"
+      "status": "IMPLEMENTED_RETROSPECTIVE_NO_ADVANTAGE"
     },
     {
       "id": "P15-H102",
@@ -43,16 +43,16 @@
       "role": "PREDICTIVE_CANDIDATE",
       "mechanism": "Latent time-varying inclusion logits estimated with shrinkage and prequential updating.",
       "required_data": ["canonical_results_history"],
-      "status": "PLANNED"
+      "status": "IMPLEMENTED_RETROSPECTIVE_NO_ADVANTAGE"
     },
     {
       "id": "P15-H103",
-      "family": "PAIRWISE_MAXIMUM_ENTROPY_FIXED_CARDINALITY",
-      "scientific_class": "ESTABLISHED_MAXIMUM_ENTROPY_FRAMEWORK",
+      "family": "PAIRWISE_CHOW_LIU_FIXED_CARDINALITY",
+      "scientific_class": "ESTABLISHED_GRAPHICAL_MODEL_METHOD",
       "role": "PREDICTIVE_CANDIDATE",
-      "mechanism": "Constrained Ising-like energy over 25 binary variables with the structural sum fixed at 15.",
+      "mechanism": "Pairwise mutual-information maximum spanning tree conditioned exactly on 15 selected numbers, with exact dynamic-programming normalizer and MAP.",
       "required_data": ["canonical_results_history"],
-      "status": "PLANNED"
+      "status": "IMPLEMENTED_UNDER_RETROSPECTIVE_PROOF"
     },
     {
       "id": "P15-H104",
@@ -61,7 +61,7 @@
       "role": "REGIME_DETECTOR_AND_PREDICTIVE_GATING",
       "mechanism": "Posterior probability of a recent generative regime change alters which historical window informs the next draw.",
       "required_data": ["canonical_results_history"],
-      "status": "PLANNED"
+      "status": "PLANNED_STANDALONE"
     },
     {
       "id": "P15-H105",
@@ -77,9 +77,9 @@
       "family": "HIGHER_ORDER_HYPERGRAPH_INTERACTIONS",
       "scientific_class": "EXPERIMENTAL_HIGH_DIMENSIONAL_METHOD",
       "role": "PREDICTIVE_CANDIDATE",
-      "mechanism": "Sparse higher-order interaction terms represent trincas or larger motifs only when they survive shrinkage and multiplicity control.",
+      "mechanism": "Sparse or low-treewidth higher-order interaction terms represent trincas or larger motifs only when they survive shrinkage and multiplicity control.",
       "required_data": ["canonical_results_history"],
-      "status": "RESEARCH"
+      "status": "PARTIALLY_IMPLEMENTED_VIA_H113"
     },
     {
       "id": "P15-H107",
@@ -134,6 +134,23 @@
       "mechanism": "Combine only frozen candidate distributions using weights learned from past prequential joint scoring, never from the target result.",
       "required_data": ["candidate_joint_predictions", "prospective_score_ledger"],
       "status": "PLANNED"
+    },
+    {
+      "id": "P15-H113",
+      "family": "HIGHER_ORDER_BLOCK_FACTOR_WITH_PREQUENTIAL_REGIME_SELECTION",
+      "scientific_class": "ESTABLISHED_FINITE_FACTOR_MODEL_PLUS_EXPERIMENTAL_DOMAIN_APPLICATION",
+      "role": "PREDICTIVE_CHALLENGER",
+      "mechanism": "Five past-only information-derived blocks of five numbers learn complete 5-bit pattern distributions, capturing interactions through fifth order inside each block. Long-history and bounded-recent versions are selected before each target by an EWMA of prior joint log-loss differences. The distribution is conditioned exactly on 15 of 25 and the current top-1 is certified by exhaustive ranking of all 3,268,760 cards.",
+      "required_data": ["canonical_results_history"],
+      "validation_contract": {
+        "block_partition_frozen_from_initial_training_window": true,
+        "target_leakage_forbidden": true,
+        "primary_metric": "joint_log_skill_vs_uniform",
+        "global_current_rank_enumeration_required": true,
+        "full_space_size": 3268760,
+        "retrospective_success_cannot_promote": true
+      },
+      "status": "IMPLEMENTED_UNDER_RETROSPECTIVE_PROOF"
     }
   ],
   "excluded_as_scientific_evidence": [
