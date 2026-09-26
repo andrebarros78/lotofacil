@@ -5,6 +5,13 @@ on:
     workflows: ["Post Contest Learning Ledger"]
     types: [completed]
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "src/sare_lotofacil/portfolios/coverage_guard.py"
+      - "scripts/build_coverage_guard.py"
+      - "tests/test_coverage_guard.py"
+      - ".github/workflows/adaptive-primary-challenger.yml"
 
 permissions: {}
 
@@ -14,7 +21,7 @@ concurrency:
 
 jobs:
   build:
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'push' || github.event.workflow_run.conclusion == 'success' }}
     permissions:
       contents: write
     runs-on: ubuntu-latest
