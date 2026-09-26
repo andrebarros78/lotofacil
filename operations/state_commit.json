@@ -1,22 +1,22 @@
 {
-  "committed_at_utc": "2026-09-25T01:32:50.667134+00:00",
+  "committed_at_utc": "2026-09-26T01:35:50.142581+00:00",
   "files": {
     "bootstrap_manifest.json": "716feea67b3b5a2ee712a498adcd9975578b9bc6837431584578ba1e7b7aefe5",
-    "canonical_history.json": "a6221e1be5e0fa859399f67840dfcef6a42b30ce2079ecf3739c36bbbd3a8f67",
-    "canonical_prizes.json": "98fe1e0ffddb2a444dec99ada7237b7a3a96cad2fa02b81988a7edbb6532dd48",
-    "latest.json": "19bc79b55bf9410f5e3285c14fbbf77969fe67c5f0425eea0cae2a7ca1eb7803",
-    "latest_post_contest_report.json": "3ffabe3b8f05111aa986711e9e19ec42fd3172d68434225f36e267d55e52f594",
-    "latest_post_contest_report.md": "4671c80c3ef228ddd9bb42b531bafcb3ff0bceb6fbb2a2c95b942689445bbb96",
+    "canonical_history.json": "5450f910ba99d5343799d452d1d65dab0bbc5e77a09e170b441c9b7d1d11ec74",
+    "canonical_prizes.json": "c4a36117b982c73bffba72de92360619be04fb9686b51ace52ebd110b4f245fb",
+    "latest.json": "2c8f00c0273d9a3fa6dd22f448b1e7ea12868b73b9dad8d83fcdfc600949ff2b",
+    "latest_post_contest_report.json": "158b12aa770bd772e585f472fb56afa096fc3a685f0c6413452b5e093cac56a0",
+    "latest_post_contest_report.md": "e40ad1878e88663665537156bb84711e34b1ad8de4fdd074a1fc4d69a0da3f7b",
     "operator_card_ledger.json": "f17774f97ccf12c8c974c0ee5404c3bb6f098b032d9dc62080255485eb94facd",
-    "post_contest_reports.json": "451f6319bc4d5e70dafff4c5766e6a3fcd2d36da787b3ced3be8d3448418b05a",
-    "prospective_ledger.json": "88fcdb7b08d9af89a7833bbc9757cf58900a0b2646a17d551333ae4acd469581"
+    "post_contest_reports.json": "f3ceae1a01d3c1af9ac1451f232bcca4fee33a4e7ec05a53ba9d0d2fae5fbea2",
+    "prospective_ledger.json": "eb3263f1aa355f4ac09a8401972032e99d167e6c0d51229911af6a7b82e70e99"
   },
-  "generation_id": "prizes-3788-98fe1e0ffddb2a44",
+  "generation_id": "prizes-3789-c4a36117b982c73b",
   "metadata": {
-    "canonical_prizes_sha256": "98fe1e0ffddb2a444dec99ada7237b7a3a96cad2fa02b81988a7edbb6532dd48",
-    "cycle_generation_id": "cycle-3788-8858a8dd8b03d3d5",
-    "latest_contest": 3788,
-    "parent_generation_id": "cycle-3788-8858a8dd8b03d3d5",
+    "canonical_prizes_sha256": "c4a36117b982c73bffba72de92360619be04fb9686b51ace52ebd110b4f245fb",
+    "cycle_generation_id": "cycle-3789-42c39574a0ac54d4",
+    "latest_contest": 3789,
+    "parent_generation_id": "cycle-3789-42c39574a0ac54d4",
     "source": "canonical_prize_update"
   },
   "schema": "operational-state-commit-v1"

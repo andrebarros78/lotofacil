@@ -1,16 +1,16 @@
 # Análise Pós-Concurso — Lotofácil Operacional
 
-- Concurso Número: 3788
-- Resultado: 01 04 05 07 08 09 12 16 17 18 20 21 22 23 24
+- Concurso Número: 3789
+- Resultado: 06 07 08 09 11 12 13 14 15 16 17 18 19 23 25
 - Cartão gerado: 01 02 03 04 05 10 11 12 13 14 15 20 22 24 25
-- Número de acertos: 7
+- Número de acertos: 6
 
-- Acertos: 01 04 05 12 20 22 24
-- Selecionadas que não saíram: 02 03 10 11 13 14 15 25
-- Sorteadas que ficaram fora: 07 08 09 16 17 18 21 23
+- Acertos: 11 12 13 14 15 25
+- Selecionadas que não saíram: 01 02 03 04 05 10 20 22 24
+- Sorteadas que ficaram fora: 06 07 08 09 16 17 18 19 23
 
 ## Autoanálise do processo
-- Cartão obteve 7 acertos; 8 selecionadas não saíram e 8 sorteadas ficaram fora.
+- Cartão obteve 6 acertos; 9 selecionadas não saíram e 9 sorteadas ficaram fora.
 - O modelo primário ficou abaixo do baseline uniforme neste concurso.
 
 ### Correções necessárias
