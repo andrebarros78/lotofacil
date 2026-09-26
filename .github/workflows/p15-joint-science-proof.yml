@@ -7,10 +7,13 @@ on:
       - "src/sare_lotofacil/experiments/joint_backtest.py"
       - "src/sare_lotofacil/experiments/dynamic_joint.py"
       - "src/sare_lotofacil/experiments/dynamic_backtest.py"
+      - "src/sare_lotofacil/experiments/tree_joint.py"
+      - "src/sare_lotofacil/experiments/tree_backtest.py"
       - "scripts/p15_joint_science_report.py"
       - "tests/test_joint_models.py"
       - "tests/test_joint_backtest.py"
       - "tests/test_dynamic_joint.py"
+      - "tests/test_tree_joint.py"
       - "governance/one_card_15_hypothesis_registry.json"
       - "docs/ONE_CARD_15_SCIENCE_PROGRAM.md"
       - ".github/workflows/p15-joint-science-proof.yml"
@@ -46,7 +49,7 @@ jobs:
         run: python -m pip install './app[dev]'
       - name: Prove joint model invariants
         working-directory: app
-        run: python -m pytest tests/test_joint_models.py tests/test_joint_backtest.py tests/test_dynamic_joint.py
+        run: python -m pytest tests/test_joint_models.py tests/test_joint_backtest.py tests/test_dynamic_joint.py tests/test_tree_joint.py
       - name: Run canonical-history P15 walk-forward
         run: |
           python app/scripts/p15_joint_science_report.py \
@@ -61,6 +64,7 @@ jobs:
           grep -q '"predictive_evidence": "NOT_ESTABLISHED"' p15-joint-science-report.json
           grep -q '"single_card_15_is_guaranteed": false' p15-joint-science-report.json
           grep -q '"retrospective_model_selection_is_confirmatory_evidence": false' p15-joint-science-report.json
+          grep -q '"failed_hypotheses_receive_zero_champion_weight": true' p15-joint-science-report.json
           grep -q '"purchase_executed": false' p15-joint-science-report.json
       - name: Upload P15 scientific proof
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
