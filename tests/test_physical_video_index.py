@@ -32,7 +32,7 @@ def _video(
         description=description,
         webpage_url=f"https://www.youtube.com/watch?v={video_id}",
         channel=channel,
-        channel_id="official-caixa",
+        channel_id="channel-test",
         uploader=channel,
         duration=3600.0,
     )
@@ -85,6 +85,62 @@ def test_missing_description_can_map_by_unique_official_title_date() -> None:
     assert record.mapping_status == "MAPPED"
     assert record.confidence == "MEDIUM_HIGH"
     assert record.explicit_contest_ids == ()
+
+
+def test_verified_redetv_title_lotofacil_plus_exact_date_is_high_confidence() -> None:
+    history = (_contest(1995, "2020-07-20"),)
+    videos = (
+        _video(
+            "EP3b250owhA",
+            "Loterias Caixa: Quina e Lotofácil 20/07/2020",
+            channel="RedeTV",
+        ),
+    )
+
+    index = build_video_index(history, videos, first_eligible_contest=1995)
+
+    assert index.mapped_contests == 1
+    assert index.trusted_broadcaster_verified_videos == 1
+    record = index.records[0]
+    assert record.video_id == "EP3b250owhA"
+    assert record.confidence == "HIGH"
+    assert "TRUSTED_HISTORICAL_REDETV_BROADCAST" in record.evidence_basis
+    assert "HISTORICAL_BROADCAST_LOTOFACIL_TITLE_DATE_MATCH" in record.evidence_basis
+
+
+def test_untrusted_channel_cannot_enter_from_title_and_date_alone() -> None:
+    history = (_contest(1995, "2020-07-20"),)
+    videos = (
+        _video(
+            "copy",
+            "Loterias Caixa: Quina e Lotofácil 20/07/2020",
+            channel="Random Channel",
+        ),
+    )
+
+    index = build_video_index(history, videos, first_eligible_contest=1995)
+
+    assert index.mapped_contests == 0
+    assert index.accessible_contests == 0
+    assert index.records[0].mapping_status == "MISSING"
+
+
+def test_historical_broadcaster_wrong_date_fails_closed() -> None:
+    history = (_contest(1995, "2020-07-20"),)
+    videos = (
+        _video(
+            "wrong",
+            "Loterias Caixa: Quina e Lotofácil 21/07/2020",
+            "Lotofácil concurso nº 1995",
+            channel="RedeTV",
+        ),
+    )
+
+    index = build_video_index(history, videos, first_eligible_contest=1995)
+
+    assert index.mapped_contests == 0
+    assert index.conflicting_contests == 1
+    assert index.records[0].mapping_status == "CONFLICT"
 
 
 def test_explicit_contest_date_conflict_fails_closed() -> None:
