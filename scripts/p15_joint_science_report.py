@@ -140,13 +140,13 @@ def build_report(
     )
     higher_order_decision = _decision_from_result(higher_order_result)
 
-    # The final/current H104 model is ranked over the complete state space once.
+    # The final/current H113 model is ranked over the complete state space once.
     # Historical windows use exact DP MAP to keep the walk-forward computationally bounded.
     full_ranking = higher_order_model.rank_full_space(top_k=FULL_SPACE_TOP_K)
     if full_ranking.evaluated_cards != 3_268_760:
-        raise RuntimeError("P15_H104_FULL_SPACE_RANK_INCOMPLETE")
+        raise RuntimeError("P15_H113_FULL_SPACE_RANK_INCOMPLETE")
     if not full_ranking.top_cards or full_ranking.top_cards[0].card != higher_order_model.map_card():
-        raise RuntimeError("P15_H104_DP_MAP_DISAGREES_WITH_EXHAUSTIVE_RANK")
+        raise RuntimeError("P15_H113_DP_MAP_DISAGREES_WITH_EXHAUSTIVE_RANK")
 
     return {
         "schema_version": 4,
@@ -204,7 +204,7 @@ def build_report(
                 ),
                 "research_decision": tree_decision,
             },
-            "P15-H104": {
+            "P15-H113": {
                 "scientific_class": "HIGHER_ORDER_BLOCK_FACTOR_WITH_PREQUENTIAL_REGIME_SELECTION",
                 "mechanism": (
                     "PAST_ONLY_INFORMATION_BLOCKS_PLUS_COMPLETE_5BIT_PATTERN_FACTORS_"
