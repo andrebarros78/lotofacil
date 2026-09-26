@@ -1,0 +1,99 @@
+name: P15 Physical Video Index Proof
+
+on:
+  pull_request:
+    paths:
+      - "src/sare_lotofacil/physical/**"
+      - "scripts/build_p15_physical_video_index.py"
+      - "tests/test_physical_video_index.py"
+      - ".github/workflows/p15-physical-video-index.yml"
+      - "docs/P15_PHYSICAL_OBSERVATION_DATASET.md"
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: sare-p15-physical-video-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deterministic-proof:
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout candidate
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          path: app
+      - name: Setup Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: "3.13"
+      - name: Install candidate
+        run: python -m pip install './app[dev]'
+      - name: Prove physical video index invariants
+        working-directory: app
+        run: python -m pytest tests/test_physical_video_index.py
+
+  live-official-archive-proof:
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout candidate
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          path: app
+      - name: Checkout committed operational state
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          ref: operations/state
+          path: state-store
+      - name: Setup Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: "3.13"
+      - name: Install candidate and pinned public archive client
+        run: |
+          python -m pip install './app[dev]'
+          python -m pip install 'yt-dlp==2026.8.19'
+      - name: Discover official CAIXA lottery transmissions and build index
+        run: |
+          python app/scripts/build_p15_physical_video_index.py \
+            --history state-store/operations/canonical_history.json \
+            --out p15-physical-video-index.json \
+            --first-contest 1874 \
+            --playlist-end 12000 \
+            --timeout-seconds 1200 \
+            | tee p15-physical-video-index-proof.log
+      - name: Enforce live discovery minimum proof
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p = json.loads(Path('p15-physical-video-index.json').read_text(encoding='utf-8'))
+          assert p['eligible_contests'] > 1800, p['eligible_contests']
+          assert p['discovered_videos'] > 0, p['discovered_videos']
+          assert p['mapped_contests'] > 0, p['mapped_contests']
+          assert p['predictive_evidence'] == 'NOT_ESTABLISHED'
+          assert p['purchase_executed'] is False
+          print(json.dumps({
+              'eligible_contests': p['eligible_contests'],
+              'discovered_videos': p['discovered_videos'],
+              'mapped_contests': p['mapped_contests'],
+              'coverage_ratio': p['coverage_ratio'],
+              'missing_contests': p['missing_contests'],
+              'conflicting_contests': p['conflicting_contests'],
+          }, indent=2, sort_keys=True))
+          PY
+      - name: Upload P15 physical archive evidence
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: p15-physical-video-index-proof
+          path: |
+            p15-physical-video-index.json
+            p15-physical-video-index-proof.log
+          if-no-files-found: error
