@@ -1,0 +1,159 @@
+name: P15 Physical Content V2 Proof
+
+on:
+  pull_request:
+    paths:
+      - "src/sare_lotofacil/physical/**"
+      - "scripts/extract_p15_physical_content.py"
+      - "scripts/recover_p15_remaining_gaps.py"
+      - "tests/test_physical_content_features.py"
+      - "tests/test_physical_content_resolution.py"
+      - "tests/test_physical_gap_recovery.py"
+      - ".github/workflows/p15-physical-content-v2.yml"
+      - "docs/P15_PHYSICAL_CONTENT_V2.md"
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: sare-p15-physical-content-v2-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deterministic-proof:
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout candidate
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          path: app
+      - name: Setup Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: "3.13"
+      - name: Install candidate
+        run: python -m pip install './app[dev]'
+      - name: Prove content, resolution, visual and gap invariants
+        working-directory: app
+        run: |
+          python -m pytest \
+            tests/test_physical_content_features.py \
+            tests/test_physical_content_resolution.py \
+            tests/test_physical_gap_recovery.py \
+            tests/test_physical_video_index.py \
+            tests/test_targeted_recovery.py
+
+  live-content-and-gap-proof:
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - name: Checkout candidate
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          path: app
+      - name: Checkout committed operational state
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          ref: operations/state
+          path: state-store
+      - name: Setup Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: "3.13"
+      - name: Install candidate and public video client
+        run: |
+          python -m pip install './app[dev]'
+          python -m pip install 'yt-dlp==2026.8.19'
+          ffmpeg -version | head -n 1
+      - name: Rebuild Phase 1 physical index
+        run: |
+          python app/scripts/recover_p15_physical_video_index.py \
+            --history state-store/operations/canonical_history.json \
+            --out p15-physical-base-index.json \
+            --diagnostics-out p15-physical-base-diagnostics.json \
+            --first-contest 1874 \
+            --playlist-end 12000 \
+            --timeout-seconds 1200 \
+            --targeted-timeout-seconds 360 \
+            --targeted-chunk-size 80 \
+            | tee p15-phase2-proof.log
+      - name: Resolve ambiguous videos by content and extract initial physical observations
+        run: |
+          python app/scripts/extract_p15_physical_content.py \
+            --index p15-physical-base-index.json \
+            --resolved-index-out p15-physical-content-index.json \
+            --observations-out p15-physical-observations.json \
+            --diagnostics-out p15-physical-content-diagnostics.json \
+            --per-video-timeout-seconds 30 \
+            --max-workers 6 \
+            --mapped-limit 20 \
+            --visual-sample-limit 3 \
+            --visual-timeout-seconds 150 \
+            | tee -a p15-phase2-proof.log
+      - name: Search remaining missing contests on independent track
+        run: |
+          python app/scripts/recover_p15_remaining_gaps.py \
+            --index p15-physical-content-index.json \
+            --out p15-physical-final-index.json \
+            --diagnostics-out p15-physical-gap-diagnostics.json \
+            --timeout-seconds 360 \
+            --chunk-size 60 \
+            | tee -a p15-phase2-proof.log
+      - name: Enforce Phase 2 fail-closed proof
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          base = json.loads(Path('p15-physical-base-index.json').read_text(encoding='utf-8'))
+          content = json.loads(Path('p15-physical-content-index.json').read_text(encoding='utf-8'))
+          obs = json.loads(Path('p15-physical-observations.json').read_text(encoding='utf-8'))
+          cdiag = json.loads(Path('p15-physical-content-diagnostics.json').read_text(encoding='utf-8'))
+          final = json.loads(Path('p15-physical-final-index.json').read_text(encoding='utf-8'))
+          gdiag = json.loads(Path('p15-physical-gap-diagnostics.json').read_text(encoding='utf-8'))
+
+          assert base['eligible_contests'] > 1800
+          assert cdiag['candidate_and_sample_videos_probed'] >= base['ambiguous_contests']
+          assert cdiag['ambiguous_after'] <= cdiag['ambiguous_before']
+          assert final['missing_contests'] <= base['missing_contests']
+          assert gdiag['missing_before'] == base['missing_contests']
+          assert content['predictive_evidence'] == 'NOT_ESTABLISHED'
+          assert final['predictive_evidence'] == 'NOT_ESTABLISHED'
+          assert obs['predictive_evidence'] == 'NOT_ESTABLISHED'
+          assert content['purchase_executed'] is False
+          assert final['purchase_executed'] is False
+          assert obs['purchase_executed'] is False
+          print(json.dumps({
+              'base_mapped': base['mapped_contests'],
+              'base_ambiguous': base['ambiguous_contests'],
+              'base_missing': base['missing_contests'],
+              'content_probed': cdiag['candidate_and_sample_videos_probed'],
+              'timed_text_available': cdiag['timed_text_available'],
+              'content_resolved': cdiag['content_resolved'],
+              'observations_emitted': cdiag['observations_emitted'],
+              'complete_procedure_observations': cdiag['complete_procedure_observations'],
+              'visual_fingerprints_emitted': cdiag['visual_fingerprints_emitted'],
+              'gap_recovered_strict': gdiag['recovered_strict'],
+              'gap_new_ambiguous': gdiag['new_ambiguous'],
+              'final_mapped': final['mapped_contests'],
+              'final_ambiguous': final['ambiguous_contests'],
+              'final_missing': final['missing_contests'],
+          }, indent=2, sort_keys=True))
+          PY
+      - name: Upload P15 Phase 2 evidence
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: p15-physical-content-v2-proof
+          path: |
+            p15-physical-base-index.json
+            p15-physical-content-index.json
+            p15-physical-final-index.json
+            p15-physical-observations.json
+            p15-physical-content-diagnostics.json
+            p15-physical-gap-diagnostics.json
+            p15-phase2-proof.log
+          if-no-files-found: error
