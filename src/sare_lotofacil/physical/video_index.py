@@ -13,7 +13,9 @@ LOTTERY_TITLE_RE = re.compile(r"\bLOTERIAS?\s+CAIXA\b", re.IGNORECASE)
 LOTOFACIL_TITLE_RE = re.compile(r"\bloto\s*f[aá]cil\b", re.IGNORECASE)
 TITLE_DATE_RE = re.compile(r"\b(?P<day>0?[1-9]|[12]\d|3[01])/(?P<month>0?[1-9]|1[0-2])/(?P<year>20\d{2})\b")
 LOTOFACIL_CONTEST_RE = re.compile(
-    r"\bloto\s*f[aá]cil\b[^\n\r\d]{0,40}(?:concurso\s*)?(?:n(?:[º°o]|\.)?\s*)?(?P<contest>\d{3,5})\b",
+    r"\bloto\s*f[aá]cil\b[^\n\r]{0,60}?"
+    r"(?:concurso\s*(?:n(?:[º°o]|\.)?\s*)?|n(?:[º°o]|\.)?\s*)"
+    r"(?P<contest>\d{3,5})\b",
     re.IGNORECASE,
 )
 
@@ -289,7 +291,6 @@ def build_video_index(
             if title_date is not None and title_date != contest.draw_date:
                 conflicts.add(contest_id)
                 continue
-            # Historical secondary sources require explicit contest + exact date.
             if historical_broadcaster and not official and title_date != contest.draw_date:
                 continue
 
@@ -314,8 +315,6 @@ def build_video_index(
         if explicit_ids and contest.contest_id not in explicit_ids:
             continue
 
-        # Official CAIXA videos may use a date-only title because the full daily
-        # transmission is itself the primary archive.
         if official:
             rank = 220
             evidence = list(basis)
@@ -326,9 +325,6 @@ def build_video_index(
             if not explicit_ids:
                 unique_title_matches.add(contest.contest_id)
 
-        # Historical RedeTV broadcasts are accepted without description only if
-        # the title itself explicitly names Lotofácil and the date matches the
-        # single canonical Lotofácil contest on that date.
         elif historical_broadcaster and "LOTOFACIL_TITLE_MENTION" in basis:
             rank = 215
             evidence = list(basis)
