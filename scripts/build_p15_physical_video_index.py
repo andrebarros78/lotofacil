@@ -165,23 +165,42 @@ def monthly_channel_search_urls(
     return tuple(urls)
 
 
+def monthly_public_archive_searches(
+    first_date: dt.date,
+    last_date: dt.date,
+    *,
+    results_per_month: int = 60,
+) -> tuple[str, ...]:
+    """Search YouTube's public index by month, then trust only allowlisted channels.
+
+    Current channel pagination demonstrably omits some public CAIXA transmissions.
+    A global month shard can recover those entries while ``build_video_index``
+    still rejects every uploader outside the CAIXA/RedeTV allowlist.
+    """
+
+    current = _month_floor(first_date)
+    end = _month_floor(last_date)
+    searches: list[str] = []
+    while current <= end:
+        query = f"Loterias CAIXA {current.month:02d}/{current.year}"
+        searches.append(f"ytsearch{results_per_month}:{query}")
+        current = _next_month(current)
+    return tuple(searches)
+
+
 def monthly_historical_broadcast_searches(
     first_date: dt.date,
     last_date: dt.date,
     *,
     results_per_month: int = 50,
 ) -> tuple[str, ...]:
-    """Create YouTube search shards for the documented RedeTV broadcast era.
-
-    Results remain untrusted until ``build_video_index`` verifies the uploader
-    name and a strong contest/date or Lotofácil-title/date join.
-    """
+    """Extra search shards for the documented RedeTV broadcast era."""
 
     current = _month_floor(first_date)
     end = _month_floor(min(last_date, HISTORICAL_BROADCAST_SEARCH_END))
     searches: list[str] = []
     while current <= end:
-        query = f'Loterias Caixa Lotofácil {current.month:02d}/{current.year}'
+        query = f"Loterias Caixa Lotofácil {current.month:02d}/{current.year}"
         searches.append(f"ytsearch{results_per_month}:{query}")
         current = _next_month(current)
     return tuple(searches)
@@ -243,12 +262,13 @@ def discover_public_broadcast_metadata(
     fallback_url: str,
     streams_url: str,
     shard_urls: Sequence[str] = (),
+    public_searches: Sequence[str] = (),
     historical_searches: Sequence[str] = (),
     playlist_end: int,
     timeout_seconds: int,
     hydrate_limit: int = 0,
 ) -> tuple[tuple[VideoMetadata, ...], tuple[str, ...]]:
-    """Discover CAIXA primary archive plus documented historical broadcasts."""
+    """Discover CAIXA primary archive plus allowlisted public broadcast copies."""
 
     official_entries: list[dict[str, object]] = []
     errors: list[str] = []
@@ -272,14 +292,25 @@ def discover_public_broadcast_metadata(
         official_entries.extend(shard_entries)
         errors.extend(shard_errors)
 
-    historical_entries: list[dict[str, object]] = []
+    public_entries: list[dict[str, object]] = []
+    if public_searches:
+        found, public_errors = _flat_discover_many(
+            yt_dlp_bin,
+            public_searches,
+            playlist_end=min(60, playlist_end),
+            timeout_seconds=timeout_seconds,
+        )
+        public_entries.extend(found)
+        errors.extend(public_errors)
+
     if historical_searches:
-        historical_entries, historical_errors = _flat_discover_many(
+        found, historical_errors = _flat_discover_many(
             yt_dlp_bin,
             historical_searches,
             playlist_end=min(50, playlist_end),
             timeout_seconds=timeout_seconds,
         )
+        public_entries.extend(found)
         errors.extend(historical_errors)
 
     videos_by_id: dict[str, VideoMetadata] = {}
@@ -290,7 +321,7 @@ def discover_public_broadcast_metadata(
         if video_id:
             videos_by_id.setdefault(video_id, _flat_entry_to_official_video(entry))
 
-    for entry in historical_entries:
+    for entry in public_entries:
         if not _looks_like_lottery_video(entry):
             continue
         video_id = str(entry.get("id") or "").strip()
@@ -334,6 +365,7 @@ def main() -> int:
     parser.add_argument("--playlist-end", type=int, default=10000)
     parser.add_argument("--timeout-seconds", type=int, default=900)
     parser.add_argument("--disable-month-shards", action="store_true")
+    parser.add_argument("--disable-public-month-search", action="store_true")
     parser.add_argument("--disable-historical-broadcast-search", action="store_true")
     parser.add_argument(
         "--hydrate-limit",
@@ -362,6 +394,10 @@ def main() -> int:
             last_date,
             channel_base_url=args.channel_base_url,
         )
+        public_searches = () if args.disable_public_month_search else monthly_public_archive_searches(
+            first_date,
+            last_date,
+        )
         historical_searches = () if args.disable_historical_broadcast_search else monthly_historical_broadcast_searches(
             first_date,
             last_date,
@@ -372,6 +408,7 @@ def main() -> int:
             fallback_url=args.fallback_channel_url,
             streams_url=args.streams_channel_url,
             shard_urls=shard_urls,
+            public_searches=public_searches,
             historical_searches=historical_searches,
             playlist_end=args.playlist_end,
             timeout_seconds=args.timeout_seconds,
