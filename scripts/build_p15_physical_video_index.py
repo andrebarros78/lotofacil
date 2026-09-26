@@ -20,6 +20,7 @@ from sare_lotofacil.physical.video_index import (
 
 DEFAULT_CHANNEL_SEARCH_URL = "https://www.youtube.com/user/canalcaixa/search?query=Loterias%20CAIXA"
 DEFAULT_CHANNEL_VIDEOS_URL = "https://www.youtube.com/user/canalcaixa/videos"
+DEFAULT_CHANNEL_STREAMS_URL = "https://www.youtube.com/user/canalcaixa/streams"
 
 
 def _run(command: list[str], *, timeout_seconds: int) -> subprocess.CompletedProcess[str]:
@@ -85,10 +86,10 @@ def _flat_entry_to_official_video(payload: dict[str, object]) -> VideoMetadata:
     """Promote a channel-listing entry to auditable official-source metadata.
 
     Per-video extraction is often challenged by YouTube bot protection on cloud
-    runners.  The channel listing itself is still public evidence: because the
-    entry was discovered *inside the configured official CAIXA channel*, the
+    runners. The channel listing itself is still public evidence: because the
+    entry was discovered inside the configured official CAIXA channel, the
     source identity is attached explicitly while title/date/video-id remain the
-    values returned by YouTube/yt-dlp.  Description enrichment is optional.
+    values returned by YouTube/yt-dlp. Description enrichment is optional.
     """
 
     enriched = dict(payload)
@@ -155,34 +156,34 @@ def discover_official_metadata(
     yt_dlp_bin: str,
     source_url: str,
     fallback_url: str,
+    streams_url: str,
     playlist_end: int,
     timeout_seconds: int,
     hydrate_limit: int = 0,
 ) -> tuple[tuple[VideoMetadata, ...], tuple[str, ...]]:
-    """Discover the archive from public official-channel listings.
+    """Discover public lottery transmissions across search/videos/streams tabs.
 
-    The flat channel/search indexes are the primary dataset.  Full per-video
-    hydration is optional and bounded because YouTube can challenge repeated
-    cloud requests.  Hydration can only enrich a record; failure never deletes
-    the already discovered official-channel video.
+    YouTube separates ordinary uploads and archived live streams. Daily CAIXA
+    lottery transmissions can live primarily under the channel ``streams`` tab,
+    therefore all three official-channel surfaces are unioned by video id.
+    Full per-video hydration remains optional because cloud runners can trigger
+    YouTube bot challenges; hydration failure never deletes flat evidence.
     """
 
-    search_entries, errors = _flat_discover(
-        yt_dlp_bin,
-        source_url,
-        playlist_end=playlist_end,
-        timeout_seconds=timeout_seconds,
-    )
-    channel_entries, channel_errors = _flat_discover(
-        yt_dlp_bin,
-        fallback_url,
-        playlist_end=playlist_end,
-        timeout_seconds=timeout_seconds,
-    )
-    errors.extend(channel_errors)
+    all_entries: list[dict[str, object]] = []
+    errors: list[str] = []
+    for url in (source_url, fallback_url, streams_url):
+        entries, source_errors = _flat_discover(
+            yt_dlp_bin,
+            url,
+            playlist_end=playlist_end,
+            timeout_seconds=timeout_seconds,
+        )
+        all_entries.extend(entries)
+        errors.extend(source_errors)
 
     combined: dict[str, dict[str, object]] = {}
-    for entry in (*search_entries, *channel_entries):
+    for entry in all_entries:
         if not _looks_like_lottery_video(entry):
             continue
         video_id = str(entry.get("id") or "").strip()
@@ -222,6 +223,7 @@ def main() -> int:
     parser.add_argument("--yt-dlp-bin", default="yt-dlp")
     parser.add_argument("--channel-url", default=DEFAULT_CHANNEL_SEARCH_URL)
     parser.add_argument("--fallback-channel-url", default=DEFAULT_CHANNEL_VIDEOS_URL)
+    parser.add_argument("--streams-channel-url", default=DEFAULT_CHANNEL_STREAMS_URL)
     parser.add_argument("--first-contest", type=int, default=1874)
     parser.add_argument("--playlist-end", type=int, default=10000)
     parser.add_argument("--timeout-seconds", type=int, default=900)
@@ -244,6 +246,7 @@ def main() -> int:
             yt_dlp_bin=args.yt_dlp_bin,
             source_url=args.channel_url,
             fallback_url=args.fallback_channel_url,
+            streams_url=args.streams_channel_url,
             playlist_end=args.playlist_end,
             timeout_seconds=args.timeout_seconds,
             hydrate_limit=args.hydrate_limit,
