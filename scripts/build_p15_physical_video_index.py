@@ -54,10 +54,14 @@ def _flat_discover(
         str(playlist_end),
         source_url,
     ]
-    completed = _run(command, timeout_seconds=timeout_seconds)
+    try:
+        completed = _run(command, timeout_seconds=timeout_seconds)
+    except subprocess.TimeoutExpired as exc:
+        return [], [f"FLAT_DISCOVERY_TIMEOUT:{source_url}:{exc.timeout}"]
+
     errors: list[str] = []
     if completed.returncode != 0:
-        errors.append(f"FLAT_DISCOVERY_EXIT_{completed.returncode}:{completed.stderr[-2000:]}")
+        errors.append(f"FLAT_DISCOVERY_EXIT_{completed.returncode}:{source_url}:{completed.stderr[-2000:]}")
 
     entries: list[dict[str, object]] = []
     for line in completed.stdout.splitlines():
@@ -77,6 +81,26 @@ def _looks_like_lottery_video(payload: dict[str, object]) -> bool:
     return bool(LOTTERY_TITLE_RE.search(title) and TITLE_DATE_RE.search(title))
 
 
+def _flat_entry_to_official_video(payload: dict[str, object]) -> VideoMetadata:
+    """Promote a channel-listing entry to auditable official-source metadata.
+
+    Per-video extraction is often challenged by YouTube bot protection on cloud
+    runners.  The channel listing itself is still public evidence: because the
+    entry was discovered *inside the configured official CAIXA channel*, the
+    source identity is attached explicitly while title/date/video-id remain the
+    values returned by YouTube/yt-dlp.  Description enrichment is optional.
+    """
+
+    enriched = dict(payload)
+    enriched["channel"] = str(payload.get("channel") or "CAIXA")
+    enriched["uploader"] = str(payload.get("uploader") or "CAIXA")
+    video_id = str(payload.get("id") or "").strip()
+    enriched["webpage_url"] = str(
+        payload.get("webpage_url") or f"https://www.youtube.com/watch?v={video_id}"
+    )
+    return VideoMetadata.from_mapping(enriched)
+
+
 def _hydrate_metadata(
     yt_dlp_bin: str,
     video_ids: Iterable[str],
@@ -85,7 +109,7 @@ def _hydrate_metadata(
 ) -> tuple[tuple[VideoMetadata, ...], list[str]]:
     ids = tuple(dict.fromkeys(str(value).strip() for value in video_ids if str(value).strip()))
     if not ids:
-        return (), ["NO_CANDIDATE_VIDEO_IDS"]
+        return (), []
 
     errors: list[str] = []
     with tempfile.NamedTemporaryFile("w", encoding="utf-8", delete=False) as handle:
@@ -103,7 +127,10 @@ def _hydrate_metadata(
             "--batch-file",
             str(batch_path),
         ]
-        completed = _run(command, timeout_seconds=timeout_seconds)
+        try:
+            completed = _run(command, timeout_seconds=timeout_seconds)
+        except subprocess.TimeoutExpired as exc:
+            return (), [f"HYDRATE_TIMEOUT:{exc.timeout}"]
     finally:
         batch_path.unlink(missing_ok=True)
 
@@ -130,37 +157,59 @@ def discover_official_metadata(
     fallback_url: str,
     playlist_end: int,
     timeout_seconds: int,
+    hydrate_limit: int = 0,
 ) -> tuple[tuple[VideoMetadata, ...], tuple[str, ...]]:
-    flat_entries, errors = _flat_discover(
+    """Discover the archive from public official-channel listings.
+
+    The flat channel/search indexes are the primary dataset.  Full per-video
+    hydration is optional and bounded because YouTube can challenge repeated
+    cloud requests.  Hydration can only enrich a record; failure never deletes
+    the already discovered official-channel video.
+    """
+
+    search_entries, errors = _flat_discover(
         yt_dlp_bin,
         source_url,
         playlist_end=playlist_end,
         timeout_seconds=timeout_seconds,
     )
-    candidate_ids = [str(entry["id"]) for entry in flat_entries if _looks_like_lottery_video(entry)]
-
-    # Some yt-dlp/YouTube combinations do not expose channel search pages. In that
-    # case inspect the channel upload list and still hydrate only lottery videos.
-    if not candidate_ids:
-        errors.append("PRIMARY_CHANNEL_SEARCH_EMPTY_USING_CHANNEL_VIDEOS_FALLBACK")
-        fallback_entries, fallback_errors = _flat_discover(
-            yt_dlp_bin,
-            fallback_url,
-            playlist_end=playlist_end,
-            timeout_seconds=timeout_seconds,
-        )
-        errors.extend(fallback_errors)
-        candidate_ids = [
-            str(entry["id"]) for entry in fallback_entries if _looks_like_lottery_video(entry)
-        ]
-
-    videos, hydrate_errors = _hydrate_metadata(
+    channel_entries, channel_errors = _flat_discover(
         yt_dlp_bin,
-        candidate_ids,
+        fallback_url,
+        playlist_end=playlist_end,
         timeout_seconds=timeout_seconds,
     )
-    errors.extend(hydrate_errors)
-    return videos, tuple(errors)
+    errors.extend(channel_errors)
+
+    combined: dict[str, dict[str, object]] = {}
+    for entry in (*search_entries, *channel_entries):
+        if not _looks_like_lottery_video(entry):
+            continue
+        video_id = str(entry.get("id") or "").strip()
+        if video_id:
+            combined.setdefault(video_id, entry)
+
+    if not combined:
+        errors.append("OFFICIAL_CHANNEL_FLAT_DISCOVERY_EMPTY")
+        return (), tuple(errors)
+
+    flat_videos = {
+        video_id: _flat_entry_to_official_video(entry)
+        for video_id, entry in combined.items()
+    }
+
+    if hydrate_limit > 0:
+        selected_ids = tuple(sorted(flat_videos))[:hydrate_limit]
+        hydrated, hydrate_errors = _hydrate_metadata(
+            yt_dlp_bin,
+            selected_ids,
+            timeout_seconds=timeout_seconds,
+        )
+        errors.extend(hydrate_errors)
+        for video in hydrated:
+            flat_videos[video.video_id] = video
+
+    return tuple(flat_videos[video_id] for video_id in sorted(flat_videos)), tuple(errors)
 
 
 def main() -> int:
@@ -176,6 +225,12 @@ def main() -> int:
     parser.add_argument("--first-contest", type=int, default=1874)
     parser.add_argument("--playlist-end", type=int, default=10000)
     parser.add_argument("--timeout-seconds", type=int, default=900)
+    parser.add_argument(
+        "--hydrate-limit",
+        type=int,
+        default=0,
+        help="Optional bounded number of flat entries to enrich with full per-video metadata.",
+    )
     parser.add_argument("--min-coverage", type=float, default=0.0)
     args = parser.parse_args()
 
@@ -191,6 +246,7 @@ def main() -> int:
             fallback_url=args.fallback_channel_url,
             playlist_end=args.playlist_end,
             timeout_seconds=args.timeout_seconds,
+            hydrate_limit=args.hydrate_limit,
         )
         source_url = args.channel_url
 
