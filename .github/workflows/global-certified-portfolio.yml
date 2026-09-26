@@ -1,0 +1,140 @@
+name: Global Certified Portfolio
+
+on:
+  pull_request:
+    paths:
+      - "native/global_orbit_optimizer_4card.cpp"
+      - "src/sare_lotofacil/portfolios/global_certified_optimizer.py"
+      - "scripts/build_global_certified_portfolio.py"
+      - "tests/test_global_certified_optimizer.py"
+      - ".github/workflows/global-certified-portfolio.yml"
+      - "governance/github-only-policy.json"
+  workflow_run:
+    workflows: ["Exact Budget Portfolio"]
+    types: [completed]
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: sare-global-certified-portfolio-${{ github.event_name }}
+  cancel-in-progress: false
+
+jobs:
+  proof:
+    if: ${{ github.event_name == 'pull_request' }}
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout candidate
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+      - name: Setup Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: "3.13"
+      - name: Install candidate
+        run: python -m pip install '.[dev]'
+      - name: Run Python global optimizer tests
+        run: python -m pytest tests/test_global_certified_optimizer.py tests/test_exact_budget_optimizer.py
+      - name: Compile native orbit certificate
+        run: g++ -O3 -std=c++17 native/global_orbit_optimizer_4card.cpp -o global-orbit-optimizer
+      - name: Prove four-card global optimum
+        run: |
+          ./global-orbit-optimizer | tee global-native-certificate.json
+          grep -q '"status":"GLOBAL_ORBIT_SEARCH_PROVEN"' global-native-certificate.json
+          grep -q '"floor_ge_10_histograms":0' global-native-certificate.json
+          grep -q '"objective_vector":\[9,4,604,19504,237504,1310584,33982067\]' global-native-certificate.json
+      - name: Upload PR proof
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: global-certified-portfolio-pr-proof
+          path: global-native-certificate.json
+          if-no-files-found: error
+
+  build:
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') }}
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout engine
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          ref: main
+          path: app
+      - name: Checkout committed operational state
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          ref: operations/state
+          path: state-store
+      - name: Setup Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: "3.13"
+      - name: Install engine and global optimizer tests
+        run: |
+          python -m pip install './app[dev]'
+          cd app
+          python -m pytest tests/test_global_certified_optimizer.py tests/test_exact_budget_optimizer.py
+      - name: Compile native orbit certificate
+        run: g++ -O3 -std=c++17 app/native/global_orbit_optimizer_4card.cpp -o global-orbit-optimizer
+      - name: Prove four-card global optimum
+        run: |
+          ./global-orbit-optimizer | tee global-native-certificate.json
+          grep -q '"status":"GLOBAL_ORBIT_SEARCH_PROVEN"' global-native-certificate.json
+          grep -q '"floor_ge_10_histograms":0' global-native-certificate.json
+          grep -q '"objective_vector":\[9,4,604,19504,237504,1310584,33982067\]' global-native-certificate.json
+      - name: Build globally certified budget frontier
+        run: |
+          python app/scripts/build_global_certified_portfolio.py \
+            --state-dir state-store/operations \
+            --native-certificate global-native-certificate.json \
+            --out global-certified-portfolio.json \
+            | tee global-certified-portfolio-proof.json
+          grep -q '"status": "GLOBAL_CERTIFIED_BUDGET_PORTFOLIO_PROVEN"' global-certified-portfolio-proof.json
+          grep -q '"global_full_space_optimality_proven": true' global-certified-portfolio-proof.json
+          grep -q '"max_budget_floor": 9' global-certified-portfolio-proof.json
+          grep -q '"purchase_executed": false' global-certified-portfolio-proof.json
+      - name: Attach global proof to derived challenger state
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          challenger_path = Path("state-store/operations/adaptive_challenger.json")
+          proof_path = Path("global-certified-portfolio.json")
+          challenger = json.loads(challenger_path.read_text(encoding="utf-8"))
+          proof = json.loads(proof_path.read_text(encoding="utf-8"))
+          if int(challenger["target_contest"]) != int(proof["target_contest"]):
+              raise SystemExit("GLOBAL_CERTIFIED_TARGET_MISMATCH")
+          challenger["global_certified_portfolio"] = proof
+          challenger_path.write_text(
+              json.dumps(challenger, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+          PY
+      - name: Persist derived global certificate
+        working-directory: state-store
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add operations/adaptive_challenger.json
+          if git diff --cached --quiet; then
+            echo "GLOBAL_CERTIFIED_PORTFOLIO_UNCHANGED"
+          else
+            git commit -m "ops: persist globally certified portfolio frontier"
+            git push origin HEAD:operations/state
+          fi
+      - name: Upload global certified portfolio proof
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: global-certified-portfolio
+          path: |
+            global-native-certificate.json
+            global-certified-portfolio-proof.json
+            global-certified-portfolio.json
+            state-store/operations/adaptive_challenger.json
+          if-no-files-found: error
