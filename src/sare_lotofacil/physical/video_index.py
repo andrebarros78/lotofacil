@@ -74,6 +74,8 @@ class VideoIndexRecord:
     mapping_status: str
     confidence: str
     evidence_basis: tuple[str, ...]
+    candidate_video_ids: tuple[str, ...] = ()
+    candidate_video_urls: tuple[str, ...] = ()
     start_seconds: float | None = None
     end_seconds: float | None = None
     sequence_extracted_from_video: tuple[int, ...] | None = None
@@ -91,9 +93,13 @@ class PhysicalVideoIndex:
     eligible_contests: int
     discovered_videos: int
     mapped_contests: int
+    candidate_available_contests: int
+    accessible_contests: int
     missing_contests: int
+    ambiguous_contests: int
     conflicting_contests: int
     coverage_ratio: float
+    accessible_ratio: float
     exact_description_matches: int
     unique_title_date_matches: int
     official_channel_verified_videos: int
@@ -218,6 +224,12 @@ def _video_evidence(video: VideoMetadata) -> tuple[dt.date | None, tuple[int, ..
     return title_date, explicit_ids, tuple(basis)
 
 
+def _candidate_ids_and_urls(candidates: Sequence[tuple[int, VideoMetadata, tuple[str, ...], dt.date | None, tuple[int, ...]]]) -> tuple[tuple[str, ...], tuple[str, ...]]:
+    by_id = {candidate[1].video_id: candidate[1].webpage_url for candidate in candidates}
+    ids = tuple(sorted(by_id))
+    return ids, tuple(by_id[video_id] for video_id in ids)
+
+
 def build_video_index(
     canonical_history: Sequence[CanonicalContest],
     videos: Sequence[VideoMetadata],
@@ -246,7 +258,6 @@ def build_video_index(
         if is_official_caixa_video(video):
             official_verified.add(video.video_id)
 
-        # Explicit contest evidence is strongest. A canonical date conflict is fail-closed.
         for contest_id in explicit_ids:
             contest = by_id.get(contest_id)
             if contest is None:
@@ -267,12 +278,9 @@ def build_video_index(
             )
             exact_description_matches.add(contest_id)
 
-        # When the description omits Lotofácil, the official dated transmission can still
-        # be linked if exactly one canonical Lotofácil contest exists on that date.
         if title_date is not None and title_date in by_date and len(by_date[title_date]) == 1:
             contest = by_date[title_date][0]
             if explicit_ids and contest.contest_id not in explicit_ids:
-                # Explicit contradictory evidence beats date-only inference.
                 continue
             rank = 200
             evidence = list(basis)
@@ -288,11 +296,15 @@ def build_video_index(
     records: list[VideoIndexRecord] = []
     mapped = 0
     missing = 0
-    ambiguous_or_conflict = 0
+    ambiguous = 0
+    conflict_count = 0
+    candidate_available = 0
 
     for contest in eligible:
         candidates = candidate_map.get(contest.contest_id, [])
         candidates.sort(key=lambda item: (-item[0], item[1].video_id))
+        all_candidate_ids, all_candidate_urls = _candidate_ids_and_urls(candidates)
+
         if contest.contest_id in conflicts and not candidates:
             records.append(
                 VideoIndexRecord(
@@ -312,7 +324,7 @@ def build_video_index(
                     evidence_basis=("DATE_CONFLICT",),
                 )
             )
-            ambiguous_or_conflict += 1
+            conflict_count += 1
             continue
 
         if not candidates:
@@ -339,8 +351,8 @@ def build_video_index(
 
         best_rank = candidates[0][0]
         best = [candidate for candidate in candidates if candidate[0] == best_rank]
-        distinct_best_ids = {candidate[1].video_id for candidate in best}
-        if len(distinct_best_ids) > 1:
+        best_ids, best_urls = _candidate_ids_and_urls(best)
+        if len(best_ids) > 1:
             records.append(
                 VideoIndexRecord(
                     contest_id=contest.contest_id,
@@ -349,17 +361,20 @@ def build_video_index(
                     video_id=None,
                     video_url=None,
                     video_title=None,
-                    title_date=None,
+                    title_date=contest.draw_date.isoformat(),
                     explicit_contest_ids=(),
-                    channel=None,
+                    channel="CAIXA",
                     channel_id=None,
                     duration_seconds=None,
                     mapping_status="AMBIGUOUS",
-                    confidence="NONE",
-                    evidence_basis=("MULTIPLE_EQUAL_RANK_VIDEOS",),
+                    confidence="CANDIDATE_SET_ONLY",
+                    evidence_basis=("MULTIPLE_EQUAL_RANK_VIDEOS", "PHASE2_CONTENT_DISAMBIGUATION_REQUIRED"),
+                    candidate_video_ids=best_ids,
+                    candidate_video_urls=best_urls,
                 )
             )
-            ambiguous_or_conflict += 1
+            ambiguous += 1
+            candidate_available += 1
             continue
 
         _rank, video, evidence, title_date, explicit_ids = candidates[0]
@@ -387,13 +402,17 @@ def build_video_index(
                 mapping_status="MAPPED",
                 confidence=confidence,
                 evidence_basis=evidence,
+                candidate_video_ids=all_candidate_ids,
+                candidate_video_urls=all_candidate_urls,
             )
         )
         mapped += 1
+        candidate_available += 1
 
     eligible_count = len(eligible)
+    accessible = mapped + ambiguous
     return PhysicalVideoIndex(
-        schema_version=1,
+        schema_version=2,
         program_id="SARE-P15-PHYSICAL-OBSERVATION-V1",
         source="OFFICIAL_CAIXA_YOUTUBE_PUBLIC_ARCHIVE",
         source_channel_url=source_channel_url,
@@ -402,9 +421,13 @@ def build_video_index(
         eligible_contests=eligible_count,
         discovered_videos=len(videos),
         mapped_contests=mapped,
+        candidate_available_contests=candidate_available,
+        accessible_contests=accessible,
         missing_contests=missing,
-        conflicting_contests=ambiguous_or_conflict,
+        ambiguous_contests=ambiguous,
+        conflicting_contests=conflict_count,
         coverage_ratio=mapped / eligible_count,
+        accessible_ratio=accessible / eligible_count,
         exact_description_matches=len(exact_description_matches),
         unique_title_date_matches=len(unique_title_matches),
         official_channel_verified_videos=len(official_verified),
