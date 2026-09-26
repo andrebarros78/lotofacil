@@ -57,21 +57,39 @@ jobs:
         run: |
           python app/scripts/build_coverage_guard.py \
             --state-dir state-store/operations \
-            --out state-store/operations/coverage_guard.json \
+            --out coverage-guard.json \
             | tee coverage-guard-proof.json
           grep -q '"status": "COVERAGE_GUARD_PROVEN"' coverage-guard-proof.json
           grep -q '"guaranteed_min_best_hits": 8' coverage-guard-proof.json
           grep -q '"purchase_executed": false' coverage-guard-proof.json
-      - name: Persist adaptive challenger and coverage guard into operational state
+      - name: Attach coverage guard to derived challenger state
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          challenger_path = Path("state-store/operations/adaptive_challenger.json")
+          guard_path = Path("coverage-guard.json")
+          challenger = json.loads(challenger_path.read_text(encoding="utf-8"))
+          guard = json.loads(guard_path.read_text(encoding="utf-8"))
+          if int(challenger["target_contest"]) != int(guard["target_contest"]):
+              raise SystemExit("COVERAGE_GUARD_TARGET_MISMATCH")
+          challenger["coverage_guard"] = guard
+          challenger_path.write_text(
+              json.dumps(challenger, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+          PY
+      - name: Persist derived adaptive challenger state
         working-directory: state-store
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add operations/adaptive_challenger.json operations/coverage_guard.json
+          git add operations/adaptive_challenger.json
           if git diff --cached --quiet; then
-            echo "ADAPTIVE_AND_COVERAGE_GUARD_UNCHANGED"
+            echo "ADAPTIVE_CHALLENGER_UNCHANGED"
           else
-            git commit -m "ops: persist adaptive challenger and coverage guard"
+            git commit -m "ops: persist adaptive challenger with coverage guard"
             git push origin HEAD:operations/state
           fi
       - name: Upload adaptive challenger and coverage proof
@@ -81,6 +99,6 @@ jobs:
           path: |
             adaptive-challenger-proof.json
             coverage-guard-proof.json
+            coverage-guard.json
             state-store/operations/adaptive_challenger.json
-            state-store/operations/coverage_guard.json
           if-no-files-found: error

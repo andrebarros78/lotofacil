@@ -11,7 +11,8 @@
     ".github/workflows/operator-freeze-cards.yml",
     ".github/workflows/agent-pr-pipeline-proof.yml",
     ".github/workflows/post-contest-learning-ledger.yml",
-    ".github/workflows/adaptive-primary-challenger.yml"
+    ".github/workflows/adaptive-primary-challenger.yml",
+    ".github/workflows/exact-budget-portfolio.yml"
   ],
   "required_workflows": [
     ".github/workflows/ci.yml",
@@ -27,7 +28,8 @@
     ".github/workflows/disaster-recovery-proof.yml",
     ".github/workflows/r6-integrated-construction-proof.yml",
     ".github/workflows/post-contest-learning-ledger.yml",
-    ".github/workflows/adaptive-primary-challenger.yml"
+    ".github/workflows/adaptive-primary-challenger.yml",
+    ".github/workflows/exact-budget-portfolio.yml"
   ],
   "pinned_actions": {
     "actions/checkout": "fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
@@ -56,7 +58,8 @@
         "GitHub Operational Cycle",
         "SARE Operator Card Freeze",
         "Post Contest Learning Ledger",
-        "Adaptive Primary Challenger"
+        "Adaptive Primary Challenger",
+        "Exact Budget Portfolio"
       ]
     }
   }
