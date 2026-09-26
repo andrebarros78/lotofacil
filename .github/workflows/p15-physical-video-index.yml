@@ -5,7 +5,9 @@ on:
     paths:
       - "src/sare_lotofacil/physical/**"
       - "scripts/build_p15_physical_video_index.py"
+      - "scripts/recover_p15_physical_video_index.py"
       - "tests/test_physical_video_index.py"
+      - "tests/test_targeted_recovery.py"
       - ".github/workflows/p15-physical-video-index.yml"
       - "docs/P15_PHYSICAL_OBSERVATION_DATASET.md"
   workflow_dispatch:
@@ -35,13 +37,13 @@ jobs:
         run: python -m pip install './app[dev]'
       - name: Prove physical video index invariants
         working-directory: app
-        run: python -m pytest tests/test_physical_video_index.py
+        run: python -m pytest tests/test_physical_video_index.py tests/test_targeted_recovery.py
 
   live-official-archive-proof:
     permissions:
       contents: read
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - name: Checkout candidate
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
@@ -60,34 +62,35 @@ jobs:
         run: |
           python -m pip install './app[dev]'
           python -m pip install 'yt-dlp==2026.8.19'
-      - name: Discover official CAIXA lottery transmissions and build index
+      - name: Recover missing contests and disambiguate candidate videos
         run: |
-          python app/scripts/build_p15_physical_video_index.py \
+          python app/scripts/recover_p15_physical_video_index.py \
             --history state-store/operations/canonical_history.json \
             --out p15-physical-video-index.json \
+            --diagnostics-out p15-physical-targeted-recovery.json \
             --first-contest 1874 \
             --playlist-end 12000 \
             --timeout-seconds 1200 \
+            --targeted-timeout-seconds 360 \
+            --targeted-chunk-size 80 \
             | tee p15-physical-video-index-proof.log
-      - name: Enforce live discovery minimum proof
+      - name: Enforce live directed recovery proof
         run: |
           python - <<'PY'
           import json
           from pathlib import Path
           p = json.loads(Path('p15-physical-video-index.json').read_text(encoding='utf-8'))
+          d = json.loads(Path('p15-physical-targeted-recovery.json').read_text(encoding='utf-8'))
           assert p['eligible_contests'] > 1800, p['eligible_contests']
-          assert p['discovered_videos'] > 0, p['discovered_videos']
-          assert p['mapped_contests'] > 0, p['mapped_contests']
+          assert d['stages']['first_pass']['missing'] > 0
+          assert d['stages']['missing_directed_pass']['queries'] == d['stages']['first_pass']['missing']
+          assert d['stages']['ambiguity_directed_pass']['queries'] == d['stages']['missing_directed_pass']['ambiguous']
+          assert p['mapped_contests'] >= d['stages']['first_pass']['mapped']
+          assert p['missing_contests'] <= d['stages']['first_pass']['missing']
+          assert p['ambiguous_contests'] <= d['stages']['missing_directed_pass']['ambiguous']
           assert p['predictive_evidence'] == 'NOT_ESTABLISHED'
           assert p['purchase_executed'] is False
-          print(json.dumps({
-              'eligible_contests': p['eligible_contests'],
-              'discovered_videos': p['discovered_videos'],
-              'mapped_contests': p['mapped_contests'],
-              'coverage_ratio': p['coverage_ratio'],
-              'missing_contests': p['missing_contests'],
-              'conflicting_contests': p['conflicting_contests'],
-          }, indent=2, sort_keys=True))
+          print(json.dumps(d, indent=2, sort_keys=True))
           PY
       - name: Upload P15 physical archive evidence
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
@@ -95,5 +98,6 @@ jobs:
           name: p15-physical-video-index-proof
           path: |
             p15-physical-video-index.json
+            p15-physical-targeted-recovery.json
             p15-physical-video-index-proof.log
           if-no-files-found: error
