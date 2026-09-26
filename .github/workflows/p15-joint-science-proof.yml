@@ -1,0 +1,87 @@
+name: P15 Joint Science Proof
+
+on:
+  pull_request:
+    paths:
+      - "src/sare_lotofacil/experiments/joint_models.py"
+      - "src/sare_lotofacil/experiments/joint_backtest.py"
+      - "src/sare_lotofacil/experiments/dynamic_joint.py"
+      - "src/sare_lotofacil/experiments/dynamic_backtest.py"
+      - "src/sare_lotofacil/experiments/tree_joint.py"
+      - "src/sare_lotofacil/experiments/tree_backtest.py"
+      - "src/sare_lotofacil/experiments/higher_order_regime.py"
+      - "src/sare_lotofacil/experiments/higher_order_backtest.py"
+      - "scripts/p15_joint_science_report.py"
+      - "tests/test_joint_models.py"
+      - "tests/test_joint_backtest.py"
+      - "tests/test_dynamic_joint.py"
+      - "tests/test_tree_joint.py"
+      - "tests/test_higher_order_regime.py"
+      - "governance/one_card_15_hypothesis_registry.json"
+      - "docs/ONE_CARD_15_SCIENCE_PROGRAM.md"
+      - ".github/workflows/p15-joint-science-proof.yml"
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: sare-p15-joint-science-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  proof:
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout candidate
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          path: app
+      - name: Checkout committed operational state
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          ref: operations/state
+          path: state-store
+      - name: Setup Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: "3.13"
+      - name: Install candidate
+        run: python -m pip install './app[dev]'
+      - name: Prove joint model invariants
+        working-directory: app
+        run: >-
+          python -m pytest
+          tests/test_joint_models.py
+          tests/test_joint_backtest.py
+          tests/test_dynamic_joint.py
+          tests/test_tree_joint.py
+          tests/test_higher_order_regime.py
+      - name: Run canonical-history P15 walk-forward and exhaustive current ranking
+        run: |
+          python app/scripts/p15_joint_science_report.py \
+            --history state-store/operations/canonical_history.json \
+            --out p15-joint-science-report.json \
+            --min-train 100 \
+            --prior-strength 100 \
+            | tee p15-joint-science-proof.log
+      - name: Enforce scientific guardrails
+        run: |
+          grep -q '"status": "P15_JOINT_SCIENCE_REPORT_COMPLETE"' p15-joint-science-report.json
+          grep -q '"predictive_evidence": "NOT_ESTABLISHED"' p15-joint-science-report.json
+          grep -q '"single_card_15_is_guaranteed": false' p15-joint-science-report.json
+          grep -q '"retrospective_model_selection_is_confirmatory_evidence": false' p15-joint-science-report.json
+          grep -q '"failed_hypotheses_receive_zero_champion_weight": true' p15-joint-science-report.json
+          grep -q '"higher_order_full_space_ranker_exact": true' p15-joint-science-report.json
+          grep -q '"evaluated_cards": 3268760' p15-joint-science-report.json
+          grep -q '"purchase_executed": false' p15-joint-science-report.json
+      - name: Upload P15 scientific proof
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: p15-joint-science-proof
+          path: |
+            p15-joint-science-report.json
+            p15-joint-science-proof.log
+          if-no-files-found: error

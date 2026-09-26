@@ -1,0 +1,164 @@
+{
+  "schema_version": 2,
+  "program_id": "SARE-P15-ONE-CARD-SCIENCE-V1",
+  "objective": "Maximize the prospectively estimated joint probability of the exact next 15-number Lotofacil outcome and emit exactly one MAP card.",
+  "null_model": {
+    "id": "P15-H0-UNIFORM",
+    "full_space_size": 3268760,
+    "probability_per_card": 3.0592640634368994e-07,
+    "joint_log_loss_nats": 14.999921266064113,
+    "status": "MANDATORY_BASELINE"
+  },
+  "promotion_policy": {
+    "future_results_forbidden": true,
+    "retrospective_discovery_cannot_promote": true,
+    "prospective_freeze_required": true,
+    "multiple_testing_control_required": true,
+    "independent_review_required_for_replicated_status": true,
+    "primary_joint_metric": "mean_joint_log_loss_vs_uniform",
+    "secondary_metrics": [
+      "observed_outcome_rank_percentile",
+      "map_card_hits",
+      "marginal_brier",
+      "calibration",
+      "top_k_mass_concentration"
+    ],
+    "single_contest_retuning_forbidden": true,
+    "operational_purchase_automatic": false
+  },
+  "hypotheses": [
+    {
+      "id": "P15-H101",
+      "family": "REGULARIZED_CONDITIONAL_BERNOULLI",
+      "scientific_class": "ESTABLISHED_STATISTICAL_METHOD",
+      "role": "PREDICTIVE_CANDIDATE",
+      "mechanism": "Regularized unequal inclusion propensities conditioned on exactly 15 selected numbers.",
+      "required_data": ["canonical_results_history"],
+      "status": "IMPLEMENTED_RETROSPECTIVE_NO_ADVANTAGE"
+    },
+    {
+      "id": "P15-H102",
+      "family": "DYNAMIC_STATE_SPACE_INCLUSION",
+      "scientific_class": "ESTABLISHED_TIME_SERIES_METHOD",
+      "role": "PREDICTIVE_CANDIDATE",
+      "mechanism": "Latent time-varying inclusion logits estimated with shrinkage and prequential updating.",
+      "required_data": ["canonical_results_history"],
+      "status": "IMPLEMENTED_RETROSPECTIVE_NO_ADVANTAGE"
+    },
+    {
+      "id": "P15-H103",
+      "family": "PAIRWISE_CHOW_LIU_FIXED_CARDINALITY",
+      "scientific_class": "ESTABLISHED_GRAPHICAL_MODEL_METHOD",
+      "role": "PREDICTIVE_CANDIDATE",
+      "mechanism": "Pairwise mutual-information maximum spanning tree conditioned exactly on 15 selected numbers, with exact dynamic-programming normalizer and MAP.",
+      "required_data": ["canonical_results_history"],
+      "status": "IMPLEMENTED_UNDER_RETROSPECTIVE_PROOF"
+    },
+    {
+      "id": "P15-H104",
+      "family": "BAYESIAN_ONLINE_CHANGEPOINT",
+      "scientific_class": "ESTABLISHED_BAYESIAN_METHOD",
+      "role": "REGIME_DETECTOR_AND_PREDICTIVE_GATING",
+      "mechanism": "Posterior probability of a recent generative regime change alters which historical window informs the next draw.",
+      "required_data": ["canonical_results_history"],
+      "status": "PLANNED_STANDALONE"
+    },
+    {
+      "id": "P15-H105",
+      "family": "HIDDEN_MARKOV_REGIME",
+      "scientific_class": "ESTABLISHED_LATENT_STATE_METHOD",
+      "role": "PREDICTIVE_CANDIDATE",
+      "mechanism": "Latent discrete regimes generate different constrained subset distributions.",
+      "required_data": ["canonical_results_history"],
+      "status": "PLANNED"
+    },
+    {
+      "id": "P15-H106",
+      "family": "HIGHER_ORDER_HYPERGRAPH_INTERACTIONS",
+      "scientific_class": "EXPERIMENTAL_HIGH_DIMENSIONAL_METHOD",
+      "role": "PREDICTIVE_CANDIDATE",
+      "mechanism": "Sparse or low-treewidth higher-order interaction terms represent trincas or larger motifs only when they survive shrinkage and multiplicity control.",
+      "required_data": ["canonical_results_history"],
+      "status": "PARTIALLY_IMPLEMENTED_VIA_H113"
+    },
+    {
+      "id": "P15-H107",
+      "family": "MUTUAL_AND_TRANSFER_INFORMATION",
+      "scientific_class": "ESTABLISHED_INFORMATION_THEORY_WITH_FINITE_SAMPLE_RISK",
+      "role": "FEATURE_DISCOVERY_ONLY_UNTIL_REPLICATED",
+      "mechanism": "Corrected information measures test whether past state contains directed or mutual information about future inclusion beyond null surrogates.",
+      "required_data": ["canonical_results_history"],
+      "status": "RESEARCH"
+    },
+    {
+      "id": "P15-H108",
+      "family": "NONLINEAR_COMPLEXITY_AND_ALGORITHMIC_DIAGNOSTICS",
+      "scientific_class": "ESTABLISHED_DIAGNOSTICS_EXPERIMENTAL_FOR_THIS_DOMAIN",
+      "role": "DIAGNOSTIC_ONLY_UNTIL_PREDICTIVE_PROTOCOL",
+      "mechanism": "Permutation entropy, Lempel-Ziv complexity, recurrence and related nonlinear diagnostics test departures from surrogate null dynamics.",
+      "required_data": ["canonical_results_history"],
+      "status": "RESEARCH"
+    },
+    {
+      "id": "P15-H109",
+      "family": "PHYSICAL_CAUSAL_METADATA",
+      "scientific_class": "CAUSAL_PHYSICAL_HYPOTHESIS_REQUIRES_MEASUREMENTS",
+      "role": "PREDICTIVE_CANDIDATE_ONLY_IF_METADATA_EXISTS",
+      "mechanism": "Venue, globe identity, ball-set identity, loading order, maintenance and interventions may define physically distinct regimes if measured before the target draw.",
+      "required_data": ["pre_draw_equipment_metadata", "ball_set_metadata", "venue_metadata"],
+      "status": "BLOCKED_BY_METADATA"
+    },
+    {
+      "id": "P15-H110",
+      "family": "PHYSICS_INFORMED_SYMBOLIC_REGRESSION",
+      "scientific_class": "ACTIVE_RESEARCH_FRONTIER",
+      "role": "HYPOTHESIS_DISCOVERY",
+      "mechanism": "Search interpretable equations under structural constraints, penalizing complexity and validating outside the discovery interval.",
+      "required_data": ["canonical_results_history", "optional_physical_metadata"],
+      "status": "RESEARCH"
+    },
+    {
+      "id": "P15-H111",
+      "family": "GRAPH_NEURAL_SEQUENCE_MODELS",
+      "scientific_class": "ACTIVE_RESEARCH_FRONTIER",
+      "role": "CHALLENGER_ONLY",
+      "mechanism": "Graph, transformer or reservoir sequence models learn interactions among the 25 number nodes under the fixed-cardinality output constraint.",
+      "required_data": ["canonical_results_history"],
+      "status": "RESEARCH_DATA_LIMITED"
+    },
+    {
+      "id": "P15-H112",
+      "family": "BAYESIAN_MODEL_AVERAGING_AND_PREQUENTIAL_STACKING",
+      "scientific_class": "ESTABLISHED_ENSEMBLE_METHOD",
+      "role": "META_MODEL",
+      "mechanism": "Combine only frozen candidate distributions using weights learned from past prequential joint scoring, never from the target result.",
+      "required_data": ["candidate_joint_predictions", "prospective_score_ledger"],
+      "status": "PLANNED"
+    },
+    {
+      "id": "P15-H113",
+      "family": "HIGHER_ORDER_BLOCK_FACTOR_WITH_PREQUENTIAL_REGIME_SELECTION",
+      "scientific_class": "ESTABLISHED_FINITE_FACTOR_MODEL_PLUS_EXPERIMENTAL_DOMAIN_APPLICATION",
+      "role": "PREDICTIVE_CHALLENGER",
+      "mechanism": "Five past-only information-derived blocks of five numbers learn complete 5-bit pattern distributions, capturing interactions through fifth order inside each block. Long-history and bounded-recent versions are selected before each target by an EWMA of prior joint log-loss differences. The distribution is conditioned exactly on 15 of 25 and the current top-1 is certified by exhaustive ranking of all 3,268,760 cards.",
+      "required_data": ["canonical_results_history"],
+      "validation_contract": {
+        "block_partition_frozen_from_initial_training_window": true,
+        "target_leakage_forbidden": true,
+        "primary_metric": "joint_log_skill_vs_uniform",
+        "global_current_rank_enumeration_required": true,
+        "full_space_size": 3268760,
+        "retrospective_success_cannot_promote": true
+      },
+      "status": "IMPLEMENTED_UNDER_RETROSPECTIVE_PROOF"
+    }
+  ],
+  "excluded_as_scientific_evidence": [
+    "numerology",
+    "astrology",
+    "unfalsifiable synchronicity claims",
+    "quantum claims without a measured mechanism linking them to the macroscopic draw apparatus",
+    "post-hoc pattern selection without multiplicity control",
+    "future-result leakage"
+  ]
+}
