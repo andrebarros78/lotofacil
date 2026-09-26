@@ -24,6 +24,7 @@ DEFAULT_CHANNEL_BASE_URL = "https://www.youtube.com/user/canalcaixa"
 DEFAULT_CHANNEL_SEARCH_URL = f"{DEFAULT_CHANNEL_BASE_URL}/search?query=Loterias%20CAIXA"
 DEFAULT_CHANNEL_VIDEOS_URL = f"{DEFAULT_CHANNEL_BASE_URL}/videos"
 DEFAULT_CHANNEL_STREAMS_URL = f"{DEFAULT_CHANNEL_BASE_URL}/streams"
+HISTORICAL_BROADCAST_SEARCH_END = dt.date(2021, 12, 31)
 
 
 def _run(command: list[str], *, timeout_seconds: int) -> subprocess.CompletedProcess[str]:
@@ -129,6 +130,15 @@ def _flat_entry_to_official_video(payload: dict[str, object]) -> VideoMetadata:
     return VideoMetadata.from_mapping(enriched)
 
 
+def _flat_entry_to_public_video(payload: dict[str, object]) -> VideoMetadata:
+    enriched = dict(payload)
+    video_id = str(payload.get("id") or "").strip()
+    enriched["webpage_url"] = str(
+        payload.get("webpage_url") or f"https://www.youtube.com/watch?v={video_id}"
+    )
+    return VideoMetadata.from_mapping(enriched)
+
+
 def _month_floor(value: dt.date) -> dt.date:
     return value.replace(day=1)
 
@@ -145,8 +155,6 @@ def monthly_channel_search_urls(
     *,
     channel_base_url: str = DEFAULT_CHANNEL_BASE_URL,
 ) -> tuple[str, ...]:
-    """Create bounded channel-search shards matching the dd/mm/yyyy title convention."""
-
     current = _month_floor(first_date)
     end = _month_floor(last_date)
     urls: list[str] = []
@@ -155,6 +163,28 @@ def monthly_channel_search_urls(
         urls.append(f"{channel_base_url}/search?query={query}")
         current = _next_month(current)
     return tuple(urls)
+
+
+def monthly_historical_broadcast_searches(
+    first_date: dt.date,
+    last_date: dt.date,
+    *,
+    results_per_month: int = 50,
+) -> tuple[str, ...]:
+    """Create YouTube search shards for the documented RedeTV broadcast era.
+
+    Results remain untrusted until ``build_video_index`` verifies the uploader
+    name and a strong contest/date or Lotofácil-title/date join.
+    """
+
+    current = _month_floor(first_date)
+    end = _month_floor(min(last_date, HISTORICAL_BROADCAST_SEARCH_END))
+    searches: list[str] = []
+    while current <= end:
+        query = f'Loterias Caixa Lotofácil {current.month:02d}/{current.year}'
+        searches.append(f"ytsearch{results_per_month}:{query}")
+        current = _next_month(current)
+    return tuple(searches)
 
 
 def _hydrate_metadata(
@@ -206,25 +236,21 @@ def _hydrate_metadata(
     return tuple(videos), errors
 
 
-def discover_official_metadata(
+def discover_public_broadcast_metadata(
     *,
     yt_dlp_bin: str,
     source_url: str,
     fallback_url: str,
     streams_url: str,
     shard_urls: Sequence[str] = (),
+    historical_searches: Sequence[str] = (),
     playlist_end: int,
     timeout_seconds: int,
     hydrate_limit: int = 0,
 ) -> tuple[tuple[VideoMetadata, ...], tuple[str, ...]]:
-    """Discover public lottery transmissions from all official-channel surfaces.
+    """Discover CAIXA primary archive plus documented historical broadcasts."""
 
-    Generic channel search and current ``videos``/``streams`` pagination can omit
-    old public material. Month-scoped searches are therefore unioned with those
-    surfaces. The archive remains deduplicated by YouTube video id.
-    """
-
-    all_entries: list[dict[str, object]] = []
+    official_entries: list[dict[str, object]] = []
     errors: list[str] = []
     for url in (source_url, fallback_url, streams_url):
         entries, source_errors = _flat_discover(
@@ -233,7 +259,7 @@ def discover_official_metadata(
             playlist_end=playlist_end,
             timeout_seconds=timeout_seconds,
         )
-        all_entries.extend(entries)
+        official_entries.extend(entries)
         errors.extend(source_errors)
 
     if shard_urls:
@@ -243,28 +269,43 @@ def discover_official_metadata(
             playlist_end=min(100, playlist_end),
             timeout_seconds=timeout_seconds,
         )
-        all_entries.extend(shard_entries)
+        official_entries.extend(shard_entries)
         errors.extend(shard_errors)
 
-    combined: dict[str, dict[str, object]] = {}
-    for entry in all_entries:
+    historical_entries: list[dict[str, object]] = []
+    if historical_searches:
+        historical_entries, historical_errors = _flat_discover_many(
+            yt_dlp_bin,
+            historical_searches,
+            playlist_end=min(50, playlist_end),
+            timeout_seconds=timeout_seconds,
+        )
+        errors.extend(historical_errors)
+
+    videos_by_id: dict[str, VideoMetadata] = {}
+    for entry in official_entries:
         if not _looks_like_lottery_video(entry):
             continue
         video_id = str(entry.get("id") or "").strip()
         if video_id:
-            combined.setdefault(video_id, entry)
+            videos_by_id.setdefault(video_id, _flat_entry_to_official_video(entry))
 
-    if not combined:
-        errors.append("OFFICIAL_CHANNEL_FLAT_DISCOVERY_EMPTY")
+    for entry in historical_entries:
+        if not _looks_like_lottery_video(entry):
+            continue
+        video_id = str(entry.get("id") or "").strip()
+        if video_id and video_id not in videos_by_id:
+            try:
+                videos_by_id[video_id] = _flat_entry_to_public_video(entry)
+            except ValueError:
+                continue
+
+    if not videos_by_id:
+        errors.append("PUBLIC_LOTTERY_ARCHIVE_DISCOVERY_EMPTY")
         return (), tuple(errors)
 
-    flat_videos = {
-        video_id: _flat_entry_to_official_video(entry)
-        for video_id, entry in combined.items()
-    }
-
     if hydrate_limit > 0:
-        selected_ids = tuple(sorted(flat_videos))[:hydrate_limit]
+        selected_ids = tuple(sorted(videos_by_id))[:hydrate_limit]
         hydrated, hydrate_errors = _hydrate_metadata(
             yt_dlp_bin,
             selected_ids,
@@ -272,14 +313,14 @@ def discover_official_metadata(
         )
         errors.extend(hydrate_errors)
         for video in hydrated:
-            flat_videos[video.video_id] = video
+            videos_by_id[video.video_id] = video
 
-    return tuple(flat_videos[video_id] for video_id in sorted(flat_videos)), tuple(errors)
+    return tuple(videos_by_id[video_id] for video_id in sorted(videos_by_id)), tuple(errors)
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Build a keyless index from canonical Lotofácil contests to official CAIXA YouTube transmissions."
+        description="Build a keyless Lotofácil index from CAIXA and verified historical public broadcasts."
     )
     parser.add_argument("--history", type=Path, required=True)
     parser.add_argument("--out", type=Path, required=True)
@@ -293,6 +334,7 @@ def main() -> int:
     parser.add_argument("--playlist-end", type=int, default=10000)
     parser.add_argument("--timeout-seconds", type=int, default=900)
     parser.add_argument("--disable-month-shards", action="store_true")
+    parser.add_argument("--disable-historical-broadcast-search", action="store_true")
     parser.add_argument(
         "--hydrate-limit",
         type=int,
@@ -313,17 +355,24 @@ def main() -> int:
         errors: tuple[str, ...] = ()
         source_url = "FILE_SUPPLIED_METADATA"
     else:
+        first_date = eligible_history[0].draw_date
+        last_date = eligible_history[-1].draw_date
         shard_urls = () if args.disable_month_shards else monthly_channel_search_urls(
-            eligible_history[0].draw_date,
-            eligible_history[-1].draw_date,
+            first_date,
+            last_date,
             channel_base_url=args.channel_base_url,
         )
-        videos, errors = discover_official_metadata(
+        historical_searches = () if args.disable_historical_broadcast_search else monthly_historical_broadcast_searches(
+            first_date,
+            last_date,
+        )
+        videos, errors = discover_public_broadcast_metadata(
             yt_dlp_bin=args.yt_dlp_bin,
             source_url=args.channel_url,
             fallback_url=args.fallback_channel_url,
             streams_url=args.streams_channel_url,
             shard_urls=shard_urls,
+            historical_searches=historical_searches,
             playlist_end=args.playlist_end,
             timeout_seconds=args.timeout_seconds,
             hydrate_limit=args.hydrate_limit,
@@ -355,6 +404,7 @@ def main() -> int:
         "exact_description_matches": index.exact_description_matches,
         "unique_title_date_matches": index.unique_title_date_matches,
         "official_channel_verified_videos": index.official_channel_verified_videos,
+        "trusted_broadcaster_verified_videos": index.trusted_broadcaster_verified_videos,
         "discovery_errors": list(index.discovery_errors),
         "predictive_evidence": index.predictive_evidence,
         "purchase_executed": index.purchase_executed,
