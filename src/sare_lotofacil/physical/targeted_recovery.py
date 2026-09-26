@@ -5,7 +5,7 @@ from dataclasses import dataclass, replace
 from typing import Mapping, Sequence
 
 from .video_index import (
-    LOTERY_TITLE_RE if False else LOTTERY_TITLE_RE,
+    LOTTERY_TITLE_RE,
     LOTOFACIL_TITLE_RE,
     PhysicalVideoIndex,
     VideoIndexRecord,
@@ -191,7 +191,15 @@ def resolve_ambiguities_strict(
                 duration_seconds=winner.duration,
                 mapping_status="MAPPED",
                 confidence="HIGH_STRICT_METADATA_RESOLUTION",
-                evidence_basis=tuple(dict.fromkeys((*record.evidence_basis, *strict_evidence, "PHASE2_STRICT_METADATA_DISAMBIGUATION"))),
+                evidence_basis=tuple(
+                    dict.fromkeys(
+                        (
+                            *record.evidence_basis,
+                            *strict_evidence,
+                            "PHASE2_STRICT_METADATA_DISAMBIGUATION",
+                        )
+                    )
+                ),
             )
         )
         resolved += 1
