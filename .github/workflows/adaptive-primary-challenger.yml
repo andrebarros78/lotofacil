@@ -93,7 +93,7 @@ jobs:
             git push origin HEAD:operations/state
           fi
       - name: Upload adaptive challenger and coverage proof
-        uses: actions/upload-artifact@b7c566a772e6b6fb58ed0dc250532a479d7789f
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
           name: adaptive-primary-challenger
           path: |
