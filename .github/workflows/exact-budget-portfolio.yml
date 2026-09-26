@@ -9,7 +9,7 @@ on:
 permissions: {}
 
 concurrency:
-  group: sare-exact-budget-portfolio
+  group: sare-derived-state-writer
   cancel-in-progress: false
 
 jobs:
