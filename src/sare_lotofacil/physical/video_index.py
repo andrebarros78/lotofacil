@@ -10,6 +10,7 @@ from typing import Iterable, Mapping, Sequence
 OFFICIAL_CHANNEL_NAMES = {"CAIXA", "CAIXA ECONÔMICA FEDERAL"}
 TRUSTED_HISTORICAL_BROADCASTER_NAMES = {"REDETV", "REDETV!", "REDE TV", "REDE TV!"}
 LOTTERY_TITLE_RE = re.compile(r"\bLOTERIAS?\s+CAIXA\b", re.IGNORECASE)
+LOTOFACIL_TITLE_RE = re.compile(r"\bloto\s*f[aá]cil\b", re.IGNORECASE)
 TITLE_DATE_RE = re.compile(r"\b(?P<day>0?[1-9]|[12]\d|3[01])/(?P<month>0?[1-9]|1[0-2])/(?P<year>20\d{2})\b")
 LOTOFACIL_CONTEST_RE = re.compile(
     r"\bloto\s*f[aá]cil\b[^\n\r\d]{0,40}(?:concurso\s*)?(?:n(?:[º°o]|\.)?\s*)?(?P<contest>\d{3,5})\b",
@@ -224,6 +225,8 @@ def _video_evidence(video: VideoMetadata) -> tuple[dt.date | None, tuple[int, ..
     basis: list[str] = []
     if LOTTERY_TITLE_RE.search(video.title):
         basis.append("LOTERIAS_CAIXA_TITLE")
+    if LOTOFACIL_TITLE_RE.search(video.title):
+        basis.append("LOTOFACIL_TITLE_MENTION")
     if title_date is not None:
         basis.append("TITLE_DATE")
     if explicit_ids:
@@ -276,7 +279,6 @@ def build_video_index(
         if historical_broadcaster:
             trusted_broadcaster_verified.add(video.video_id)
 
-        # Untrusted global-search hits can never enter the index.
         if not official and not historical_broadcaster:
             continue
 
@@ -287,8 +289,7 @@ def build_video_index(
             if title_date is not None and title_date != contest.draw_date:
                 conflicts.add(contest_id)
                 continue
-            # Historical broadcaster copies are accepted only under the strongest
-            # join: explicit Lotofácil contest id AND exact canonical draw date.
+            # Historical secondary sources require explicit contest + exact date.
             if historical_broadcaster and not official and title_date != contest.draw_date:
                 continue
 
@@ -307,12 +308,15 @@ def build_video_index(
             )
             exact_description_matches.add(contest_id)
 
-        # Date-only inference is deliberately restricted to the official CAIXA
-        # channel. Secondary broadcaster material must carry the contest number.
-        if official and title_date is not None and title_date in by_date and len(by_date[title_date]) == 1:
-            contest = by_date[title_date][0]
-            if explicit_ids and contest.contest_id not in explicit_ids:
-                continue
+        if title_date is None or title_date not in by_date or len(by_date[title_date]) != 1:
+            continue
+        contest = by_date[title_date][0]
+        if explicit_ids and contest.contest_id not in explicit_ids:
+            continue
+
+        # Official CAIXA videos may use a date-only title because the full daily
+        # transmission is itself the primary archive.
+        if official:
             rank = 220
             evidence = list(basis)
             evidence.extend(("UNIQUE_CANONICAL_DRAW_DATE", "CANONICAL_DATE_MATCH"))
@@ -321,6 +325,24 @@ def build_video_index(
             )
             if not explicit_ids:
                 unique_title_matches.add(contest.contest_id)
+
+        # Historical RedeTV broadcasts are accepted without description only if
+        # the title itself explicitly names Lotofácil and the date matches the
+        # single canonical Lotofácil contest on that date.
+        elif historical_broadcaster and "LOTOFACIL_TITLE_MENTION" in basis:
+            rank = 215
+            evidence = list(basis)
+            evidence.extend(
+                (
+                    "UNIQUE_CANONICAL_DRAW_DATE",
+                    "CANONICAL_DATE_MATCH",
+                    "HISTORICAL_BROADCAST_LOTOFACIL_TITLE_DATE_MATCH",
+                )
+            )
+            candidate_map.setdefault(contest.contest_id, []).append(
+                (rank, video, tuple(dict.fromkeys(evidence)), title_date, explicit_ids)
+            )
+            unique_title_matches.add(contest.contest_id)
 
     records: list[VideoIndexRecord] = []
     mapped = 0
@@ -411,6 +433,8 @@ def build_video_index(
         if "OFFICIAL_CAIXA_CHANNEL" in evidence and "CANONICAL_CONTEST_ID_MATCH" in evidence and "CANONICAL_DATE_MATCH" in evidence:
             confidence = "VERY_HIGH"
         elif "CANONICAL_CONTEST_ID_MATCH" in evidence and "CANONICAL_DATE_MATCH" in evidence:
+            confidence = "HIGH"
+        elif "HISTORICAL_BROADCAST_LOTOFACIL_TITLE_DATE_MATCH" in evidence:
             confidence = "HIGH"
         elif "CANONICAL_CONTEST_ID_MATCH" in evidence:
             confidence = "HIGH"
