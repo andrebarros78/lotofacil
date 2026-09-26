@@ -35,7 +35,9 @@ def test_floor_eight_is_attainable_so_the_bound_is_not_overstated() -> None:
         range(1, 16),
         target_contest=3790,
     )
-    draw = tuple((*range(1, 9), *range(16, 23)))
+    # Core padrão = 01..05. Este resultado evita o core e divide as 15
+    # dezenas entre as duas alas exclusivas em 8 + 7, atingindo o piso.
+    draw = tuple((*range(6, 14), *range(16, 23)))
 
     best = max(_hits(card, draw) for card in decision.cards)
 
