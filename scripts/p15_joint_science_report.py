@@ -8,8 +8,11 @@ from pathlib import Path
 from sare_lotofacil.experiments.dynamic_backtest import fit_dynamic_joint, walk_forward_dynamic_joint
 from sare_lotofacil.experiments.joint_backtest import walk_forward_additive_joint
 from sare_lotofacil.experiments.joint_models import fit_regularized_additive_joint
+from sare_lotofacil.experiments.tree_backtest import walk_forward_tree_joint
+from sare_lotofacil.experiments.tree_joint import fit_tree_joint
 
 PREDECLARED_HALF_LIVES = (30.0, 90.0, 180.0, 365.0, 730.0)
+TREE_PRIOR_STRENGTH = 20.0
 
 
 def _load_history(path: Path) -> tuple[tuple[int, ...], tuple[tuple[int, ...], ...]]:
@@ -43,6 +46,12 @@ def _candidate_payload(model, *, role: str, discovery_basis: str) -> dict[str, o
     }
 
 
+def _decision_from_result(result) -> str:
+    if result.mean_joint_log_skill > 0.0 and result.joint_log_skill_ci_low > 0.0:
+        return "DOMAIN_SIGNAL_UNDER_TEST_RETROSPECTIVE_ONLY"
+    return "DO_NOT_PROMOTE"
+
+
 def build_report(
     history_path: Path,
     *,
@@ -68,16 +77,24 @@ def build_report(
         )
         dynamic_results.append(result)
 
-    discovery_winner = max(dynamic_results, key=lambda item: item.mean_joint_log_skill)
-    winning_half_life = float(discovery_winner.model_name.rsplit("_", 1)[-1])
-    discovery_model = fit_dynamic_joint(
+    dynamic_discovery_winner = max(dynamic_results, key=lambda item: item.mean_joint_log_skill)
+    winning_half_life = float(dynamic_discovery_winner.model_name.rsplit("_", 1)[-1])
+    dynamic_discovery_model = fit_dynamic_joint(
         draws,
         half_life=winning_half_life,
         prior_strength=prior_strength,
     )
 
+    tree_result = walk_forward_tree_joint(
+        draws,
+        min_train=min_train,
+        prior_strength=TREE_PRIOR_STRENGTH,
+    )
+    tree_model = fit_tree_joint(draws, prior_strength=TREE_PRIOR_STRENGTH)
+    tree_decision = _decision_from_result(tree_result)
+
     return {
-        "schema_version": 2,
+        "schema_version": 3,
         "status": "P15_JOINT_SCIENCE_REPORT_COMPLETE",
         "program_id": "SARE-P15-ONE-CARD-SCIENCE-V1",
         "history_path": str(history_path),
@@ -102,19 +119,35 @@ def build_report(
                 "fixed_model_walk_forward": [_summary(result) for result in dynamic_results],
                 "discovery_selection": {
                     "method": "MAX_MEAN_JOINT_LOG_SKILL_OVER_PREDECLARED_DISCOVERY_GRID",
-                    "selected_model": discovery_winner.model_name,
-                    "selected_mean_joint_log_skill": discovery_winner.mean_joint_log_skill,
-                    "selected_joint_log_skill_ci_low": discovery_winner.joint_log_skill_ci_low,
-                    "selected_joint_log_skill_ci_high": discovery_winner.joint_log_skill_ci_high,
+                    "selected_model": dynamic_discovery_winner.model_name,
+                    "selected_mean_joint_log_skill": dynamic_discovery_winner.mean_joint_log_skill,
+                    "selected_joint_log_skill_ci_low": dynamic_discovery_winner.joint_log_skill_ci_low,
+                    "selected_joint_log_skill_ci_high": dynamic_discovery_winner.joint_log_skill_ci_high,
                     "multiple_testing_adjusted_evidence_claim": False,
-                    "role": "DISCOVERY_ONLY_FREEZE_FOR_FUTURE_PROSPECTIVE_TEST",
+                    "role": "DISCOVERY_ONLY",
                 },
                 "next_candidate": _candidate_payload(
-                    discovery_model,
-                    role="EXPERIMENTAL_SINGLE_CARD_MAP_TO_FREEZE_PROSPECTIVELY",
+                    dynamic_discovery_model,
+                    role="EXPERIMENTAL_SINGLE_CARD_MAP_NO_PROMOTION",
                     discovery_basis="PREDECLARED_HALF_LIFE_GRID_RETROSPECTIVE_DISCOVERY_ONLY",
                 ),
-                "research_decision": "FREEZE_AS_CHALLENGER_ONLY_NOT_CHAMPION",
+                "research_decision": "DO_NOT_PROMOTE",
+            },
+            "P15-H103": {
+                "scientific_class": "CHOW_LIU_PAIRWISE_TREE_FIXED_CARDINALITY",
+                "mechanism": "PAIRWISE_MUTUAL_INFORMATION_TREE_WITH_EXACT_15_OF_25_CONDITIONING",
+                "prior_strength": TREE_PRIOR_STRENGTH,
+                "walk_forward": _summary(tree_result),
+                "next_candidate": _candidate_payload(
+                    tree_model,
+                    role=(
+                        "EXPERIMENTAL_SINGLE_CARD_MAP_TO_FREEZE_PROSPECTIVELY"
+                        if tree_decision != "DO_NOT_PROMOTE"
+                        else "REJECTED_AS_STANDALONE_PREDICTIVE_CANDIDATE"
+                    ),
+                    discovery_basis="FULL_PREQUENTIAL_HISTORY_PAIRWISE_TREE",
+                ),
+                "research_decision": tree_decision,
             },
         },
         "scientific_interpretation": {
@@ -125,6 +158,7 @@ def build_report(
             "multiple_testing_control_required_before_evidence_claim": True,
             "single_contest_retuning_forbidden": True,
             "future_results_forbidden": True,
+            "failed_hypotheses_receive_zero_champion_weight": True,
         },
         "purchase_executed": False,
     }
