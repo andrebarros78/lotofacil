@@ -55,6 +55,9 @@ jobs:
 
   build:
     if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') }}
+    concurrency:
+      group: sare-derived-state-writer
+      cancel-in-progress: false
     permissions:
       contents: write
     runs-on: ubuntu-latest
