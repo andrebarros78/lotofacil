@@ -48,6 +48,10 @@ def test_parse_lotofacil_contest_ids_accepts_real_description_shape() -> None:
     assert parse_lotofacil_contest_ids(text) == (3720,)
 
 
+def test_parse_lotofacil_contest_ids_does_not_treat_title_date_as_contest() -> None:
+    assert parse_lotofacil_contest_ids("Loterias Caixa: Quina e Lotofácil 20/07/2020") == ()
+
+
 def test_explicit_contest_and_date_produces_very_high_confidence_mapping() -> None:
     history = (_contest(3720, "2026-06-26"),)
     videos = (
