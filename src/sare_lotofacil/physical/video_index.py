@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Iterable, Mapping, Sequence
 
 OFFICIAL_CHANNEL_NAMES = {"CAIXA", "CAIXA ECONÔMICA FEDERAL"}
+TRUSTED_HISTORICAL_BROADCASTER_NAMES = {"REDETV", "REDETV!", "REDE TV", "REDE TV!"}
 LOTTERY_TITLE_RE = re.compile(r"\bLOTERIAS?\s+CAIXA\b", re.IGNORECASE)
 TITLE_DATE_RE = re.compile(r"\b(?P<day>0?[1-9]|[12]\d|3[01])/(?P<month>0?[1-9]|1[0-2])/(?P<year>20\d{2})\b")
 LOTOFACIL_CONTEST_RE = re.compile(
@@ -103,6 +104,7 @@ class PhysicalVideoIndex:
     exact_description_matches: int
     unique_title_date_matches: int
     official_channel_verified_videos: int
+    trusted_broadcaster_verified_videos: int
     records: tuple[VideoIndexRecord, ...]
     discovery_errors: tuple[str, ...]
     predictive_evidence: str = "NOT_ESTABLISHED"
@@ -141,9 +143,16 @@ def normalize_channel_name(value: str | None) -> str:
     return " ".join((value or "").strip().upper().split())
 
 
+def _video_channel_names(video: VideoMetadata) -> set[str]:
+    return {normalize_channel_name(video.channel), normalize_channel_name(video.uploader)}
+
+
 def is_official_caixa_video(video: VideoMetadata) -> bool:
-    names = {normalize_channel_name(video.channel), normalize_channel_name(video.uploader)}
-    return bool(names.intersection(OFFICIAL_CHANNEL_NAMES))
+    return bool(_video_channel_names(video).intersection(OFFICIAL_CHANNEL_NAMES))
+
+
+def is_trusted_historical_broadcast(video: VideoMetadata) -> bool:
+    return bool(_video_channel_names(video).intersection(TRUSTED_HISTORICAL_BROADCASTER_NAMES))
 
 
 def parse_title_date(title: str) -> dt.date | None:
@@ -221,10 +230,14 @@ def _video_evidence(video: VideoMetadata) -> tuple[dt.date | None, tuple[int, ..
         basis.append("EXPLICIT_LOTOFACIL_CONTEST")
     if is_official_caixa_video(video):
         basis.append("OFFICIAL_CAIXA_CHANNEL")
+    if is_trusted_historical_broadcast(video):
+        basis.append("TRUSTED_HISTORICAL_REDETV_BROADCAST")
     return title_date, explicit_ids, tuple(basis)
 
 
-def _candidate_ids_and_urls(candidates: Sequence[tuple[int, VideoMetadata, tuple[str, ...], dt.date | None, tuple[int, ...]]]) -> tuple[tuple[str, ...], tuple[str, ...]]:
+def _candidate_ids_and_urls(
+    candidates: Sequence[tuple[int, VideoMetadata, tuple[str, ...], dt.date | None, tuple[int, ...]]],
+) -> tuple[tuple[str, ...], tuple[str, ...]]:
     by_id = {candidate[1].video_id: candidate[1].webpage_url for candidate in candidates}
     ids = tuple(sorted(by_id))
     return ids, tuple(by_id[video_id] for video_id in ids)
@@ -252,11 +265,20 @@ def build_video_index(
     exact_description_matches: set[int] = set()
     unique_title_matches: set[int] = set()
     official_verified: set[str] = set()
+    trusted_broadcaster_verified: set[str] = set()
 
     for video in videos:
         title_date, explicit_ids, basis = _video_evidence(video)
-        if is_official_caixa_video(video):
+        official = is_official_caixa_video(video)
+        historical_broadcaster = is_trusted_historical_broadcast(video)
+        if official:
             official_verified.add(video.video_id)
+        if historical_broadcaster:
+            trusted_broadcaster_verified.add(video.video_id)
+
+        # Untrusted global-search hits can never enter the index.
+        if not official and not historical_broadcaster:
+            continue
 
         for contest_id in explicit_ids:
             contest = by_id.get(contest_id)
@@ -265,28 +287,35 @@ def build_video_index(
             if title_date is not None and title_date != contest.draw_date:
                 conflicts.add(contest_id)
                 continue
+            # Historical broadcaster copies are accepted only under the strongest
+            # join: explicit Lotofácil contest id AND exact canonical draw date.
+            if historical_broadcaster and not official and title_date != contest.draw_date:
+                continue
+
             rank = 300
             evidence = list(basis)
             evidence.append("CANONICAL_CONTEST_ID_MATCH")
             if title_date == contest.draw_date:
                 rank += 20
                 evidence.append("CANONICAL_DATE_MATCH")
-            if is_official_caixa_video(video):
-                rank += 10
+            if official:
+                rank += 20
+            elif historical_broadcaster:
+                rank += 5
             candidate_map.setdefault(contest_id, []).append(
-                (rank, video, tuple(evidence), title_date, explicit_ids)
+                (rank, video, tuple(dict.fromkeys(evidence)), title_date, explicit_ids)
             )
             exact_description_matches.add(contest_id)
 
-        if title_date is not None and title_date in by_date and len(by_date[title_date]) == 1:
+        # Date-only inference is deliberately restricted to the official CAIXA
+        # channel. Secondary broadcaster material must carry the contest number.
+        if official and title_date is not None and title_date in by_date and len(by_date[title_date]) == 1:
             contest = by_date[title_date][0]
             if explicit_ids and contest.contest_id not in explicit_ids:
                 continue
-            rank = 200
+            rank = 220
             evidence = list(basis)
             evidence.extend(("UNIQUE_CANONICAL_DRAW_DATE", "CANONICAL_DATE_MATCH"))
-            if is_official_caixa_video(video):
-                rank += 10
             candidate_map.setdefault(contest.contest_id, []).append(
                 (rank, video, tuple(dict.fromkeys(evidence)), title_date, explicit_ids)
             )
@@ -353,6 +382,7 @@ def build_video_index(
         best = [candidate for candidate in candidates if candidate[0] == best_rank]
         best_ids, best_urls = _candidate_ids_and_urls(best)
         if len(best_ids) > 1:
+            channels = {candidate[1].channel or candidate[1].uploader for candidate in best}
             records.append(
                 VideoIndexRecord(
                     contest_id=contest.contest_id,
@@ -363,7 +393,7 @@ def build_video_index(
                     video_title=None,
                     title_date=contest.draw_date.isoformat(),
                     explicit_contest_ids=(),
-                    channel="CAIXA",
+                    channel=next(iter(channels)) if len(channels) == 1 else None,
                     channel_id=None,
                     duration_seconds=None,
                     mapping_status="AMBIGUOUS",
@@ -378,8 +408,10 @@ def build_video_index(
             continue
 
         _rank, video, evidence, title_date, explicit_ids = candidates[0]
-        if "CANONICAL_CONTEST_ID_MATCH" in evidence and "CANONICAL_DATE_MATCH" in evidence:
+        if "OFFICIAL_CAIXA_CHANNEL" in evidence and "CANONICAL_CONTEST_ID_MATCH" in evidence and "CANONICAL_DATE_MATCH" in evidence:
             confidence = "VERY_HIGH"
+        elif "CANONICAL_CONTEST_ID_MATCH" in evidence and "CANONICAL_DATE_MATCH" in evidence:
+            confidence = "HIGH"
         elif "CANONICAL_CONTEST_ID_MATCH" in evidence:
             confidence = "HIGH"
         elif "OFFICIAL_CAIXA_CHANNEL" in evidence:
@@ -412,9 +444,9 @@ def build_video_index(
     eligible_count = len(eligible)
     accessible = mapped + ambiguous
     return PhysicalVideoIndex(
-        schema_version=2,
+        schema_version=3,
         program_id="SARE-P15-PHYSICAL-OBSERVATION-V1",
-        source="OFFICIAL_CAIXA_YOUTUBE_PUBLIC_ARCHIVE",
+        source="CAIXA_OFFICIAL_PLUS_VERIFIED_HISTORICAL_BROADCAST_ARCHIVES",
         source_channel_url=source_channel_url,
         first_eligible_contest=first_eligible_contest,
         latest_contest=eligible[-1].contest_id,
@@ -431,6 +463,7 @@ def build_video_index(
         exact_description_matches=len(exact_description_matches),
         unique_title_date_matches=len(unique_title_matches),
         official_channel_verified_videos=len(official_verified),
+        trusted_broadcaster_verified_videos=len(trusted_broadcaster_verified),
         records=tuple(records),
         discovery_errors=tuple(str(item) for item in discovery_errors),
     )
