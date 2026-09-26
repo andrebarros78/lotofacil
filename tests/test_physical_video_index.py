@@ -61,9 +61,12 @@ def test_explicit_contest_and_date_produces_very_high_confidence_mapping() -> No
     index = build_video_index(history, videos, first_eligible_contest=3720)
 
     assert index.mapped_contests == 1
+    assert index.accessible_contests == 1
     assert index.coverage_ratio == 1.0
+    assert index.accessible_ratio == 1.0
     record = index.records[0]
     assert record.video_id == "zucg_9k3Fy0"
+    assert record.candidate_video_ids == ("zucg_9k3Fy0",)
     assert record.confidence == "VERY_HIGH"
     assert "CANONICAL_CONTEST_ID_MATCH" in record.evidence_basis
     assert "CANONICAL_DATE_MATCH" in record.evidence_basis
@@ -97,11 +100,13 @@ def test_explicit_contest_date_conflict_fails_closed() -> None:
     index = build_video_index(history, videos, first_eligible_contest=3720)
 
     assert index.mapped_contests == 0
+    assert index.ambiguous_contests == 0
     assert index.conflicting_contests == 1
+    assert index.accessible_contests == 0
     assert index.records[0].mapping_status == "CONFLICT"
 
 
-def test_equal_rank_duplicate_videos_are_ambiguous_not_silently_selected() -> None:
+def test_equal_rank_duplicate_videos_are_retained_for_phase_two() -> None:
     history = (_contest(3720, "2026-06-26"),)
     videos = (
         _video("a", "Loterias CAIXA | 26/06/2026", "Lotofácil - concurso nº 3720;"),
@@ -111,8 +116,16 @@ def test_equal_rank_duplicate_videos_are_ambiguous_not_silently_selected() -> No
     index = build_video_index(history, videos, first_eligible_contest=3720)
 
     assert index.mapped_contests == 0
-    assert index.conflicting_contests == 1
-    assert index.records[0].mapping_status == "AMBIGUOUS"
+    assert index.ambiguous_contests == 1
+    assert index.conflicting_contests == 0
+    assert index.accessible_contests == 1
+    assert index.accessible_ratio == 1.0
+    record = index.records[0]
+    assert record.mapping_status == "AMBIGUOUS"
+    assert record.confidence == "CANDIDATE_SET_ONLY"
+    assert record.candidate_video_ids == ("a", "b")
+    assert len(record.candidate_video_urls) == 2
+    assert "PHASE2_CONTENT_DISAMBIGUATION_REQUIRED" in record.evidence_basis
 
 
 def test_missing_video_is_explicitly_preserved() -> None:
@@ -129,4 +142,6 @@ def test_missing_video_is_explicitly_preserved() -> None:
 
     assert index.mapped_contests == 1
     assert index.missing_contests == 1
+    assert index.accessible_contests == 1
+    assert index.accessible_ratio == 0.5
     assert [record.mapping_status for record in index.records] == ["MAPPED", "MISSING"]
