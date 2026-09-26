@@ -9,6 +9,7 @@ from pathlib import Path
 from sare_lotofacil.domain.rules import DEFAULT_RULES
 from sare_lotofacil.portfolios.authority import operator_card_for_generation_index
 from sare_lotofacil.portfolios.coverage import exact_joint_coverage
+from sare_lotofacil.portfolios.coverage_guard import build_two_card_coverage_guard
 from sare_lotofacil.portfolios.exact_budget_optimizer import (
     MAX_EXACT_CANDIDATE_POOL,
     MAX_EXACT_OPTIMIZER_CARDS,
@@ -48,15 +49,13 @@ def _candidate_pool(
     *,
     target: int,
     challenger: dict[str, object],
-    guard: dict[str, object],
+    guard_card: tuple[int, ...],
 ) -> tuple[tuple[tuple[int, ...], ...], tuple[str, ...]]:
     cards: list[tuple[int, ...]] = []
     sources: list[str] = []
 
     _append_candidate(cards, sources, challenger.get("card"), "ADAPTIVE_CHALLENGER_LEAD")
-    decision = guard.get("decision")
-    if isinstance(decision, dict):
-        _append_candidate(cards, sources, decision.get("guard_card"), "TWO_CARD_COVERAGE_GUARD")
+    _append_candidate(cards, sources, list(guard_card), "TWO_CARD_COVERAGE_GUARD")
 
     champion = challenger.get("champion_control")
     if isinstance(champion, dict):
@@ -77,21 +76,31 @@ def _candidate_pool(
 def build_exact_budget_portfolio(state_dir: Path) -> dict[str, object]:
     latest_path = state_dir / "latest.json"
     challenger_path = state_dir / "adaptive_challenger.json"
-    guard_path = state_dir / "coverage_guard.json"
-    for path in (latest_path, challenger_path, guard_path):
+    for path in (latest_path, challenger_path):
         if not path.exists():
             raise RuntimeError(f"EXACT_BUDGET_REQUIRED_STATE_MISSING file={path.name}")
 
     latest = _load(latest_path)
     challenger = _load(challenger_path)
-    guard = _load(guard_path)
     target = int(latest["next_prediction_target"])
-    if int(challenger["target_contest"]) != target or int(guard["target_contest"]) != target:
+    if int(challenger["target_contest"]) != target:
         raise RuntimeError("EXACT_BUDGET_TARGET_MISMATCH")
-    if guard.get("status") != "COVERAGE_GUARD_PROVEN":
-        raise RuntimeError("EXACT_BUDGET_REQUIRES_PROVEN_COVERAGE_GUARD")
 
-    candidates, sources = _candidate_pool(target=target, challenger=challenger, guard=guard)
+    raw_card = challenger.get("card")
+    raw_probabilities = challenger.get("probabilities")
+    if not isinstance(raw_card, list) or not isinstance(raw_probabilities, list):
+        raise RuntimeError("EXACT_BUDGET_CHALLENGER_PAYLOAD_INVALID")
+    guard_decision = build_two_card_coverage_guard(
+        raw_card,
+        target_contest=target,
+        probabilities=raw_probabilities,
+    )
+
+    candidates, sources = _candidate_pool(
+        target=target,
+        challenger=challenger,
+        guard_card=guard_decision.guard_card,
+    )
     candidate_payload = [
         {"index": index, "source": sources[index], "card": list(card)}
         for index, card in enumerate(candidates)
@@ -153,6 +162,7 @@ def build_exact_budget_portfolio(state_dir: Path) -> dict[str, object]:
         "simple_bet_cost_cents": DEFAULT_RULES.simple_bet_cost_cents,
         "full_result_space": DEFAULT_RULES.combination_space,
         "full_card_space": DEFAULT_RULES.combination_space,
+        "coverage_guard_decision": guard_decision.to_dict(),
         "candidate_pool": candidate_payload,
         "candidate_pool_sha256": candidate_pool_sha256,
         "budget_frontier": frontier,
