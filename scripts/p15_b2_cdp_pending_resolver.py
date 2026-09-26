@@ -40,6 +40,27 @@ def parse_events(obj: dict) -> list[dict]:
     return out
 
 
+def parse_vtt(text: str) -> list[dict]:
+    out = []
+    current_ms = None
+    for raw in text.splitlines():
+        line = raw.strip()
+        cue = re.match(r'(?:(\d+):)?(\d{2}):(\d{2})[\.,](\d{3})\s+-->', line)
+        if cue:
+            h = int(cue.group(1) or 0)
+            m = int(cue.group(2))
+            s = int(cue.group(3))
+            ms = int(cue.group(4))
+            current_ms = ((h * 60 + m) * 60 + s) * 1000 + ms
+            continue
+        if current_ms is None or not line or line.startswith(('WEBVTT', 'Kind:', 'Language:')):
+            continue
+        clean = re.sub(r'<[^>]+>', '', line).strip()
+        if clean and '-->' not in clean:
+            out.append({'ms': current_ms, 'text': clean, 'norm': norm(clean)})
+    return out
+
+
 def marker_hits(events: list[dict], anchor_ms: int | None, radius_ms: int = 12 * 60 * 1000) -> dict[str, int]:
     pats = {
         'maleta': re.compile(r'\bmaleta\b'),
@@ -80,6 +101,13 @@ def new_target(url: str) -> dict:
         return json.loads(r.read().decode('utf-8'))
 
 
+def force_caption_format(base_url: str, fmt: str) -> str:
+    parts = urllib.parse.urlsplit(base_url)
+    pairs = [(k, v) for k, v in urllib.parse.parse_qsl(parts.query, keep_blank_values=True) if k != 'fmt']
+    pairs.append(('fmt', fmt))
+    return urllib.parse.urlunsplit((parts.scheme, parts.netloc, parts.path, urllib.parse.urlencode(pairs), parts.fragment))
+
+
 def cdp_probe(contest_id: int, draw_date: str | None, video_id: str) -> dict:
     url = f'https://www.youtube.com/watch?v={video_id}'
     out = {'contest_id': contest_id, 'draw_date': draw_date, 'video_id': video_id, 'url': url, 'status': 'ERROR'}
@@ -87,7 +115,7 @@ def cdp_probe(contest_id: int, draw_date: str | None, video_id: str) -> dict:
     ws = None
     try:
         target = new_target(url)
-        ws = websocket.create_connection(target['webSocketDebuggerUrl'], timeout=20, origin=f'http://127.0.0.1:{PORT}')
+        ws = websocket.create_connection(target['webSocketDebuggerUrl'], timeout=25, origin=f'http://127.0.0.1:{PORT}')
         seq = 0
         def cmd(method: str, params=None):
             nonlocal seq
@@ -98,9 +126,17 @@ def cdp_probe(contest_id: int, draw_date: str | None, video_id: str) -> dict:
                 msg = json.loads(ws.recv())
                 if msg.get('id') == myid:
                     return msg
-        def ev(expr: str):
-            res = cmd('Runtime.evaluate', {'expression': expr, 'returnByValue': True, 'userGesture': True})
-            return (((res.get('result') or {}).get('result') or {}).get('value'))
+        def ev(expr: str, await_promise: bool = False):
+            res = cmd('Runtime.evaluate', {
+                'expression': expr,
+                'returnByValue': True,
+                'awaitPromise': await_promise,
+                'userGesture': True,
+            })
+            inner = (res.get('result') or {}).get('result') or {}
+            if inner.get('subtype') == 'error':
+                raise RuntimeError(inner.get('description') or 'Runtime.evaluate error')
+            return inner.get('value')
         cmd('Runtime.enable')
         cmd('Page.enable')
         deadline = time.time() + 18
@@ -125,11 +161,23 @@ def cdp_probe(contest_id: int, draw_date: str | None, video_id: str) -> dict:
             if track:
                 break
         events = []
+        caption_format = None
+        caption_bytes = 0
         if track and track.get('baseUrl'):
-            cap_url = track['baseUrl'] + ('&' if '?' in track['baseUrl'] else '?') + 'fmt=json3'
-            req = urllib.request.Request(cap_url, headers={'User-Agent': 'Mozilla/5.0'})
-            with urllib.request.urlopen(req, timeout=25) as resp:
-                events = parse_events(json.loads(resp.read(5_000_000).decode('utf-8', errors='replace')))
+            cap_json_url = force_caption_format(track['baseUrl'], 'json3')
+            js = 'fetch(' + json.dumps(cap_json_url) + ').then(async r => ({status:r.status,text:await r.text()}))'
+            fetched = ev(js, await_promise=True) or {}
+            cap_text = fetched.get('text') or ''
+            caption_bytes = len(cap_text.encode('utf-8', errors='ignore'))
+            stripped = cap_text.lstrip()
+            if stripped.startswith('{'):
+                events = parse_events(json.loads(cap_text))
+                caption_format = 'json3'
+            elif stripped.startswith('WEBVTT') or '-->' in cap_text:
+                events = parse_vtt(cap_text)
+                caption_format = 'vtt'
+            elif cap_text:
+                caption_format = 'other'
         title = details.get('title') or ''
         desc = details.get('shortDescription') or ''
         title_n, desc_n = norm(title), norm(desc)
@@ -169,6 +217,8 @@ def cdp_probe(contest_id: int, draw_date: str | None, video_id: str) -> dict:
             'playability_status': playability.get('status'),
             'timed_text_events': len(events),
             'caption_language': track.get('languageCode') if track else None,
+            'caption_format': caption_format,
+            'caption_bytes': caption_bytes,
             'title_contest': title_contest,
             'title_modality': title_modality,
             'description_contest': desc_contest,
@@ -193,7 +243,8 @@ def cdp_probe(contest_id: int, draw_date: str | None, video_id: str) -> dict:
             pass
         if target:
             try:
-                urllib.request.urlopen(f"http://127.0.0.1:{PORT}/json/close/{target['id']}", timeout=5).read()
+                req = urllib.request.Request(f"http://127.0.0.1:{PORT}/json/close/{target['id']}", method='PUT')
+                urllib.request.urlopen(req, timeout=5).read()
             except Exception:
                 pass
 
@@ -224,18 +275,37 @@ def resolve(record: dict, candidates: list[dict]) -> dict:
     return result
 
 
+def write_checkpoint(out_path: Path, resolved: list[dict], total: int) -> None:
+    counts = {}
+    for r in resolved:
+        counts[r['resolution_status']] = counts.get(r['resolution_status'], 0) + 1
+    payload = {
+        'schema_version': 2,
+        'program_id': 'P15_B2_CDP_PENDING_RESOLVER_V2',
+        'records_total': total,
+        'records_completed': len(resolved),
+        'resolution_counts': counts,
+        'predictive_evidence': 'NOT_ESTABLISHED',
+        'purchase_executed': False,
+        'records': resolved,
+    }
+    out_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True), encoding='utf-8')
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument('--queue', required=True)
     ap.add_argument('--prior', required=True)
     ap.add_argument('--out', required=True)
-    ap.add_argument('--pause-seconds', type=float, default=1.5)
+    ap.add_argument('--pause-seconds', type=float, default=2.0)
     args = ap.parse_args()
     queue = json.loads(Path(args.queue).read_text(encoding='utf-8'))
     prior = json.loads(Path(args.prior).read_text(encoding='utf-8'))
     prior_by = {r['contest_id']: r for r in prior['records']}
     pending_ids = {cid for cid, r in prior_by.items() if not r['resolution_status'].startswith('RESOLVED')}
     records = [r for r in queue['records'] if r['contest_id'] in pending_ids]
+    out_path = Path(args.out)
+    partial_path = out_path.with_suffix(out_path.suffix + '.partial')
     chrome = subprocess.Popen([
         CHROME, '--headless=new', '--disable-gpu', '--no-first-run', '--no-default-browser-check',
         '--remote-debugging-address=127.0.0.1', f'--remote-debugging-port={PORT}', '--remote-allow-origins=*',
@@ -249,23 +319,15 @@ def main() -> int:
             for vid in rec.get('candidate_video_ids', []):
                 res = cdp_probe(rec['contest_id'], rec.get('draw_date'), vid)
                 candidates.append(res)
-                print(json.dumps({'contest_id': rec['contest_id'], 'video_id': vid, 'status': res.get('status'), 'complete': res.get('complete_procedure'), 'score': res.get('score'), 'error': res.get('error')}, ensure_ascii=False), flush=True)
+                print(json.dumps({'contest_id': rec['contest_id'], 'video_id': vid, 'status': res.get('status'), 'complete': res.get('complete_procedure'), 'score': res.get('score'), 'caption_format': res.get('caption_format'), 'caption_bytes': res.get('caption_bytes'), 'error': res.get('error')}, ensure_ascii=False), flush=True)
                 time.sleep(max(0.2, args.pause_seconds))
             resolved.append(resolve(rec, candidates))
-        counts = {}
-        for r in resolved:
-            counts[r['resolution_status']] = counts.get(r['resolution_status'], 0) + 1
-        output = {
-            'schema_version': 1,
-            'program_id': 'P15_B2_CDP_PENDING_RESOLVER_V1',
-            'records_total': len(records),
-            'resolution_counts': counts,
-            'predictive_evidence': 'NOT_ESTABLISHED',
-            'purchase_executed': False,
-            'records': resolved,
-        }
-        Path(args.out).write_text(json.dumps(output, ensure_ascii=False, indent=2, sort_keys=True), encoding='utf-8')
-        print(json.dumps({k: output[k] for k in ('records_total','resolution_counts','predictive_evidence','purchase_executed')}, ensure_ascii=False, indent=2), flush=True)
+            write_checkpoint(partial_path, resolved, len(records))
+        write_checkpoint(out_path, resolved, len(records))
+        if partial_path.exists():
+            partial_path.unlink()
+        final = json.loads(out_path.read_text(encoding='utf-8'))
+        print(json.dumps({k: final[k] for k in ('records_total','records_completed','resolution_counts','predictive_evidence','purchase_executed')}, ensure_ascii=False, indent=2), flush=True)
     finally:
         chrome.terminate()
         try:
