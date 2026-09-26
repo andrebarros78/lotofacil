@@ -300,6 +300,7 @@ def main() -> int:
         help="Optional bounded number of flat entries to enrich with full per-video metadata.",
     )
     parser.add_argument("--min-coverage", type=float, default=0.0)
+    parser.add_argument("--min-accessible-ratio", type=float, default=0.0)
     args = parser.parse_args()
 
     history = load_canonical_history(args.history)
@@ -344,9 +345,13 @@ def main() -> int:
         "eligible_contests": index.eligible_contests,
         "discovered_videos": index.discovered_videos,
         "mapped_contests": index.mapped_contests,
+        "candidate_available_contests": index.candidate_available_contests,
+        "accessible_contests": index.accessible_contests,
         "missing_contests": index.missing_contests,
+        "ambiguous_contests": index.ambiguous_contests,
         "conflicting_contests": index.conflicting_contests,
         "coverage_ratio": index.coverage_ratio,
+        "accessible_ratio": index.accessible_ratio,
         "exact_description_matches": index.exact_description_matches,
         "unique_title_date_matches": index.unique_title_date_matches,
         "official_channel_verified_videos": index.official_channel_verified_videos,
@@ -362,6 +367,12 @@ def main() -> int:
             file=sys.stderr,
         )
         return 2
+    if index.accessible_ratio < args.min_accessible_ratio:
+        print(
+            f"P15_PHYSICAL_ACCESSIBLE_BELOW_GATE:{index.accessible_ratio:.6f}<{args.min_accessible_ratio:.6f}",
+            file=sys.stderr,
+        )
+        return 3
     return 0
 
 
