@@ -1,11 +1,12 @@
 {
-  "contest_number": 3790,
+  "contest_number": 3794,
   "generated_card": [
     1,
     2,
     3,
     4,
     5,
+    9,
     10,
     11,
     12,
@@ -13,11 +14,10 @@
     14,
     15,
     20,
-    22,
     24,
     25
   ],
-  "generated_card_display": "01 02 03 04 05 10 11 12 13 14 15 20 22 24 25",
+  "generated_card_display": "01 02 03 04 05 09 10 11 12 13 14 15 20 24 25",
   "guardrails": [
     "FROZEN_CARD_IMMUTABLE",
     "NO_SINGLE_CONTEST_RETUNING",
@@ -29,21 +29,21 @@
     3,
     4,
     5,
-    11,
-    14,
+    10,
+    12,
+    13,
     15,
-    20,
-    25
+    24
   ],
   "omitted_winners": [
     6,
-    7,
-    9,
-    16,
-    17,
-    21
+    8,
+    18,
+    19,
+    21,
+    23
   ],
-  "primary_delta_brier_vs_uniform": 0.0005373808186165951,
+  "primary_delta_brier_vs_uniform": -0.0008825129496328188,
   "report_version": "constructive-post-contest-v1",
   "result": [
     1,
@@ -51,31 +51,31 @@
     4,
     5,
     6,
-    7,
-    9,
-    11,
-    14,
-    15,
-    16,
-    17,
-    20,
-    21,
-    25
-  ],
-  "result_display": "01 03 04 05 06 07 09 11 14 15 16 17 20 21 25",
-  "schema_version": 1,
-  "selected_misses": [
-    2,
+    8,
     10,
     12,
     13,
-    22,
+    15,
+    18,
+    19,
+    21,
+    23,
     24
+  ],
+  "result_display": "01 03 04 05 06 08 10 12 13 15 18 19 21 23 24",
+  "schema_version": 1,
+  "selected_misses": [
+    2,
+    9,
+    11,
+    14,
+    20,
+    25
   ],
   "self_analysis": {
     "adjustments_suggested": [
       "Examinar a recorrência das dezenas selecionadas que não saíram e das sorteadas que ficaram fora em uma janela prospectiva; um único concurso não deve virar regra de seleção.",
-      "Registrar o ganho sem promover o modelo; aguardar evidência prospectiva acumulada."
+      "Se a perda para o baseline persistir na coorte, abrir challenger predeclarado e compará-lo sem alterar retroativamente o champion."
     ],
     "corrections_required": [
       "Nenhuma correção de integridade obrigatória foi identificada neste ciclo."
@@ -87,7 +87,7 @@
     "process_errors": [],
     "process_findings": [
       "Cartão obteve 9 acertos; 6 selecionadas não saíram e 6 sorteadas ficaram fora.",
-      "O modelo primário superou o baseline uniforme neste concurso isolado."
+      "O modelo primário ficou abaixo do baseline uniforme neste concurso."
     ]
   },
   "status": "POST_CONTEST_REPORT_PASS"
