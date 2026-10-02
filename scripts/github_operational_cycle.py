@@ -17,7 +17,7 @@ from sare_lotofacil.analysis.post_contest_report import (
     render_post_contest_report_markdown,
 )
 from sare_lotofacil.experiments.models import exponential_update, frequency_regularized
-from sare_lotofacil.ingestion.caixa import fetch_caixa_contest
+from sare_lotofacil.ingestion.caixa import TRANSIENT_HTTP_CODES, fetch_caixa_contest
 from sare_lotofacil.ingestion.csv_history import parse_history_csv
 from sare_lotofacil.ingestion.validation import validate_contest
 from sare_lotofacil.operational_state import (
@@ -74,9 +74,21 @@ def _download(url: str) -> bytes:
 
 
 def _resolve_official_latest(current_last: int):
-    official_latest = fetch_caixa_contest()
-    official_id = official_latest.record.contest_id
+    try:
+        official_latest = fetch_caixa_contest()
+    except HTTPError as exc:
+        if exc.code not in TRANSIENT_HTTP_CODES:
+            raise
+        try:
+            official_latest = fetch_caixa_contest(current_last)
+        except HTTPError as verify_exc:
+            if verify_exc.code in {400, 404}:
+                raise RuntimeError("official latest unavailable and operational state cannot be verified") from verify_exc
+            raise
+        if official_latest.record.contest_id != current_last:
+            raise RuntimeError("official current-contest verification returned an unexpected contest")
 
+    official_id = official_latest.record.contest_id
     if official_id > current_last:
         return official_latest
 
@@ -102,7 +114,6 @@ def _resolve_official_latest(current_last: int):
     if candidate.record.contest_id != next_contest:
         raise RuntimeError("official next-contest probe returned an unexpected contest")
     return candidate
-
 
 def _paired_interval(values: list[float]) -> tuple[float | None, float | None, float | None]:
     if not values:

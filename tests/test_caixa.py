@@ -1,6 +1,10 @@
+import json
 from datetime import datetime, timezone
+from urllib.error import HTTPError
 
-from sare_lotofacil.ingestion.caixa import parse_caixa_payload
+import pytest
+
+from sare_lotofacil.ingestion.caixa import fetch_caixa_contest, parse_caixa_payload
 
 
 PAYLOAD = {
@@ -24,3 +28,49 @@ def test_parse_observed_caixa_contract() -> None:
     assert contest.record.mask.bit_count() == 15
     assert [tier.hits for tier in contest.prize_tiers] == [15, 14, 13, 12, 11]
     assert contest.prize_tiers[0].prize_cents == 53_222_172
+
+
+class _Response:
+    def __init__(self, payload: bytes):
+        self.payload = payload
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        return False
+
+    def read(self) -> bytes:
+        return self.payload
+
+
+def test_fetch_caixa_contest_retries_transient_504_then_succeeds() -> None:
+    calls = []
+    delays = []
+
+    def opener(request, timeout):
+        calls.append((request.full_url, timeout))
+        if len(calls) == 1:
+            raise HTTPError(request.full_url, 504, "Gateway Time-out", None, None)
+        return _Response(json.dumps(PAYLOAD).encode("utf-8"))
+
+    contest = fetch_caixa_contest(3779, attempts=3, backoff_seconds=0.25, opener=opener, sleeper=delays.append)
+    assert contest.record.contest_id == 3779
+    assert len(calls) == 2
+    assert delays == [0.25]
+
+
+def test_fetch_caixa_contest_exhausts_transient_retries_fail_closed() -> None:
+    calls = []
+    delays = []
+
+    def opener(request, timeout):
+        calls.append((request.full_url, timeout))
+        raise HTTPError(request.full_url, 504, "Gateway Time-out", None, None)
+
+    with pytest.raises(HTTPError) as exc_info:
+        fetch_caixa_contest(3779, attempts=3, backoff_seconds=0.5, opener=opener, sleeper=delays.append)
+
+    assert exc_info.value.code == 504
+    assert len(calls) == 3
+    assert delays == [0.5, 1.0]
