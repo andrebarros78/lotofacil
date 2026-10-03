@@ -1,5 +1,5 @@
 {
-  "contest_number": 3794,
+  "contest_number": 3795,
   "generated_card": [
     1,
     2,
@@ -23,16 +23,17 @@
     "NO_SINGLE_CONTEST_RETUNING",
     "CHALLENGER_REQUIRES_PREDECLARED_VALIDATION"
   ],
-  "hits": 9,
+  "hits": 10,
   "matched_numbers": [
     1,
     3,
     4,
     5,
     10,
+    11,
     12,
     13,
-    15,
+    14,
     24
   ],
   "omitted_winners": [
@@ -40,10 +41,9 @@
     8,
     18,
     19,
-    21,
-    23
+    22
   ],
-  "primary_delta_brier_vs_uniform": -0.0008825129496328188,
+  "primary_delta_brier_vs_uniform": 0.0021379552491301856,
   "report_version": "constructive-post-contest-v1",
   "result": [
     1,
@@ -53,29 +53,28 @@
     6,
     8,
     10,
+    11,
     12,
     13,
-    15,
+    14,
     18,
     19,
-    21,
-    23,
+    22,
     24
   ],
-  "result_display": "01 03 04 05 06 08 10 12 13 15 18 19 21 23 24",
+  "result_display": "01 03 04 05 06 08 10 11 12 13 14 18 19 22 24",
   "schema_version": 1,
   "selected_misses": [
     2,
     9,
-    11,
-    14,
+    15,
     20,
     25
   ],
   "self_analysis": {
     "adjustments_suggested": [
       "Examinar a recorrência das dezenas selecionadas que não saíram e das sorteadas que ficaram fora em uma janela prospectiva; um único concurso não deve virar regra de seleção.",
-      "Se a perda para o baseline persistir na coorte, abrir challenger predeclarado e compará-lo sem alterar retroativamente o champion."
+      "Registrar o ganho sem promover o modelo; aguardar evidência prospectiva acumulada."
     ],
     "corrections_required": [
       "Nenhuma correção de integridade obrigatória foi identificada neste ciclo."
@@ -86,8 +85,8 @@
     ],
     "process_errors": [],
     "process_findings": [
-      "Cartão obteve 9 acertos; 6 selecionadas não saíram e 6 sorteadas ficaram fora.",
-      "O modelo primário ficou abaixo do baseline uniforme neste concurso."
+      "Cartão obteve 10 acertos; 5 selecionadas não saíram e 5 sorteadas ficaram fora.",
+      "O modelo primário superou o baseline uniforme neste concurso isolado."
     ]
   },
   "status": "POST_CONTEST_REPORT_PASS"
