@@ -385,34 +385,67 @@
         25
       ],
       "target_hits": 15
+    },
+    {
+      "adjustments_suggested": [
+        "Examinar a recorrência das dezenas selecionadas que não saíram e das sorteadas que ficaram fora em uma janela prospectiva; um único concurso não deve virar regra de seleção.",
+        "Registrar o ganho sem promover o modelo; aguardar evidência prospectiva acumulada."
+      ],
+      "contest_number": 3796,
+      "gap_to_15": 6,
+      "hits": 9,
+      "omitted_winners": [
+        6,
+        7,
+        9,
+        16,
+        19,
+        21
+      ],
+      "primary_delta_brier_vs_uniform": 0.000945570915610483,
+      "process_findings": [
+        "Cartão obteve 9 acertos; 6 selecionadas não saíram e 6 sorteadas ficaram fora.",
+        "O modelo primário superou o baseline uniforme neste concurso isolado."
+      ],
+      "selected_misses": [
+        1,
+        2,
+        13,
+        14,
+        22,
+        25
+      ],
+      "target_hits": 15
     }
   ],
-  "entry_count": 12,
+  "entry_count": 13,
   "latest_entry": {
     "adjustments_suggested": [
       "Examinar a recorrência das dezenas selecionadas que não saíram e das sorteadas que ficaram fora em uma janela prospectiva; um único concurso não deve virar regra de seleção.",
       "Registrar o ganho sem promover o modelo; aguardar evidência prospectiva acumulada."
     ],
-    "contest_number": 3795,
-    "gap_to_15": 5,
-    "hits": 10,
+    "contest_number": 3796,
+    "gap_to_15": 6,
+    "hits": 9,
     "omitted_winners": [
       6,
-      8,
-      18,
+      7,
+      9,
+      16,
       19,
-      22
+      21
     ],
-    "primary_delta_brier_vs_uniform": 0.0021379552491301856,
+    "primary_delta_brier_vs_uniform": 0.000945570915610483,
     "process_findings": [
-      "Cartão obteve 10 acertos; 5 selecionadas não saíram e 5 sorteadas ficaram fora.",
+      "Cartão obteve 9 acertos; 6 selecionadas não saíram e 6 sorteadas ficaram fora.",
       "O modelo primário superou o baseline uniforme neste concurso isolado."
     ],
     "selected_misses": [
+      1,
       2,
-      9,
-      15,
-      20,
+      13,
+      14,
+      22,
       25
     ],
     "target_hits": 15
@@ -432,24 +465,28 @@
   "schema_version": 1,
   "summary": {
     "best_hits": 10,
-    "latest_gap_to_15": 5,
-    "mean_hits": 8.416666666666666,
+    "latest_gap_to_15": 6,
+    "mean_hits": 8.461538461538462,
     "omitted_winner_frequency": [
       {
         "count": 10,
         "number": 8
       },
       {
-        "count": 9,
+        "count": 10,
         "number": 19
       },
       {
-        "count": 8,
+        "count": 9,
         "number": 6
       },
       {
-        "count": 8,
+        "count": 9,
         "number": 16
+      },
+      {
+        "count": 8,
+        "number": 7
       },
       {
         "count": 8,
@@ -461,18 +498,14 @@
       },
       {
         "count": 7,
-        "number": 7
-      },
-      {
-        "count": 7,
         "number": 17
       },
       {
-        "count": 6,
+        "count": 7,
         "number": 21
       },
       {
-        "count": 4,
+        "count": 5,
         "number": 9
       },
       {
@@ -482,7 +515,7 @@
     ],
     "selected_miss_frequency": [
       {
-        "count": 11,
+        "count": 12,
         "number": 2
       },
       {
@@ -491,23 +524,27 @@
       },
       {
         "count": 7,
-        "number": 20
-      },
-      {
-        "count": 6,
         "number": 13
       },
       {
-        "count": 6,
+        "count": 7,
         "number": 14
+      },
+      {
+        "count": 7,
+        "number": 20
+      },
+      {
+        "count": 5,
+        "number": 1
       },
       {
         "count": 5,
         "number": 5
       },
       {
-        "count": 4,
-        "number": 1
+        "count": 5,
+        "number": 25
       },
       {
         "count": 4,
@@ -531,10 +568,6 @@
       },
       {
         "count": 4,
-        "number": 25
-      },
-      {
-        "count": 3,
         "number": 22
       },
       {
