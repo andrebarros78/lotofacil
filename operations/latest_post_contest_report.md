@@ -1,16 +1,16 @@
 # Análise Pós-Concurso — Lotofácil Operacional
 
-- Concurso Número: 3795
-- Resultado: 01 03 04 05 06 08 10 11 12 13 14 18 19 22 24
-- Cartão gerado: 01 02 03 04 05 09 10 11 12 13 14 15 20 24 25
-- Número de acertos: 10
+- Concurso Número: 3796
+- Resultado: 03 04 05 06 07 09 10 11 12 15 16 19 20 21 24
+- Cartão gerado: 01 02 03 04 05 10 11 12 13 14 15 20 22 24 25
+- Número de acertos: 9
 
-- Acertos: 01 03 04 05 10 11 12 13 14 24
-- Selecionadas que não saíram: 02 09 15 20 25
-- Sorteadas que ficaram fora: 06 08 18 19 22
+- Acertos: 03 04 05 10 11 12 15 20 24
+- Selecionadas que não saíram: 01 02 13 14 22 25
+- Sorteadas que ficaram fora: 06 07 09 16 19 21
 
 ## Autoanálise do processo
-- Cartão obteve 10 acertos; 5 selecionadas não saíram e 5 sorteadas ficaram fora.
+- Cartão obteve 9 acertos; 6 selecionadas não saíram e 6 sorteadas ficaram fora.
 - O modelo primário superou o baseline uniforme neste concurso isolado.
 
 ### Correções necessárias

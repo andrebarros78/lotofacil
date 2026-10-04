@@ -1,12 +1,11 @@
 {
-  "contest_number": 3795,
+  "contest_number": 3796,
   "generated_card": [
     1,
     2,
     3,
     4,
     5,
-    9,
     10,
     11,
     12,
@@ -14,61 +13,63 @@
     14,
     15,
     20,
+    22,
     24,
     25
   ],
-  "generated_card_display": "01 02 03 04 05 09 10 11 12 13 14 15 20 24 25",
+  "generated_card_display": "01 02 03 04 05 10 11 12 13 14 15 20 22 24 25",
   "guardrails": [
     "FROZEN_CARD_IMMUTABLE",
     "NO_SINGLE_CONTEST_RETUNING",
     "CHALLENGER_REQUIRES_PREDECLARED_VALIDATION"
   ],
-  "hits": 10,
+  "hits": 9,
   "matched_numbers": [
-    1,
     3,
     4,
     5,
     10,
     11,
     12,
-    13,
-    14,
+    15,
+    20,
     24
   ],
   "omitted_winners": [
     6,
-    8,
-    18,
+    7,
+    9,
+    16,
     19,
-    22
+    21
   ],
-  "primary_delta_brier_vs_uniform": 0.0021379552491301856,
+  "primary_delta_brier_vs_uniform": 0.000945570915610483,
   "report_version": "constructive-post-contest-v1",
   "result": [
-    1,
     3,
     4,
     5,
     6,
-    8,
+    7,
+    9,
     10,
     11,
     12,
-    13,
-    14,
-    18,
+    15,
+    16,
     19,
-    22,
+    20,
+    21,
     24
   ],
-  "result_display": "01 03 04 05 06 08 10 11 12 13 14 18 19 22 24",
+  "result_display": "03 04 05 06 07 09 10 11 12 15 16 19 20 21 24",
   "schema_version": 1,
   "selected_misses": [
+    1,
     2,
-    9,
-    15,
-    20,
+    13,
+    14,
+    22,
     25
   ],
   "self_analysis": {
@@ -85,7 +86,7 @@
     ],
     "process_errors": [],
     "process_findings": [
-      "Cartão obteve 10 acertos; 5 selecionadas não saíram e 5 sorteadas ficaram fora.",
+      "Cartão obteve 9 acertos; 6 selecionadas não saíram e 6 sorteadas ficaram fora.",
       "O modelo primário superou o baseline uniforme neste concurso isolado."
     ]
   },
