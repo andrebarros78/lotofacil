@@ -1,5 +1,5 @@
 {
-  "contest_count": 21,
+  "contest_count": 22,
   "contests": [
     {
       "contest_id": 3779,
@@ -1197,9 +1197,66 @@
           "source_url": "https://servicebus2.caixa.gov.br/portaldeloterias/api/lotofacil/3799"
         }
       ]
+    },
+    {
+      "contest_id": 3800,
+      "revisions": [
+        {
+          "captured_at_utc": "2026-10-09T10:27:42.024644+00:00",
+          "draw_date": "2026-10-08",
+          "economic_signature_sha256": "7f8c570c407979f2d683c4807a78eff449449ed54f386b99cc76373218ab6ecd",
+          "numbers": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            7,
+            8,
+            9,
+            10,
+            12,
+            13,
+            14,
+            15,
+            19,
+            21
+          ],
+          "prize_tiers": [
+            {
+              "hits": 15,
+              "prize_cents": 180518378,
+              "winners": 3
+            },
+            {
+              "hits": 14,
+              "prize_cents": 150565,
+              "winners": 524
+            },
+            {
+              "hits": 13,
+              "prize_cents": 3500,
+              "winners": 30544
+            },
+            {
+              "hits": 12,
+              "prize_cents": 1400,
+              "winners": 166756
+            },
+            {
+              "hits": 11,
+              "prize_cents": 700,
+              "winners": 921939
+            }
+          ],
+          "raw_payload_sha256": "e38e465cd610196dcc2d24d1c09bb04cf33c5d0359dc17fd0174e67851774c4d",
+          "revision": 1,
+          "source_url": "https://servicebus2.caixa.gov.br/portaldeloterias/api/lotofacil/3800"
+        }
+      ]
     }
   ],
-  "latest_contest": 3799,
+  "latest_contest": 3800,
   "schema_version": 1,
-  "updated_at_utc": "2026-10-08T10:29:22.078858+00:00"
+  "updated_at_utc": "2026-10-09T10:27:42.024778+00:00"
 }
