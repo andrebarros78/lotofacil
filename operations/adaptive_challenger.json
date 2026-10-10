@@ -152,6 +152,787 @@
   },
   "decision_sha256": "3d76cf8d839a91c03cbf8a1069c7a053efe6fa438b02b33ea90c9fc9857ce0eb",
   "evidence_label": "CARTEIRA COMBINATÓRIA — SEM VANTAGEM PREDITIVA COMPROVADA",
+  "exact_budget_portfolio": {
+    "artifact_sha256": "159023f977f7b38f3110f3c41cc48b88df2dd3b3130adf5b9cec7a28c61287ad",
+    "budget_frontier": [
+      {
+        "budget_cents": 350,
+        "candidate_pool_optimality_proven": true,
+        "candidate_pool_size": 8,
+        "candidate_subsets_evaluated": 1,
+        "cards": [
+          [
+            1,
+            3,
+            4,
+            6,
+            7,
+            8,
+            10,
+            11,
+            12,
+            14,
+            15,
+            19,
+            20,
+            23,
+            24
+          ]
+        ],
+        "cost_cents": 350,
+        "global_full_space_optimality_proven": false,
+        "global_full_space_size": 3268760,
+        "metrics": {
+          "best_hits_histogram": {
+            "10": 756756,
+            "11": 286650,
+            "12": 54600,
+            "13": 4725,
+            "14": 150,
+            "15": 1,
+            "5": 3003,
+            "6": 50050,
+            "7": 289575,
+            "8": 772200,
+            "9": 1051050
+          },
+          "best_hits_sum": 29418840,
+          "card_count": 1,
+          "coverage": {
+            "11": {
+              "covered_outcomes": 346126,
+              "probability": 0.10588908332211604
+            },
+            "12": {
+              "covered_outcomes": 59476,
+              "probability": 0.018195278943697303
+            },
+            "13": {
+              "covered_outcomes": 4876,
+              "probability": 0.0014916971573318322
+            },
+            "14": {
+              "covered_outcomes": 151,
+              "probability": 4.619488735789718e-05
+            },
+            "15": {
+              "covered_outcomes": 1,
+              "probability": 3.0592640634368994e-07
+            }
+          },
+          "guaranteed_min_best_hits": 5,
+          "mean_best_hits": 9.0,
+          "method": "EXACT_MEMBERSHIP_PATTERN_DP_25_CHOOSE_15_V1",
+          "objective_vector": [
+            5,
+            1,
+            151,
+            4876,
+            59476,
+            346126,
+            29418840
+          ],
+          "total_outcomes": 3268760
+        },
+        "optimality_scope": "EXACT_OVER_DECLARED_CANDIDATE_POOL_ONLY",
+        "optimizer_method": "EXHAUSTIVE_CANDIDATE_SUBSET_LEXICOGRAPHIC_V1",
+        "selected_candidate_indices": [
+          0
+        ],
+        "selection_sha256": "08e75bea200b5bc0578f46f17c9ff92119cfec2d6f84e6ea48f8eadac885618b",
+        "unused_cents": 0
+      },
+      {
+        "budget_cents": 700,
+        "candidate_pool_optimality_proven": true,
+        "candidate_pool_size": 8,
+        "candidate_subsets_evaluated": 7,
+        "cards": [
+          [
+            1,
+            3,
+            4,
+            6,
+            7,
+            8,
+            10,
+            11,
+            12,
+            14,
+            15,
+            19,
+            20,
+            23,
+            24
+          ],
+          [
+            1,
+            2,
+            4,
+            5,
+            8,
+            9,
+            12,
+            13,
+            16,
+            17,
+            18,
+            19,
+            21,
+            22,
+            25
+          ]
+        ],
+        "cost_cents": 700,
+        "global_full_space_optimality_proven": false,
+        "global_full_space_size": 3268760,
+        "metrics": {
+          "best_hits_histogram": {
+            "10": 1450008,
+            "11": 573300,
+            "12": 109200,
+            "13": 9450,
+            "14": 300,
+            "15": 2,
+            "8": 82800,
+            "9": 1043700
+          },
+          "best_hits_sum": 32299560,
+          "card_count": 2,
+          "coverage": {
+            "11": {
+              "covered_outcomes": 692252,
+              "probability": 0.21177816664423207
+            },
+            "12": {
+              "covered_outcomes": 118952,
+              "probability": 0.036390557887394606
+            },
+            "13": {
+              "covered_outcomes": 9752,
+              "probability": 0.0029833943146636644
+            },
+            "14": {
+              "covered_outcomes": 302,
+              "probability": 9.238977471579436e-05
+            },
+            "15": {
+              "covered_outcomes": 2,
+              "probability": 6.118528126873799e-07
+            }
+          },
+          "guaranteed_min_best_hits": 8,
+          "mean_best_hits": 9.881288317282394,
+          "method": "EXACT_MEMBERSHIP_PATTERN_DP_25_CHOOSE_15_V1",
+          "objective_vector": [
+            8,
+            2,
+            302,
+            9752,
+            118952,
+            692252,
+            32299560
+          ],
+          "total_outcomes": 3268760
+        },
+        "optimality_scope": "EXACT_OVER_DECLARED_CANDIDATE_POOL_ONLY",
+        "optimizer_method": "EXHAUSTIVE_CANDIDATE_SUBSET_LEXICOGRAPHIC_V1",
+        "selected_candidate_indices": [
+          0,
+          1
+        ],
+        "selection_sha256": "86c477622ed5bb8c306b635576d91c1d6380b1d5380c7000b9e21579ed129367",
+        "unused_cents": 0
+      },
+      {
+        "budget_cents": 1050,
+        "candidate_pool_optimality_proven": true,
+        "candidate_pool_size": 8,
+        "candidate_subsets_evaluated": 21,
+        "cards": [
+          [
+            1,
+            3,
+            4,
+            6,
+            7,
+            8,
+            10,
+            11,
+            12,
+            14,
+            15,
+            19,
+            20,
+            23,
+            24
+          ],
+          [
+            1,
+            2,
+            4,
+            5,
+            8,
+            9,
+            12,
+            13,
+            16,
+            17,
+            18,
+            19,
+            21,
+            22,
+            25
+          ],
+          [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            9,
+            10,
+            13,
+            19,
+            20,
+            21,
+            22,
+            23,
+            24
+          ]
+        ],
+        "cost_cents": 1050,
+        "global_full_space_optimality_proven": false,
+        "global_full_space_size": 3268760,
+        "metrics": {
+          "best_hits_histogram": {
+            "10": 1551672,
+            "11": 795750,
+            "12": 163000,
+            "13": 14175,
+            "14": 450,
+            "15": 3,
+            "8": 27440,
+            "9": 716270
+          },
+          "best_hits_sum": 33082540,
+          "card_count": 3,
+          "coverage": {
+            "11": {
+              "covered_outcomes": 973378,
+              "probability": 0.29778203355400823
+            },
+            "12": {
+              "covered_outcomes": 177628,
+              "probability": 0.05434109570601696
+            },
+            "13": {
+              "covered_outcomes": 14628,
+              "probability": 0.004475091471995497
+            },
+            "14": {
+              "covered_outcomes": 453,
+              "probability": 0.00013858466207369155
+            },
+            "15": {
+              "covered_outcomes": 3,
+              "probability": 9.177792190310699e-07
+            }
+          },
+          "guaranteed_min_best_hits": 8,
+          "mean_best_hits": 10.120822574921377,
+          "method": "EXACT_MEMBERSHIP_PATTERN_DP_25_CHOOSE_15_V1",
+          "objective_vector": [
+            8,
+            3,
+            453,
+            14628,
+            177628,
+            973378,
+            33082540
+          ],
+          "total_outcomes": 3268760
+        },
+        "optimality_scope": "EXACT_OVER_DECLARED_CANDIDATE_POOL_ONLY",
+        "optimizer_method": "EXHAUSTIVE_CANDIDATE_SUBSET_LEXICOGRAPHIC_V1",
+        "selected_candidate_indices": [
+          0,
+          1,
+          5
+        ],
+        "selection_sha256": "29c97fa698f92c2e1ae731cdeda0035cafa292efcbbb3fa6ac2e7ca0df60ae0d",
+        "unused_cents": 0
+      },
+      {
+        "budget_cents": 1400,
+        "candidate_pool_optimality_proven": true,
+        "candidate_pool_size": 8,
+        "candidate_subsets_evaluated": 35,
+        "cards": [
+          [
+            1,
+            3,
+            4,
+            6,
+            7,
+            8,
+            10,
+            11,
+            12,
+            14,
+            15,
+            19,
+            20,
+            23,
+            24
+          ],
+          [
+            1,
+            2,
+            4,
+            5,
+            8,
+            9,
+            12,
+            13,
+            16,
+            17,
+            18,
+            19,
+            21,
+            22,
+            25
+          ],
+          [
+            1,
+            2,
+            3,
+            5,
+            7,
+            8,
+            10,
+            11,
+            12,
+            14,
+            15,
+            16,
+            17,
+            21,
+            23
+          ],
+          [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            9,
+            10,
+            13,
+            19,
+            20,
+            21,
+            22,
+            23,
+            24
+          ]
+        ],
+        "cost_cents": 1400,
+        "global_full_space_optimality_proven": false,
+        "global_full_space_size": 3268760,
+        "metrics": {
+          "best_hits_histogram": {
+            "10": 1585985,
+            "11": 1009615,
+            "12": 215900,
+            "13": 18900,
+            "14": 600,
+            "15": 4,
+            "8": 5285,
+            "9": 432471
+          },
+          "best_hits_sum": 33745094,
+          "card_count": 4,
+          "coverage": {
+            "11": {
+              "covered_outcomes": 1245019,
+              "probability": 0.38088418849961453
+            },
+            "12": {
+              "covered_outcomes": 235404,
+              "probability": 0.07201629975893
+            },
+            "13": {
+              "covered_outcomes": 19504,
+              "probability": 0.005966788629327329
+            },
+            "14": {
+              "covered_outcomes": 604,
+              "probability": 0.00018477954943158873
+            },
+            "15": {
+              "covered_outcomes": 4,
+              "probability": 1.2237056253747598e-06
+            }
+          },
+          "guaranteed_min_best_hits": 8,
+          "mean_best_hits": 10.323515339150013,
+          "method": "EXACT_MEMBERSHIP_PATTERN_DP_25_CHOOSE_15_V1",
+          "objective_vector": [
+            8,
+            4,
+            604,
+            19504,
+            235404,
+            1245019,
+            33745094
+          ],
+          "total_outcomes": 3268760
+        },
+        "optimality_scope": "EXACT_OVER_DECLARED_CANDIDATE_POOL_ONLY",
+        "optimizer_method": "EXHAUSTIVE_CANDIDATE_SUBSET_LEXICOGRAPHIC_V1",
+        "selected_candidate_indices": [
+          0,
+          1,
+          4,
+          5
+        ],
+        "selection_sha256": "8b778a9acfd1e52ea96db95da42988ca1b3ccf1f567533311573def4fa7f0c6c",
+        "unused_cents": 0
+      }
+    ],
+    "candidate_pool": [
+      {
+        "card": [
+          1,
+          3,
+          4,
+          6,
+          7,
+          8,
+          10,
+          11,
+          12,
+          14,
+          15,
+          19,
+          20,
+          23,
+          24
+        ],
+        "index": 0,
+        "source": "ADAPTIVE_CHALLENGER_LEAD"
+      },
+      {
+        "card": [
+          1,
+          2,
+          4,
+          5,
+          8,
+          9,
+          12,
+          13,
+          16,
+          17,
+          18,
+          19,
+          21,
+          22,
+          25
+        ],
+        "index": 1,
+        "source": "TWO_CARD_COVERAGE_GUARD"
+      },
+      {
+        "card": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          20,
+          24,
+          25
+        ],
+        "index": 2,
+        "source": "PROSPECTIVE_CHAMPION_CONTROL"
+      },
+      {
+        "card": [
+          1,
+          2,
+          4,
+          6,
+          7,
+          9,
+          10,
+          12,
+          15,
+          16,
+          19,
+          20,
+          22,
+          23,
+          25
+        ],
+        "index": 3,
+        "source": "DETERMINISTIC_OPERATOR_INDEX_0"
+      },
+      {
+        "card": [
+          1,
+          2,
+          3,
+          5,
+          7,
+          8,
+          10,
+          11,
+          12,
+          14,
+          15,
+          16,
+          17,
+          21,
+          23
+        ],
+        "index": 4,
+        "source": "DETERMINISTIC_OPERATOR_INDEX_1"
+      },
+      {
+        "card": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          9,
+          10,
+          13,
+          19,
+          20,
+          21,
+          22,
+          23,
+          24
+        ],
+        "index": 5,
+        "source": "DETERMINISTIC_OPERATOR_INDEX_2"
+      },
+      {
+        "card": [
+          3,
+          4,
+          7,
+          8,
+          9,
+          10,
+          11,
+          14,
+          15,
+          16,
+          18,
+          19,
+          21,
+          22,
+          24
+        ],
+        "index": 6,
+        "source": "DETERMINISTIC_OPERATOR_INDEX_3"
+      },
+      {
+        "card": [
+          2,
+          4,
+          5,
+          8,
+          9,
+          11,
+          12,
+          15,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23,
+          25
+        ],
+        "index": 7,
+        "source": "DETERMINISTIC_OPERATOR_INDEX_4"
+      }
+    ],
+    "candidate_pool_sha256": "6183471f87b85143a33b36722179dda54aa486b859c3613a3a2678fcec7901a1",
+    "coverage_guard_decision": {
+      "cards": [
+        [
+          1,
+          3,
+          4,
+          6,
+          7,
+          8,
+          10,
+          11,
+          12,
+          14,
+          15,
+          19,
+          20,
+          23,
+          24
+        ],
+        [
+          1,
+          2,
+          4,
+          5,
+          8,
+          9,
+          12,
+          13,
+          16,
+          17,
+          18,
+          19,
+          21,
+          22,
+          25
+        ]
+      ],
+      "decision_sha256": "45cde235e9290a2cb3da65dbdadcf20a3f32e7201dd60a78220fa4009fc5c136",
+      "guaranteed_min_best_hits": 8,
+      "guard_card": [
+        1,
+        2,
+        4,
+        5,
+        8,
+        9,
+        12,
+        13,
+        16,
+        17,
+        18,
+        19,
+        21,
+        22,
+        25
+      ],
+      "lead_card": [
+        1,
+        3,
+        4,
+        6,
+        7,
+        8,
+        10,
+        11,
+        12,
+        14,
+        15,
+        19,
+        20,
+        23,
+        24
+      ],
+      "method": "TWO_CARD_BALANCED_PARTITION_MAXIMIN_V1",
+      "overlap": 5,
+      "retained_core": [
+        1,
+        4,
+        8,
+        12,
+        19
+      ],
+      "target_contest": 3802,
+      "union_size": 25
+    },
+    "full_card_space": 3268760,
+    "full_result_space": 3268760,
+    "generated_at_utc": "2026-10-10T09:47:15.887601+00:00",
+    "max_budget_enumeration_proof": {
+      "11": {
+        "covered_outcomes": 1245019,
+        "independence_assumption_used": false,
+        "method": "EXACT_JOINT_ENUMERATION_25_CHOOSE_15",
+        "probability": 0.38088418849961453,
+        "total_outcomes": 3268760
+      },
+      "12": {
+        "covered_outcomes": 235404,
+        "independence_assumption_used": false,
+        "method": "EXACT_JOINT_ENUMERATION_25_CHOOSE_15",
+        "probability": 0.07201629975893,
+        "total_outcomes": 3268760
+      },
+      "13": {
+        "covered_outcomes": 19504,
+        "independence_assumption_used": false,
+        "method": "EXACT_JOINT_ENUMERATION_25_CHOOSE_15",
+        "probability": 0.005966788629327329,
+        "total_outcomes": 3268760
+      },
+      "14": {
+        "covered_outcomes": 604,
+        "independence_assumption_used": false,
+        "method": "EXACT_JOINT_ENUMERATION_25_CHOOSE_15",
+        "probability": 0.00018477954943158873,
+        "total_outcomes": 3268760
+      },
+      "15": {
+        "covered_outcomes": 4,
+        "independence_assumption_used": false,
+        "method": "EXACT_JOINT_ENUMERATION_25_CHOOSE_15",
+        "probability": 1.2237056253747598e-06,
+        "total_outcomes": 3268760
+      },
+      "8": {
+        "covered_outcomes": 3268760,
+        "independence_assumption_used": false,
+        "method": "EXACT_JOINT_ENUMERATION_25_CHOOSE_15",
+        "probability": 1.0,
+        "total_outcomes": 3268760
+      }
+    },
+    "max_exact_budget_cents": 1400,
+    "max_exact_cards": 4,
+    "policy": {
+      "budget_mode": "SIMPLE_CARD_COUNT_FRONTIER_1_TO_4",
+      "candidate_pool_optimality_proven": true,
+      "future_results_forbidden": true,
+      "global_full_space_optimality_proven": false,
+      "global_limit_reason": "The optimizer exhaustively proves the best subset only inside the declared candidate pool. It does not claim exhaustive subset search across all 3,268,760 possible cards.",
+      "mandatory_lead_card": true,
+      "objective_order": [
+        "guaranteed_min_best_hits",
+        "coverage_ge_15",
+        "coverage_ge_14",
+        "coverage_ge_13",
+        "coverage_ge_12",
+        "coverage_ge_11",
+        "mean_best_hits"
+      ],
+      "spending_requires_operator_action": true
+    },
+    "predictive_evidence": "NOT_ESTABLISHED",
+    "purchase_executed": false,
+    "schema_version": 1,
+    "simple_bet_cost_cents": 350,
+    "status": "EXACT_BUDGET_PORTFOLIO_PROVEN",
+    "target_contest": 3802
+  },
   "generated_at_utc": "2026-10-10T09:46:44.624732+00:00",
   "history": [
     {
