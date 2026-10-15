@@ -1,13 +1,13 @@
 # Análise Pós-Concurso — Lotofácil Operacional
 
-- Concurso Número: 3803
-- Resultado: 03 06 07 08 09 11 12 13 15 16 19 20 21 22 23
+- Concurso Número: 3804
+- Resultado: 01 02 06 07 08 12 14 15 16 17 18 19 21 24 25
 - Cartão gerado: 01 02 03 04 05 09 10 11 12 13 14 15 20 24 25
 - Número de acertos: 7
 
-- Acertos: 03 09 11 12 13 15 20
-- Selecionadas que não saíram: 01 02 04 05 10 14 24 25
-- Sorteadas que ficaram fora: 06 07 08 16 19 21 22 23
+- Acertos: 01 02 12 14 15 24 25
+- Selecionadas que não saíram: 03 04 05 09 10 11 13 20
+- Sorteadas que ficaram fora: 06 07 08 16 17 18 19 21
 
 ## Autoanálise do processo
 - Cartão obteve 7 acertos; 8 selecionadas não saíram e 8 sorteadas ficaram fora.
