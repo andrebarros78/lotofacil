@@ -1,12 +1,12 @@
 {
   "card": [
+    1,
     3,
     4,
     6,
     7,
     8,
     9,
-    10,
     11,
     12,
     13,
@@ -16,7 +16,7 @@
     23,
     24
   ],
-  "card_display": "03 04 06 07 08 09 10 11 12 13 15 19 20 23 24",
+  "card_display": "01 03 04 06 07 08 09 11 12 13 15 19 20 23 24",
   "champion_control": {
     "card": [
       1,
@@ -36,20 +36,20 @@
       25
     ],
     "changed_positions": 5,
-    "decision_sha256": "6b73dec06b8e0865a8c78101f58aa9f66be07649826b6ef7dd6a7a018daa8a94",
+    "decision_sha256": "7f5443abaa504265be76d763aaa831798a2e13e917a127a1a21821e7587b2a91",
     "overlap": 10
   },
   "coverage_guard": {
     "decision": {
       "cards": [
         [
+          1,
           3,
           4,
           6,
           7,
           8,
           9,
-          10,
           11,
           12,
           13,
@@ -60,12 +60,12 @@
           24
         ],
         [
-          1,
           2,
           5,
           6,
           7,
           8,
+          10,
           11,
           14,
           16,
@@ -77,15 +77,15 @@
           25
         ]
       ],
-      "decision_sha256": "0355990e432e6c6a49f26e760ef5ce88ecb4404d4acbb02eb024c87ae4506829",
+      "decision_sha256": "e017656ed3f1b6d904cd675150d5faf6c6011755fe3e0469d9a699bffe121e20",
       "guaranteed_min_best_hits": 8,
       "guard_card": [
-        1,
         2,
         5,
         6,
         7,
         8,
+        10,
         11,
         14,
         16,
@@ -97,13 +97,13 @@
         25
       ],
       "lead_card": [
+        1,
         3,
         4,
         6,
         7,
         8,
         9,
-        10,
         11,
         12,
         13,
@@ -122,7 +122,7 @@
         11,
         19
       ],
-      "target_contest": 3807,
+      "target_contest": 3808,
       "union_size": 25
     },
     "exact_proof": {
@@ -133,7 +133,7 @@
       "probability": 1.0,
       "total_outcomes": 3268760
     },
-    "generated_at_utc": "2026-10-18T07:59:30.867069+00:00",
+    "generated_at_utc": "2026-10-19T08:47:58.054454+00:00",
     "lead_source": "ADAPTIVE_CHALLENGER",
     "policy": {
       "future_results_forbidden": true,
@@ -148,791 +148,11 @@
     "role": "COMBINATORIAL_DOWNSIDE_GUARD",
     "schema_version": 1,
     "status": "COVERAGE_GUARD_PROVEN",
-    "target_contest": 3807
+    "target_contest": 3808
   },
-  "decision_sha256": "26a48cd6906a08c6fba64cce97bc346344f54ca1b88c967f3423801ee38d2b8a",
+  "decision_sha256": "f70a7e36d6372c651010a1de3934586e255cbda662d2983fa3e3d03fc66ba96d",
   "evidence_label": "CARTEIRA COMBINATÓRIA — SEM VANTAGEM PREDITIVA COMPROVADA",
-  "exact_budget_portfolio": {
-    "artifact_sha256": "3d8e23ff338020dd69bc3eb6e9539013b51c6ffea48cb4c87e2035ad9534b5ec",
-    "budget_frontier": [
-      {
-        "budget_cents": 350,
-        "candidate_pool_optimality_proven": true,
-        "candidate_pool_size": 8,
-        "candidate_subsets_evaluated": 1,
-        "cards": [
-          [
-            3,
-            4,
-            6,
-            7,
-            8,
-            9,
-            10,
-            11,
-            12,
-            13,
-            15,
-            19,
-            20,
-            23,
-            24
-          ]
-        ],
-        "cost_cents": 350,
-        "global_full_space_optimality_proven": false,
-        "global_full_space_size": 3268760,
-        "metrics": {
-          "best_hits_histogram": {
-            "10": 756756,
-            "11": 286650,
-            "12": 54600,
-            "13": 4725,
-            "14": 150,
-            "15": 1,
-            "5": 3003,
-            "6": 50050,
-            "7": 289575,
-            "8": 772200,
-            "9": 1051050
-          },
-          "best_hits_sum": 29418840,
-          "card_count": 1,
-          "coverage": {
-            "11": {
-              "covered_outcomes": 346126,
-              "probability": 0.10588908332211604
-            },
-            "12": {
-              "covered_outcomes": 59476,
-              "probability": 0.018195278943697303
-            },
-            "13": {
-              "covered_outcomes": 4876,
-              "probability": 0.0014916971573318322
-            },
-            "14": {
-              "covered_outcomes": 151,
-              "probability": 4.619488735789718e-05
-            },
-            "15": {
-              "covered_outcomes": 1,
-              "probability": 3.0592640634368994e-07
-            }
-          },
-          "guaranteed_min_best_hits": 5,
-          "mean_best_hits": 9.0,
-          "method": "EXACT_MEMBERSHIP_PATTERN_DP_25_CHOOSE_15_V1",
-          "objective_vector": [
-            5,
-            1,
-            151,
-            4876,
-            59476,
-            346126,
-            29418840
-          ],
-          "total_outcomes": 3268760
-        },
-        "optimality_scope": "EXACT_OVER_DECLARED_CANDIDATE_POOL_ONLY",
-        "optimizer_method": "EXHAUSTIVE_CANDIDATE_SUBSET_LEXICOGRAPHIC_V1",
-        "selected_candidate_indices": [
-          0
-        ],
-        "selection_sha256": "528d55b715099e0885aaa82c97d33c574f4e919eebfe55b2d205f6d80f9cba9f",
-        "unused_cents": 0
-      },
-      {
-        "budget_cents": 700,
-        "candidate_pool_optimality_proven": true,
-        "candidate_pool_size": 8,
-        "candidate_subsets_evaluated": 7,
-        "cards": [
-          [
-            3,
-            4,
-            6,
-            7,
-            8,
-            9,
-            10,
-            11,
-            12,
-            13,
-            15,
-            19,
-            20,
-            23,
-            24
-          ],
-          [
-            1,
-            2,
-            5,
-            6,
-            7,
-            8,
-            11,
-            14,
-            16,
-            17,
-            18,
-            19,
-            21,
-            22,
-            25
-          ]
-        ],
-        "cost_cents": 700,
-        "global_full_space_optimality_proven": false,
-        "global_full_space_size": 3268760,
-        "metrics": {
-          "best_hits_histogram": {
-            "10": 1450008,
-            "11": 573300,
-            "12": 109200,
-            "13": 9450,
-            "14": 300,
-            "15": 2,
-            "8": 82800,
-            "9": 1043700
-          },
-          "best_hits_sum": 32299560,
-          "card_count": 2,
-          "coverage": {
-            "11": {
-              "covered_outcomes": 692252,
-              "probability": 0.21177816664423207
-            },
-            "12": {
-              "covered_outcomes": 118952,
-              "probability": 0.036390557887394606
-            },
-            "13": {
-              "covered_outcomes": 9752,
-              "probability": 0.0029833943146636644
-            },
-            "14": {
-              "covered_outcomes": 302,
-              "probability": 9.238977471579436e-05
-            },
-            "15": {
-              "covered_outcomes": 2,
-              "probability": 6.118528126873799e-07
-            }
-          },
-          "guaranteed_min_best_hits": 8,
-          "mean_best_hits": 9.881288317282394,
-          "method": "EXACT_MEMBERSHIP_PATTERN_DP_25_CHOOSE_15_V1",
-          "objective_vector": [
-            8,
-            2,
-            302,
-            9752,
-            118952,
-            692252,
-            32299560
-          ],
-          "total_outcomes": 3268760
-        },
-        "optimality_scope": "EXACT_OVER_DECLARED_CANDIDATE_POOL_ONLY",
-        "optimizer_method": "EXHAUSTIVE_CANDIDATE_SUBSET_LEXICOGRAPHIC_V1",
-        "selected_candidate_indices": [
-          0,
-          1
-        ],
-        "selection_sha256": "f75ffa791e797c0d2fe1ce4ac840987959809d23c184b9b0f09afdf55b4364ea",
-        "unused_cents": 0
-      },
-      {
-        "budget_cents": 1050,
-        "candidate_pool_optimality_proven": true,
-        "candidate_pool_size": 8,
-        "candidate_subsets_evaluated": 21,
-        "cards": [
-          [
-            3,
-            4,
-            6,
-            7,
-            8,
-            9,
-            10,
-            11,
-            12,
-            13,
-            15,
-            19,
-            20,
-            23,
-            24
-          ],
-          [
-            1,
-            2,
-            5,
-            6,
-            7,
-            8,
-            11,
-            14,
-            16,
-            17,
-            18,
-            19,
-            21,
-            22,
-            25
-          ],
-          [
-            2,
-            4,
-            5,
-            7,
-            10,
-            12,
-            13,
-            14,
-            15,
-            16,
-            17,
-            21,
-            22,
-            23,
-            24
-          ]
-        ],
-        "cost_cents": 1050,
-        "global_full_space_optimality_proven": false,
-        "global_full_space_size": 3268760,
-        "metrics": {
-          "best_hits_histogram": {
-            "10": 1653897,
-            "11": 828100,
-            "12": 163800,
-            "13": 14175,
-            "14": 450,
-            "15": 3,
-            "8": 4900,
-            "9": 603435
-          },
-          "best_hits_sum": 33274405,
-          "card_count": 3,
-          "coverage": {
-            "11": {
-              "covered_outcomes": 1006528,
-              "probability": 0.3079234939243016
-            },
-            "12": {
-              "covered_outcomes": 178428,
-              "probability": 0.05458583683109191
-            },
-            "13": {
-              "covered_outcomes": 14628,
-              "probability": 0.004475091471995497
-            },
-            "14": {
-              "covered_outcomes": 453,
-              "probability": 0.00013858466207369155
-            },
-            "15": {
-              "covered_outcomes": 3,
-              "probability": 9.177792190310699e-07
-            }
-          },
-          "guaranteed_min_best_hits": 8,
-          "mean_best_hits": 10.17951914487451,
-          "method": "EXACT_MEMBERSHIP_PATTERN_DP_25_CHOOSE_15_V1",
-          "objective_vector": [
-            8,
-            3,
-            453,
-            14628,
-            178428,
-            1006528,
-            33274405
-          ],
-          "total_outcomes": 3268760
-        },
-        "optimality_scope": "EXACT_OVER_DECLARED_CANDIDATE_POOL_ONLY",
-        "optimizer_method": "EXHAUSTIVE_CANDIDATE_SUBSET_LEXICOGRAPHIC_V1",
-        "selected_candidate_indices": [
-          0,
-          1,
-          6
-        ],
-        "selection_sha256": "84951834421cd6acbc2c4862b96472a473a9172e7bb4a094584b848573d71f50",
-        "unused_cents": 0
-      },
-      {
-        "budget_cents": 1400,
-        "candidate_pool_optimality_proven": true,
-        "candidate_pool_size": 8,
-        "candidate_subsets_evaluated": 35,
-        "cards": [
-          [
-            3,
-            4,
-            6,
-            7,
-            8,
-            9,
-            10,
-            11,
-            12,
-            13,
-            15,
-            19,
-            20,
-            23,
-            24
-          ],
-          [
-            1,
-            2,
-            5,
-            6,
-            7,
-            8,
-            11,
-            14,
-            16,
-            17,
-            18,
-            19,
-            21,
-            22,
-            25
-          ],
-          [
-            1,
-            2,
-            3,
-            4,
-            5,
-            9,
-            10,
-            11,
-            12,
-            13,
-            14,
-            15,
-            20,
-            24,
-            25
-          ],
-          [
-            3,
-            4,
-            6,
-            9,
-            11,
-            13,
-            16,
-            17,
-            18,
-            19,
-            20,
-            21,
-            22,
-            23,
-            24
-          ]
-        ],
-        "cost_cents": 1400,
-        "global_full_space_optimality_proven": false,
-        "global_full_space_size": 3268760,
-        "metrics": {
-          "best_hits_histogram": {
-            "10": 1682331,
-            "11": 1021700,
-            "12": 215000,
-            "13": 18900,
-            "14": 600,
-            "15": 4,
-            "9": 330225
-          },
-          "best_hits_sum": 33868195,
-          "card_count": 4,
-          "coverage": {
-            "11": {
-              "covered_outcomes": 1256204,
-              "probability": 0.38430597535456873
-            },
-            "12": {
-              "covered_outcomes": 234504,
-              "probability": 0.07174096599322068
-            },
-            "13": {
-              "covered_outcomes": 19504,
-              "probability": 0.005966788629327329
-            },
-            "14": {
-              "covered_outcomes": 604,
-              "probability": 0.00018477954943158873
-            },
-            "15": {
-              "covered_outcomes": 4,
-              "probability": 1.2237056253747598e-06
-            }
-          },
-          "guaranteed_min_best_hits": 9,
-          "mean_best_hits": 10.361175185697329,
-          "method": "EXACT_MEMBERSHIP_PATTERN_DP_25_CHOOSE_15_V1",
-          "objective_vector": [
-            9,
-            4,
-            604,
-            19504,
-            234504,
-            1256204,
-            33868195
-          ],
-          "total_outcomes": 3268760
-        },
-        "optimality_scope": "EXACT_OVER_DECLARED_CANDIDATE_POOL_ONLY",
-        "optimizer_method": "EXHAUSTIVE_CANDIDATE_SUBSET_LEXICOGRAPHIC_V1",
-        "selected_candidate_indices": [
-          0,
-          1,
-          2,
-          5
-        ],
-        "selection_sha256": "e8e3a2370e5d704f7ddd2b160b14b5481521525748309576792fb0c22e543afe",
-        "unused_cents": 0
-      }
-    ],
-    "candidate_pool": [
-      {
-        "card": [
-          3,
-          4,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12,
-          13,
-          15,
-          19,
-          20,
-          23,
-          24
-        ],
-        "index": 0,
-        "source": "ADAPTIVE_CHALLENGER_LEAD"
-      },
-      {
-        "card": [
-          1,
-          2,
-          5,
-          6,
-          7,
-          8,
-          11,
-          14,
-          16,
-          17,
-          18,
-          19,
-          21,
-          22,
-          25
-        ],
-        "index": 1,
-        "source": "TWO_CARD_COVERAGE_GUARD"
-      },
-      {
-        "card": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          9,
-          10,
-          11,
-          12,
-          13,
-          14,
-          15,
-          20,
-          24,
-          25
-        ],
-        "index": 2,
-        "source": "PROSPECTIVE_CHAMPION_CONTROL"
-      },
-      {
-        "card": [
-          1,
-          2,
-          3,
-          5,
-          7,
-          8,
-          10,
-          11,
-          16,
-          17,
-          18,
-          22,
-          23,
-          24,
-          25
-        ],
-        "index": 3,
-        "source": "DETERMINISTIC_OPERATOR_INDEX_0"
-      },
-      {
-        "card": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          9,
-          10,
-          12,
-          15,
-          18,
-          20,
-          22,
-          23,
-          24
-        ],
-        "index": 4,
-        "source": "DETERMINISTIC_OPERATOR_INDEX_1"
-      },
-      {
-        "card": [
-          3,
-          4,
-          6,
-          9,
-          11,
-          13,
-          16,
-          17,
-          18,
-          19,
-          20,
-          21,
-          22,
-          23,
-          24
-        ],
-        "index": 5,
-        "source": "DETERMINISTIC_OPERATOR_INDEX_2"
-      },
-      {
-        "card": [
-          2,
-          4,
-          5,
-          7,
-          10,
-          12,
-          13,
-          14,
-          15,
-          16,
-          17,
-          21,
-          22,
-          23,
-          24
-        ],
-        "index": 6,
-        "source": "DETERMINISTIC_OPERATOR_INDEX_3"
-      },
-      {
-        "card": [
-          2,
-          3,
-          4,
-          6,
-          8,
-          9,
-          10,
-          11,
-          13,
-          14,
-          16,
-          20,
-          22,
-          23,
-          25
-        ],
-        "index": 7,
-        "source": "DETERMINISTIC_OPERATOR_INDEX_4"
-      }
-    ],
-    "candidate_pool_sha256": "d0eeb5962b461e6a6424e6fc158e53a3ce96b5b5c33a95a274b646e0d5367c3a",
-    "coverage_guard_decision": {
-      "cards": [
-        [
-          3,
-          4,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12,
-          13,
-          15,
-          19,
-          20,
-          23,
-          24
-        ],
-        [
-          1,
-          2,
-          5,
-          6,
-          7,
-          8,
-          11,
-          14,
-          16,
-          17,
-          18,
-          19,
-          21,
-          22,
-          25
-        ]
-      ],
-      "decision_sha256": "0355990e432e6c6a49f26e760ef5ce88ecb4404d4acbb02eb024c87ae4506829",
-      "guaranteed_min_best_hits": 8,
-      "guard_card": [
-        1,
-        2,
-        5,
-        6,
-        7,
-        8,
-        11,
-        14,
-        16,
-        17,
-        18,
-        19,
-        21,
-        22,
-        25
-      ],
-      "lead_card": [
-        3,
-        4,
-        6,
-        7,
-        8,
-        9,
-        10,
-        11,
-        12,
-        13,
-        15,
-        19,
-        20,
-        23,
-        24
-      ],
-      "method": "TWO_CARD_BALANCED_PARTITION_MAXIMIN_V1",
-      "overlap": 5,
-      "retained_core": [
-        6,
-        7,
-        8,
-        11,
-        19
-      ],
-      "target_contest": 3807,
-      "union_size": 25
-    },
-    "full_card_space": 3268760,
-    "full_result_space": 3268760,
-    "generated_at_utc": "2026-10-18T08:00:10.618317+00:00",
-    "max_budget_enumeration_proof": {
-      "11": {
-        "covered_outcomes": 1256204,
-        "independence_assumption_used": false,
-        "method": "EXACT_JOINT_ENUMERATION_25_CHOOSE_15",
-        "probability": 0.38430597535456873,
-        "total_outcomes": 3268760
-      },
-      "12": {
-        "covered_outcomes": 234504,
-        "independence_assumption_used": false,
-        "method": "EXACT_JOINT_ENUMERATION_25_CHOOSE_15",
-        "probability": 0.07174096599322068,
-        "total_outcomes": 3268760
-      },
-      "13": {
-        "covered_outcomes": 19504,
-        "independence_assumption_used": false,
-        "method": "EXACT_JOINT_ENUMERATION_25_CHOOSE_15",
-        "probability": 0.005966788629327329,
-        "total_outcomes": 3268760
-      },
-      "14": {
-        "covered_outcomes": 604,
-        "independence_assumption_used": false,
-        "method": "EXACT_JOINT_ENUMERATION_25_CHOOSE_15",
-        "probability": 0.00018477954943158873,
-        "total_outcomes": 3268760
-      },
-      "15": {
-        "covered_outcomes": 4,
-        "independence_assumption_used": false,
-        "method": "EXACT_JOINT_ENUMERATION_25_CHOOSE_15",
-        "probability": 1.2237056253747598e-06,
-        "total_outcomes": 3268760
-      },
-      "9": {
-        "covered_outcomes": 3268760,
-        "independence_assumption_used": false,
-        "method": "EXACT_JOINT_ENUMERATION_25_CHOOSE_15",
-        "probability": 1.0,
-        "total_outcomes": 3268760
-      }
-    },
-    "max_exact_budget_cents": 1400,
-    "max_exact_cards": 4,
-    "policy": {
-      "budget_mode": "SIMPLE_CARD_COUNT_FRONTIER_1_TO_4",
-      "candidate_pool_optimality_proven": true,
-      "future_results_forbidden": true,
-      "global_full_space_optimality_proven": false,
-      "global_limit_reason": "The optimizer exhaustively proves the best subset only inside the declared candidate pool. It does not claim exhaustive subset search across all 3,268,760 possible cards.",
-      "mandatory_lead_card": true,
-      "objective_order": [
-        "guaranteed_min_best_hits",
-        "coverage_ge_15",
-        "coverage_ge_14",
-        "coverage_ge_13",
-        "coverage_ge_12",
-        "coverage_ge_11",
-        "mean_best_hits"
-      ],
-      "spending_requires_operator_action": true
-    },
-    "predictive_evidence": "NOT_ESTABLISHED",
-    "purchase_executed": false,
-    "schema_version": 1,
-    "simple_bet_cost_cents": 350,
-    "status": "EXACT_BUDGET_PORTFOLIO_PROVEN",
-    "target_contest": 3807
-  },
-  "generated_at_utc": "2026-10-17T07:45:31.837029+00:00",
+  "generated_at_utc": "2026-10-19T08:47:56.062906+00:00",
   "history": [
     {
       "card": [
@@ -3068,7 +2288,48 @@
         "overlap": 10
       },
       "decision_sha256": "26a48cd6906a08c6fba64cce97bc346344f54ca1b88c967f3423801ee38d2b8a",
-      "evaluation": null,
+      "evaluation": {
+        "brier": 0.24612345679012346,
+        "champion_hits": 9,
+        "delta_brier_vs_uniform": -0.006123456790123466,
+        "delta_hits_vs_champion": 1,
+        "evaluated_at_utc": "2026-10-19T08:47:55.889698+00:00",
+        "gap_to_15": 5,
+        "hits": 10,
+        "observed_contest": 3807,
+        "observed_draw_date": "2026-10-18",
+        "observed_numbers": [
+          1,
+          3,
+          4,
+          7,
+          10,
+          11,
+          13,
+          16,
+          17,
+          19,
+          20,
+          22,
+          23,
+          24,
+          25
+        ],
+        "omitted_winners": [
+          1,
+          16,
+          17,
+          22,
+          25
+        ],
+        "selected_misses": [
+          6,
+          8,
+          9,
+          12,
+          15
+        ]
+      },
       "generated_at_utc": "2026-10-17T07:45:31.837029+00:00",
       "predictive_evidence": "NOT_ESTABLISHED",
       "probabilities": [
@@ -3124,22 +2385,120 @@
       "target_contest": 3807,
       "training_last_contest": 3806,
       "validation_windows": 240
+    },
+    {
+      "card": [
+        1,
+        3,
+        4,
+        6,
+        7,
+        8,
+        9,
+        11,
+        12,
+        13,
+        15,
+        19,
+        20,
+        23,
+        24
+      ],
+      "champion_control": {
+        "card": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          20,
+          24,
+          25
+        ],
+        "changed_positions": 5,
+        "decision_sha256": "7f5443abaa504265be76d763aaa831798a2e13e917a127a1a21821e7587b2a91",
+        "overlap": 10
+      },
+      "decision_sha256": "f70a7e36d6372c651010a1de3934586e255cbda662d2983fa3e3d03fc66ba96d",
+      "evaluation": null,
+      "generated_at_utc": "2026-10-19T08:47:56.062906+00:00",
+      "predictive_evidence": "NOT_ESTABLISHED",
+      "probabilities": [
+        0.6,
+        0.4888888888888889,
+        0.6222222222222222,
+        0.6222222222222222,
+        0.5777777777777777,
+        0.6444444444444445,
+        0.6888888888888889,
+        0.6888888888888889,
+        0.6,
+        0.6,
+        0.6444444444444445,
+        0.6222222222222222,
+        0.6222222222222222,
+        0.6,
+        0.6222222222222222,
+        0.5777777777777777,
+        0.4888888888888889,
+        0.5111111111111111,
+        0.7111111111111111,
+        0.6222222222222222,
+        0.5777777777777777,
+        0.4444444444444444,
+        0.6222222222222222,
+        0.6444444444444445,
+        0.5555555555555556
+      ],
+      "selected_metrics": {
+        "delta_brier_vs_uniform": -0.0018742386831275826,
+        "hit_stddev": 1.1629031558990628,
+        "hits_15": 0,
+        "hits_ge_11": 29,
+        "hits_ge_12": 4,
+        "hits_ge_13": 0,
+        "hits_ge_14": 0,
+        "max_hits": 12,
+        "mean_brier": 0.24187423868312757,
+        "mean_hits": 9.1875,
+        "min_hits": 6,
+        "model_id": "rolling_20_shrink_25",
+        "windows": 240
+      },
+      "selected_model": {
+        "family": "rolling",
+        "model_id": "rolling_20_shrink_25",
+        "parameter": 25.0,
+        "recent_weight": null,
+        "window": 20
+      },
+      "selection_method": "ADAPTIVE_MULTI_HORIZON_TOP15_V2",
+      "target_contest": 3808,
+      "training_last_contest": 3807,
+      "validation_windows": 240
     }
   ],
   "history_summary": {
     "best_hits": 11,
-    "entry_count": 16,
-    "evaluated_count": 15,
-    "latest_target": 3807,
+    "entry_count": 17,
+    "evaluated_count": 16,
+    "latest_target": 3808,
     "losses_vs_champion": 2,
-    "mean_hits": 9.733333333333333,
+    "mean_hits": 9.75,
     "pending_count": 1,
     "ties_vs_champion": 5,
-    "wins_vs_champion": 8
+    "wins_vs_champion": 9
   },
   "leaderboard": [
     {
-      "delta_brier_vs_uniform": -0.0018332510288065762,
+      "delta_brier_vs_uniform": -0.0018742386831275826,
       "hit_stddev": 1.1629031558990628,
       "hits_15": 0,
       "hits_ge_11": 29,
@@ -3147,248 +2506,248 @@
       "hits_ge_13": 0,
       "hits_ge_14": 0,
       "max_hits": 12,
-      "mean_brier": 0.24183325102880657,
+      "mean_brier": 0.24187423868312757,
       "mean_hits": 9.1875,
       "min_hits": 6,
       "model_id": "rolling_20_shrink_25",
       "windows": 240
     },
     {
-      "delta_brier_vs_uniform": -0.011032200551810867,
-      "hit_stddev": 1.2734194997023653,
+      "delta_brier_vs_uniform": -0.01114776273651108,
+      "hit_stddev": 1.274100990241093,
       "hits_15": 0,
       "hits_ge_11": 29,
       "hits_ge_12": 4,
       "hits_ge_13": 2,
       "hits_ge_14": 0,
       "max_hits": 13,
-      "mean_brier": 0.25103220055181086,
-      "mean_hits": 9.108333333333333,
+      "mean_brier": 0.25114776273651107,
+      "mean_hits": 9.1,
       "min_hits": 6,
       "model_id": "exp_alpha_0.1",
       "windows": 240
     },
     {
-      "delta_brier_vs_uniform": -0.005285341389921733,
-      "hit_stddev": 1.2379348282074016,
+      "delta_brier_vs_uniform": -0.005347312476437438,
+      "hit_stddev": 1.2398476608931528,
       "hits_15": 0,
       "hits_ge_11": 23,
       "hits_ge_12": 6,
       "hits_ge_13": 0,
       "hits_ge_14": 0,
       "max_hits": 12,
-      "mean_brier": 0.24528534138992172,
-      "mean_hits": 9.070833333333333,
+      "mean_brier": 0.24534731247643743,
+      "mean_hits": 9.066666666666666,
       "min_hits": 6,
       "model_id": "exp_alpha_0.05",
       "windows": 240
     },
     {
-      "delta_brier_vs_uniform": 6.102011206768343e-05,
-      "hit_stddev": 1.2432037465981012,
+      "delta_brier_vs_uniform": 5.1730859017745656e-05,
+      "hit_stddev": 1.2369036161138651,
       "hits_15": 0,
-      "hits_ge_11": 27,
+      "hits_ge_11": 26,
       "hits_ge_12": 6,
       "hits_ge_13": 0,
       "hits_ge_14": 0,
       "max_hits": 12,
-      "mean_brier": 0.2399389798879323,
-      "mean_hits": 9.066666666666666,
+      "mean_brier": 0.23994826914098225,
+      "mean_hits": 9.058333333333334,
       "min_hits": 6,
       "model_id": "global_lam_200",
       "windows": 240
     },
     {
-      "delta_brier_vs_uniform": 5.896114705888911e-05,
-      "hit_stddev": 1.2432037465981012,
+      "delta_brier_vs_uniform": 4.9399610834138796e-05,
+      "hit_stddev": 1.2369036161138651,
       "hits_15": 0,
-      "hits_ge_11": 27,
+      "hits_ge_11": 26,
       "hits_ge_12": 6,
       "hits_ge_13": 0,
       "hits_ge_14": 0,
       "max_hits": 12,
-      "mean_brier": 0.2399410388529411,
-      "mean_hits": 9.066666666666666,
+      "mean_brier": 0.23995060038916585,
+      "mean_hits": 9.058333333333334,
       "min_hits": 6,
       "model_id": "global_lam_100",
       "windows": 240
     },
     {
-      "delta_brier_vs_uniform": 5.781553911315962e-05,
-      "hit_stddev": 1.2432037465981012,
+      "delta_brier_vs_uniform": 4.8111881312845606e-05,
+      "hit_stddev": 1.2369036161138651,
       "hits_15": 0,
-      "hits_ge_11": 27,
+      "hits_ge_11": 26,
       "hits_ge_12": 6,
       "hits_ge_13": 0,
       "hits_ge_14": 0,
       "max_hits": 12,
-      "mean_brier": 0.23994218446088683,
-      "mean_hits": 9.066666666666666,
+      "mean_brier": 0.23995188811868715,
+      "mean_hits": 9.058333333333334,
       "min_hits": 6,
       "model_id": "global_lam_50",
       "windows": 240
     },
     {
-      "delta_brier_vs_uniform": -0.00022626515495086097,
-      "hit_stddev": 1.2172087833326797,
+      "delta_brier_vs_uniform": -0.00022897052154197128,
+      "hit_stddev": 1.2156316944974193,
       "hits_15": 0,
       "hits_ge_11": 25,
       "hits_ge_12": 4,
       "hits_ge_13": 0,
       "hits_ge_14": 0,
       "max_hits": 12,
-      "mean_brier": 0.24022626515495085,
-      "mean_hits": 9.041666666666666,
+      "mean_brier": 0.24022897052154196,
+      "mean_hits": 9.0375,
       "min_hits": 6,
       "model_id": "rolling_500_shrink_25",
       "windows": 240
     },
     {
-      "delta_brier_vs_uniform": -0.000549217387697698,
-      "hit_stddev": 1.16665922616675,
-      "hits_15": 0,
-      "hits_ge_11": 19,
-      "hits_ge_12": 3,
-      "hits_ge_13": 0,
-      "hits_ge_14": 0,
-      "max_hits": 12,
-      "mean_brier": 0.2405492173876977,
-      "mean_hits": 9.0375,
-      "min_hits": 6,
-      "model_id": "blend_global100_recent50_w0.5",
-      "windows": 240
-    },
-    {
-      "delta_brier_vs_uniform": -0.0009401298488931897,
-      "hit_stddev": 1.2140382567649541,
+      "delta_brier_vs_uniform": -0.0009589916765706252,
+      "hit_stddev": 1.212199275421881,
       "hits_15": 0,
       "hits_ge_11": 25,
       "hits_ge_12": 3,
       "hits_ge_13": 1,
       "hits_ge_14": 0,
       "max_hits": 13,
-      "mean_brier": 0.24094012984889318,
-      "mean_hits": 9.033333333333333,
+      "mean_brier": 0.24095899167657062,
+      "mean_hits": 9.0375,
       "min_hits": 6,
       "model_id": "blend_global100_recent100_w0.75",
       "windows": 240
     },
     {
-      "delta_brier_vs_uniform": -0.000440468940681088,
-      "hit_stddev": 1.2124284056755223,
+      "delta_brier_vs_uniform": -0.0005585316351719716,
+      "hit_stddev": 1.1649988078200861,
+      "hits_15": 0,
+      "hits_ge_11": 19,
+      "hits_ge_12": 3,
+      "hits_ge_13": 0,
+      "hits_ge_14": 0,
+      "max_hits": 12,
+      "mean_brier": 0.24055853163517196,
+      "mean_hits": 9.033333333333333,
+      "min_hits": 6,
+      "model_id": "blend_global100_recent50_w0.5",
+      "windows": 240
+    },
+    {
+      "delta_brier_vs_uniform": -0.0004561503002885048,
+      "hit_stddev": 1.2142384444580892,
       "hits_15": 0,
       "hits_ge_11": 23,
       "hits_ge_12": 5,
       "hits_ge_13": 1,
       "hits_ge_14": 0,
       "max_hits": 13,
-      "mean_brier": 0.24044046894068108,
-      "mean_hits": 9.029166666666667,
+      "mean_brier": 0.2404561503002885,
+      "mean_hits": 9.025,
       "min_hits": 6,
       "model_id": "blend_global100_recent100_w0.5",
       "windows": 240
     },
     {
-      "delta_brier_vs_uniform": -0.0022527069018259127,
-      "hit_stddev": 1.1379730396142471,
+      "delta_brier_vs_uniform": -0.0022744814773227318,
+      "hit_stddev": 1.1399013115177998,
       "hits_15": 0,
       "hits_ge_11": 22,
       "hits_ge_12": 1,
       "hits_ge_13": 0,
       "hits_ge_14": 0,
       "max_hits": 12,
-      "mean_brier": 0.2422527069018259,
-      "mean_hits": 9.029166666666667,
+      "mean_brier": 0.24227448147732272,
+      "mean_hits": 9.025,
       "min_hits": 6,
       "model_id": "exp_alpha_0.02",
       "windows": 240
     },
     {
-      "delta_brier_vs_uniform": -0.0016064213333333577,
-      "hit_stddev": 1.1847922344820163,
+      "delta_brier_vs_uniform": -0.0016285440000000095,
+      "hit_stddev": 1.1901213756961468,
       "hits_15": 0,
       "hits_ge_11": 28,
       "hits_ge_12": 3,
       "hits_ge_13": 0,
       "hits_ge_14": 0,
       "max_hits": 12,
-      "mean_brier": 0.24160642133333335,
-      "mean_hits": 9.020833333333334,
+      "mean_brier": 0.241628544,
+      "mean_hits": 9.016666666666667,
       "min_hits": 6,
       "model_id": "rolling_100_shrink_25",
       "windows": 240
     },
     {
-      "delta_brier_vs_uniform": -0.00011794335136691703,
-      "hit_stddev": 1.2144671899872617,
+      "delta_brier_vs_uniform": -0.00012729979824208093,
+      "hit_stddev": 1.2195670338279894,
       "hits_15": 0,
-      "hits_ge_11": 24,
+      "hits_ge_11": 25,
       "hits_ge_12": 3,
       "hits_ge_13": 0,
       "hits_ge_14": 0,
       "max_hits": 12,
-      "mean_brier": 0.2401179433513669,
-      "mean_hits": 9.008333333333333,
+      "mean_brier": 0.24012729979824207,
+      "mean_hits": 9.0125,
       "min_hits": 6,
       "model_id": "blend_global100_recent50_w0.25",
       "windows": 240
     },
     {
-      "delta_brier_vs_uniform": -0.00010743860869705246,
-      "hit_stddev": 1.2566420753562073,
+      "delta_brier_vs_uniform": -0.00012001987115356494,
+      "hit_stddev": 1.2549623721672118,
       "hits_15": 0,
       "hits_ge_11": 26,
       "hits_ge_12": 4,
       "hits_ge_13": 0,
       "hits_ge_14": 0,
       "max_hits": 12,
-      "mean_brier": 0.24010743860869704,
-      "mean_hits": 8.995833333333334,
+      "mean_brier": 0.24012001987115356,
+      "mean_hits": 8.991666666666667,
       "min_hits": 6,
       "model_id": "blend_global100_recent100_w0.25",
       "windows": 240
     },
     {
-      "delta_brier_vs_uniform": -0.0021748740740740735,
-      "hit_stddev": 1.1779145295346725,
+      "delta_brier_vs_uniform": -0.002184592592592627,
+      "hit_stddev": 1.1761223953691593,
       "hits_15": 0,
       "hits_ge_11": 19,
       "hits_ge_12": 2,
       "hits_ge_13": 0,
       "hits_ge_14": 0,
       "max_hits": 12,
-      "mean_brier": 0.24217487407407406,
-      "mean_hits": 8.995833333333334,
+      "mean_brier": 0.24218459259259262,
+      "mean_hits": 8.991666666666667,
       "min_hits": 6,
       "model_id": "rolling_50_shrink_25",
       "windows": 240
     },
     {
-      "delta_brier_vs_uniform": -0.0012348609619333983,
-      "hit_stddev": 1.1866151674218375,
+      "delta_brier_vs_uniform": -0.0012442958999554776,
+      "hit_stddev": 1.1847922344820163,
       "hits_15": 0,
       "hits_ge_11": 22,
       "hits_ge_12": 2,
       "hits_ge_13": 0,
       "hits_ge_14": 0,
       "max_hits": 12,
-      "mean_brier": 0.2412348609619334,
-      "mean_hits": 8.983333333333333,
+      "mean_brier": 0.24124429589995547,
+      "mean_hits": 8.979166666666666,
       "min_hits": 6,
       "model_id": "blend_global100_recent50_w0.75",
       "windows": 240
     },
     {
-      "delta_brier_vs_uniform": -0.0010706776859504274,
-      "hit_stddev": 1.1571036638473189,
+      "delta_brier_vs_uniform": -0.0010642159779614413,
+      "hit_stddev": 1.1582733797434102,
       "hits_15": 0,
       "hits_ge_11": 21,
       "hits_ge_12": 1,
       "hits_ge_13": 0,
       "hits_ge_14": 0,
       "max_hits": 12,
-      "mean_brier": 0.24107067768595042,
-      "mean_hits": 8.833333333333334,
+      "mean_brier": 0.24106421597796143,
+      "mean_hits": 8.841666666666667,
       "min_hits": 6,
       "model_id": "rolling_250_shrink_25",
       "windows": 240
@@ -3405,22 +2764,22 @@
   },
   "predictive_evidence": "NOT_ESTABLISHED",
   "probabilities": [
-    0.5777777777777777,
+    0.6,
     0.4888888888888889,
     0.6222222222222222,
     0.6222222222222222,
     0.5777777777777777,
-    0.6666666666666666,
-    0.6666666666666666,
-    0.7111111111111111,
-    0.6,
-    0.6,
     0.6444444444444445,
+    0.6888888888888889,
+    0.6888888888888889,
+    0.6,
+    0.6,
     0.6444444444444445,
     0.6222222222222222,
+    0.6222222222222222,
     0.6,
-    0.6444444444444445,
-    0.5555555555555556,
+    0.6222222222222222,
+    0.5777777777777777,
     0.4888888888888889,
     0.5111111111111111,
     0.7111111111111111,
@@ -3429,34 +2788,34 @@
     0.4444444444444444,
     0.6222222222222222,
     0.6444444444444445,
-    0.5333333333333333
+    0.5555555555555556
   ],
   "provenance": {
-    "canonical_history_sha256": "ef913c92982822a0e473050083c241eb9fce322f8a72252ec36fd543711c7713",
-    "latest_sha256": "005d7951b55534a1b20a9639c8195a609fecf4dcc8bf1a5a278988150c6ef25a",
-    "prospective_ledger_sha256": "25dd7b6d5d11825d818a24940dc1373d68c2900a788248472291db631c3ca32e"
+    "canonical_history_sha256": "27428daaf7b4709728a981e1a7894362c83f52821e34283838db630abbe45144",
+    "latest_sha256": "326da444f081c01ca20a8fa326f506f954c722cfab8d03802ef646995ed10386",
+    "prospective_ledger_sha256": "8bac171cc1c184c509cb57c798cfea8bc58a3b4a25e87ff7bebe4388c913742e"
   },
   "ranking": [
-    8,
     19,
-    6,
     7,
+    8,
+    6,
     11,
-    12,
-    15,
     24,
     3,
     4,
+    12,
     13,
+    15,
     20,
     23,
+    1,
     9,
     10,
     14,
-    1,
     5,
-    21,
     16,
+    21,
     25,
     18,
     2,
@@ -3465,7 +2824,7 @@
   ],
   "schema_version": 2,
   "selected_metrics": {
-    "delta_brier_vs_uniform": -0.0018332510288065762,
+    "delta_brier_vs_uniform": -0.0018742386831275826,
     "hit_stddev": 1.1629031558990628,
     "hits_15": 0,
     "hits_ge_11": 29,
@@ -3473,7 +2832,7 @@
     "hits_ge_13": 0,
     "hits_ge_14": 0,
     "max_hits": 12,
-    "mean_brier": 0.24183325102880657,
+    "mean_brier": 0.24187423868312757,
     "mean_hits": 9.1875,
     "min_hits": 6,
     "model_id": "rolling_20_shrink_25",
@@ -3488,7 +2847,7 @@
   },
   "selection_method": "ADAPTIVE_MULTI_HORIZON_TOP15_V2",
   "status": "ADAPTIVE_CHALLENGER_FROZEN",
-  "target_contest": 3807,
-  "training_last_contest": 3806,
+  "target_contest": 3808,
+  "training_last_contest": 3807,
   "validation_windows": 240
 }
