@@ -1,13 +1,13 @@
 # Análise Pós-Concurso — Lotofácil Operacional
 
-- Concurso Número: 3807
-- Resultado: 01 03 04 07 10 11 13 16 17 19 20 22 23 24 25
+- Concurso Número: 3808
+- Resultado: 01 04 07 10 12 13 14 15 17 18 19 20 21 22 24
 - Cartão gerado: 01 02 03 04 05 09 10 11 12 13 14 15 20 24 25
 - Número de acertos: 9
 
-- Acertos: 01 03 04 10 11 13 20 24 25
-- Selecionadas que não saíram: 02 05 09 12 14 15
-- Sorteadas que ficaram fora: 07 16 17 19 22 23
+- Acertos: 01 04 10 12 13 14 15 20 24
+- Selecionadas que não saíram: 02 03 05 09 11 25
+- Sorteadas que ficaram fora: 07 17 18 19 21 22
 
 ## Autoanálise do processo
 - Cartão obteve 9 acertos; 6 selecionadas não saíram e 6 sorteadas ficaram fora.
