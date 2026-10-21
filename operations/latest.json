@@ -1,31 +1,31 @@
 {
   "bootstrap_manifest_sha256": "716feea67b3b5a2ee712a498adcd9975578b9bc6837431584578ba1e7b7aefe5",
   "bootstrap_official_patches": [],
-  "canonical_history_sha256": "e0a5068ce58d954acc776222c71cd82b95e9d7e15c3a77348f9a7d17729c2b42",
-  "data_snapshot_hash": "a466bc3465a20dab46216ffc07f2fbb1f851f4d28fc81cba7065b99583819598",
+  "canonical_history_sha256": "1cb5db3375c3fc7869f5fa2eb1a1c17584f007a62f0947baa6b617a8ef8aadc2",
+  "data_snapshot_hash": "dbe0f8c8dcef9cb7770a032cd8e241caae3769822be049d1703fa87b10c7b637",
   "database_integrity": "ok",
   "inserted_official_contests": [
-    3808
+    3809
   ],
-  "next_prediction_target": 3809,
-  "official_latest_contest": 3808,
+  "next_prediction_target": 3810,
+  "official_latest_contest": 3809,
   "post_contest_report": {
     "emitted_for_contests": [
-      3808
+      3809
     ],
-    "latest_contest": 3808,
-    "report_count": 26
+    "latest_contest": 3809,
+    "report_count": 27
   },
   "prospective": {
     "cohort_a": {
-      "n": 26,
-      "primary_ci95_high": 0.00029165828458939814,
-      "primary_ci95_low": -0.001824896091769784,
+      "n": 27,
+      "primary_ci95_high": 0.0002782811588601334,
+      "primary_ci95_low": -0.0017607989754657603,
       "primary_gate_pass": false,
-      "primary_mean_delta": -0.000766618903590193,
-      "secondary_ci95_high": 0.005328560813600698,
-      "secondary_ci95_low": -0.007480819114157203,
-      "secondary_mean_delta": -0.0010761291502782528
+      "primary_mean_delta": -0.0007412589083028135,
+      "secondary_ci95_high": 0.004965767868756833,
+      "secondary_ci95_low": -0.007369949928416041,
+      "secondary_mean_delta": -0.0012020910298296036
     },
     "cohort_b": {
       "n": 0,
@@ -37,71 +37,71 @@
       "secondary_ci95_low": null,
       "secondary_mean_delta": null
     },
-    "evaluated_predictions": 26,
+    "evaluated_predictions": 27,
     "note": "Criteria met does not auto-promote: independent review remains required by project protocol.",
     "pending_predictions": 1,
     "predictive_evidence": "NOT_ESTABLISHED",
-    "primary_ci95_high": 0.00029165828458939814,
-    "primary_ci95_low": -0.001824896091769784,
-    "primary_mean_delta": -0.000766618903590193,
+    "primary_ci95_high": 0.0002782811588601334,
+    "primary_ci95_low": -0.0017607989754657603,
+    "primary_mean_delta": -0.0007412589083028135,
     "prospective_state": "UNDER_TEST_COHORT_A",
     "replication_criteria_met": false
   },
   "retrospective_core": {
-    "contest_count": 3808,
+    "contest_count": 3809,
     "m1_frequency": {
       "backtest_status": "VALID",
-      "delta_brier": 7.80769148785372e-05,
-      "delta_brier_ci_high": 0.00020053243171599646,
-      "delta_brier_ci_low": -4.437860195892207e-05,
+      "delta_brier": 7.976337378684946e-05,
+      "delta_brier_ci_high": 0.00020216865205530438,
+      "delta_brier_ci_low": -4.264190448160547e-05,
       "delta_min": 0.0,
       "failed_window_ids": [],
       "failed_windows": 0,
-      "mean_brier": 0.23992192308512145,
+      "mean_brier": 0.23992023662621315,
       "model_name": "M1_frequency_regularized_lambda_100",
       "planned_windows": 1524,
       "predictions": 1524,
       "success_rate": 1.0,
       "successful_windows": 1524,
       "uniform_brier": 0.24,
-      "window_ledger_hash": "d44a62aa0f55559dec57ff8e0ce3290efeb1a0d0fecf5b63e8c819490c1446ed"
+      "window_ledger_hash": "fd19e59fd35961c73ffc514a74359840c4d54d97d800681b092090ba8d8c19b5"
     },
     "m2_exponential": {
       "backtest_status": "VALID",
-      "delta_brier": -0.006109098301756,
-      "delta_brier_ci_high": -0.005308698608766558,
-      "delta_brier_ci_low": -0.006909497994745442,
+      "delta_brier": -0.006105579016154522,
+      "delta_brier_ci_high": -0.005305190984666362,
+      "delta_brier_ci_low": -0.006905967047642682,
       "delta_min": 0.0,
       "failed_window_ids": [],
       "failed_windows": 0,
-      "mean_brier": 0.246109098301756,
+      "mean_brier": 0.2461055790161545,
       "model_name": "M2_exponential_alpha_0.05",
       "planned_windows": 1524,
       "predictions": 1524,
       "success_rate": 1.0,
       "successful_windows": 1524,
       "uniform_brier": 0.24,
-      "window_ledger_hash": "60c16a6236604301542bb3b2a67b482d540932724004570054e58b8ca9031d91"
+      "window_ledger_hash": "168ee3c94eb1fde442e40e00e31ef48c9fb5cdb3fc6c932524eed3ec16c92e04"
     },
-    "max_abs_marginal_z": 3.56586313561818,
-    "max_marginal_frequency": 0.6234243697478992,
-    "mean_consecutive_repetition": 8.975571315996849,
-    "min_marginal_frequency": 0.5716911764705882,
-    "min_train": 2284,
+    "max_abs_marginal_z": 3.5852395201830474,
+    "max_marginal_frequency": 0.6235232344447361,
+    "mean_consecutive_repetition": 8.975052521008404,
+    "min_marginal_frequency": 0.5715410868994487,
+    "min_train": 2285,
     "predictive_evidence": "NOT_ESTABLISHED",
     "scientific_conclusion": "EVIDENCIA_PREDITIVA_INSUFICIENTE"
   },
-  "run_at_utc": "2026-10-20T08:27:32.643884+00:00",
-  "snapshot_contests": 3808,
-  "snapshot_hash": "a852636e65d0c8faa3badd896c4d06a1451d98d3a30d62beacd1e34234010111",
-  "snapshot_id": "snap-a852636e65d0c8faa3ba",
+  "run_at_utc": "2026-10-21T08:30:09.753502+00:00",
+  "snapshot_contests": 3809,
+  "snapshot_hash": "dc226c5dec74b76b3793ee530a5cdfc1f33c28229f53abd7dd4f57f95d1bf050",
+  "snapshot_id": "snap-dc226c5dec74b76b3793",
   "state_transaction": {
-    "generation_id": "cycle-3808-3146e058d9f8dc48",
+    "generation_id": "cycle-3809-b7fd4416c00e7f17",
     "previous_commit_status": "STATE_COMMIT_VERIFIED",
     "recovery_before_cycle": "CLEAN",
     "schema": "operational-state-transaction-v1"
   },
   "status": "GITHUB_OPERATIONAL_CYCLE_PASS",
-  "storage_snapshot_hash": "a852636e65d0c8faa3badd896c4d06a1451d98d3a30d62beacd1e34234010111",
-  "storage_snapshot_id": "snap-a852636e65d0c8faa3ba"
+  "storage_snapshot_hash": "dc226c5dec74b76b3793ee530a5cdfc1f33c28229f53abd7dd4f57f95d1bf050",
+  "storage_snapshot_id": "snap-dc226c5dec74b76b3793"
 }
