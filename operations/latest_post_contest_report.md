@@ -1,13 +1,13 @@
 # Análise Pós-Concurso — Lotofácil Operacional
 
-- Concurso Número: 3811
-- Resultado: 01 03 05 07 08 09 10 11 12 15 16 18 19 23 25
+- Concurso Número: 3812
+- Resultado: 03 04 05 07 08 11 13 16 17 19 20 21 23 24 25
 - Cartão gerado: 01 02 03 04 05 10 11 12 13 14 15 19 20 24 25
 - Número de acertos: 9
 
-- Acertos: 01 03 05 10 11 12 15 19 25
-- Selecionadas que não saíram: 02 04 13 14 20 24
-- Sorteadas que ficaram fora: 07 08 09 16 18 23
+- Acertos: 03 04 05 11 13 19 20 24 25
+- Selecionadas que não saíram: 01 02 10 12 14 15
+- Sorteadas que ficaram fora: 07 08 16 17 21 23
 
 ## Autoanálise do processo
 - Cartão obteve 9 acertos; 6 selecionadas não saíram e 6 sorteadas ficaram fora.
