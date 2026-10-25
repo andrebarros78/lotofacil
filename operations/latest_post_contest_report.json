@@ -1,5 +1,5 @@
 {
-  "contest_number": 3812,
+  "contest_number": 3813,
   "generated_card": [
     1,
     2,
@@ -25,52 +25,52 @@
   ],
   "hits": 9,
   "matched_numbers": [
-    3,
     4,
     5,
-    11,
+    10,
+    12,
     13,
-    19,
+    14,
+    15,
     20,
-    24,
     25
   ],
   "omitted_winners": [
-    7,
+    6,
     8,
     16,
     17,
-    21,
+    22,
     23
   ],
-  "primary_delta_brier_vs_uniform": -0.0004496048325563218,
+  "primary_delta_brier_vs_uniform": -0.0005311902760526954,
   "report_version": "constructive-post-contest-v1",
   "result": [
-    3,
     4,
     5,
-    7,
+    6,
     8,
-    11,
+    10,
+    12,
     13,
+    14,
+    15,
     16,
     17,
-    19,
     20,
-    21,
+    22,
     23,
-    24,
     25
   ],
-  "result_display": "03 04 05 07 08 11 13 16 17 19 20 21 23 24 25",
+  "result_display": "04 05 06 08 10 12 13 14 15 16 17 20 22 23 25",
   "schema_version": 1,
   "selected_misses": [
     1,
     2,
-    10,
-    12,
-    14,
-    15
+    3,
+    11,
+    19,
+    24
   ],
   "self_analysis": {
     "adjustments_suggested": [
