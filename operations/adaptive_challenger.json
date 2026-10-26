@@ -153,7 +153,7 @@
   "decision_sha256": "363156caf69ad3fdf1f2f692fae3fa840c466c569d7dfbf08f7e1e27b374665d",
   "evidence_label": "CARTEIRA COMBINATÓRIA — SEM VANTAGEM PREDITIVA COMPROVADA",
   "exact_budget_portfolio": {
-    "artifact_sha256": "9d2494bae3c462f28e2acac8a68dcd3022040f2df97cfc2a7e89f13b9dd9242b",
+    "artifact_sha256": "4bbf3efb3e84589cb9bd8b67c42f4c0955fd168421d9e0198c2dc78be297d82e",
     "budget_frontier": [
       {
         "budget_cents": 350,
@@ -861,7 +861,7 @@
     },
     "full_card_space": 3268760,
     "full_result_space": 3268760,
-    "generated_at_utc": "2026-10-25T08:22:46.554768+00:00",
+    "generated_at_utc": "2026-10-26T08:50:53.546466+00:00",
     "max_budget_enumeration_proof": {
       "11": {
         "covered_outcomes": 1273089,
