@@ -1,5 +1,5 @@
 {
-  "contest_number": 3813,
+  "contest_number": 3814,
   "generated_card": [
     1,
     2,
@@ -23,54 +23,56 @@
     "NO_SINGLE_CONTEST_RETUNING",
     "CHALLENGER_REQUIRES_PREDECLARED_VALIDATION"
   ],
-  "hits": 9,
+  "hits": 7,
   "matched_numbers": [
+    1,
     4,
-    5,
-    10,
     12,
     13,
-    14,
     15,
-    20,
+    24,
     25
   ],
   "omitted_winners": [
     6,
     8,
+    9,
     16,
     17,
-    22,
-    23
+    18,
+    21,
+    22
   ],
-  "primary_delta_brier_vs_uniform": -0.0005311902760526954,
+  "primary_delta_brier_vs_uniform": -0.003536301211195275,
   "report_version": "constructive-post-contest-v1",
   "result": [
+    1,
     4,
-    5,
     6,
     8,
-    10,
+    9,
     12,
     13,
-    14,
     15,
     16,
     17,
-    20,
+    18,
+    21,
     22,
-    23,
+    24,
     25
   ],
-  "result_display": "04 05 06 08 10 12 13 14 15 16 17 20 22 23 25",
+  "result_display": "01 04 06 08 09 12 13 15 16 17 18 21 22 24 25",
   "schema_version": 1,
   "selected_misses": [
-    1,
     2,
     3,
+    5,
+    10,
     11,
+    14,
     19,
-    24
+    20
   ],
   "self_analysis": {
     "adjustments_suggested": [
@@ -86,7 +88,7 @@
     ],
     "process_errors": [],
     "process_findings": [
-      "Cartão obteve 9 acertos; 6 selecionadas não saíram e 6 sorteadas ficaram fora.",
+      "Cartão obteve 7 acertos; 8 selecionadas não saíram e 8 sorteadas ficaram fora.",
       "O modelo primário ficou abaixo do baseline uniforme neste concurso."
     ]
   },

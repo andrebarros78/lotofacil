@@ -1,16 +1,16 @@
 # Análise Pós-Concurso — Lotofácil Operacional
 
-- Concurso Número: 3813
-- Resultado: 04 05 06 08 10 12 13 14 15 16 17 20 22 23 25
+- Concurso Número: 3814
+- Resultado: 01 04 06 08 09 12 13 15 16 17 18 21 22 24 25
 - Cartão gerado: 01 02 03 04 05 10 11 12 13 14 15 19 20 24 25
-- Número de acertos: 9
+- Número de acertos: 7
 
-- Acertos: 04 05 10 12 13 14 15 20 25
-- Selecionadas que não saíram: 01 02 03 11 19 24
-- Sorteadas que ficaram fora: 06 08 16 17 22 23
+- Acertos: 01 04 12 13 15 24 25
+- Selecionadas que não saíram: 02 03 05 10 11 14 19 20
+- Sorteadas que ficaram fora: 06 08 09 16 17 18 21 22
 
 ## Autoanálise do processo
-- Cartão obteve 9 acertos; 6 selecionadas não saíram e 6 sorteadas ficaram fora.
+- Cartão obteve 7 acertos; 8 selecionadas não saíram e 8 sorteadas ficaram fora.
 - O modelo primário ficou abaixo do baseline uniforme neste concurso.
 
 ### Correções necessárias
