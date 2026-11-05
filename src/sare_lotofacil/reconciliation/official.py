@@ -10,7 +10,7 @@ from typing import Any, Callable, Iterable
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
-from sare_lotofacil.ingestion.caixa import BASE_URL, parse_caixa_payload
+from sare_lotofacil.ingestion.caixa import BASE_URL, PORTAL_HEADERS, parse_caixa_payload
 from sare_lotofacil.ingestion.validation import ContestRecord, validate_contest
 
 OFFICIAL_MATCH = "OFFICIAL_MATCH"
@@ -118,7 +118,7 @@ def fetch_official_raw(
     source_url = f"{BASE_URL}/{contest_id}"
     request = Request(
         source_url,
-        headers={"Accept": "application/json", "User-Agent": "SARE-Lotofacil/1.1-official-reconciliation"},
+        headers=PORTAL_HEADERS,
     )
 
     for attempt in range(retries + 1):
