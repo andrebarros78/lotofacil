@@ -34,3 +34,28 @@ jobs:
         run: python scripts/validate_agent_ecosystem.py
       - name: Operator console smoke
         run: python scripts/github_operator_console.py --help >/dev/null
+
+  caixa-live-portal:
+    name: CAIXA live official endpoint (GitHub runner)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: "3.13"
+      - name: Install canonical engine
+        run: python -m pip install -c requirements.lock.txt -e .
+      - name: Verify real CAIXA responses without mutating canonical state
+        run: |
+          python - <<'PY'
+          from sare_lotofacil.ingestion.caixa import fetch_caixa_contest
+          known = fetch_caixa_contest(3821, attempts=1, timeout=15)
+          assert known.record.contest_id == 3821
+          assert known.record.draw_date.isoformat() == "2026-11-04"
+          assert known.record.numbers == (1, 5, 6, 9, 10, 12, 14, 17, 18, 19, 20, 21, 22, 23, 25)
+          latest = fetch_caixa_contest(attempts=1, timeout=15)
+          assert latest.record.contest_id >= 3821
+          print(f"CAIXA_LIVE_PASS latest={latest.record.contest_id} confirmed=3821")
+          PY

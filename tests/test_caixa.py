@@ -74,3 +74,36 @@ def test_fetch_caixa_contest_exhausts_transient_retries_fail_closed() -> None:
     assert exc_info.value.code == 504
     assert len(calls) == 3
     assert delays == [0.5, 1.0]
+
+
+def test_caixa_request_uses_portal_compatible_http_headers() -> None:
+    """Regression: the official service rejects the old SARE/0.1 bot request (403)."""
+    calls = []
+
+    def opener(request, timeout):
+        calls.append(request)
+        user_agent = request.get_header("User-agent", "")
+        if user_agent.startswith("SARE-Lotofacil/"):
+            raise HTTPError(request.full_url, 403, "Forbidden", None, None)
+        assert "Mozilla/" in user_agent
+        assert request.get_header("Accept") == "application/json"
+        assert "pt-BR" in request.get_header("Accept-language", "")
+        assert request.get_header("Referer", "").startswith("https://loterias.caixa.gov.br/")
+        return _Response(json.dumps(PAYLOAD).encode("utf-8"))
+
+    result = fetch_caixa_contest(3779, attempts=1, opener=opener)
+    assert result.record.contest_id == 3779
+    assert len(calls) == 1
+
+
+def test_caixa_403_remains_fail_closed_when_portal_headers_are_rejected() -> None:
+    calls = []
+
+    def opener(request, timeout):
+        calls.append(request.full_url)
+        raise HTTPError(request.full_url, 403, "Forbidden", None, None)
+
+    with pytest.raises(HTTPError) as error:
+        fetch_caixa_contest(3779, attempts=4, opener=opener)
+    assert error.value.code == 403
+    assert len(calls) == 1
