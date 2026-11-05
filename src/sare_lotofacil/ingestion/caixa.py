@@ -14,6 +14,20 @@ from sare_lotofacil.ingestion.validation import ContestRecord, validate_contest
 BASE_URL = "https://servicebus2.caixa.gov.br/portaldeloterias/api/lotofacil"
 TRANSIENT_HTTP_CODES = frozenset({408, 425, 429, 502, 503, 504})
 
+# The CAIXA portal rejects some generic API-client user agents with HTTP 403.
+# Keep the official URL and explicit portal origin; never retry a definitive 403
+# or substitute a third-party response as direct official evidence.
+PORTAL_HEADERS = {
+    "Accept": "application/json",
+    "Accept-Language": "pt-BR,pt;q=0.9",
+    "Origin": "https://loterias.caixa.gov.br",
+    "Referer": "https://loterias.caixa.gov.br/",
+    "User-Agent": (
+        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
+        "(KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36"
+    ),
+}
+
 
 @dataclass(frozen=True, slots=True)
 class PrizeTier:
@@ -90,7 +104,7 @@ def fetch_caixa_contest(
         raise ValueError("backoff_seconds não pode ser negativo")
 
     url = BASE_URL if contest_id is None else f"{BASE_URL}/{contest_id}"
-    request = Request(url, headers={"Accept": "application/json", "User-Agent": "SARE-Lotofacil/0.1"})
+    request = Request(url, headers=PORTAL_HEADERS)
 
     for attempt in range(1, attempts + 1):
         try:
