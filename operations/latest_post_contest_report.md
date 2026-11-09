@@ -1,24 +1,24 @@
 # Análise Pós-Concurso — Lotofácil Operacional
 
-- Concurso Número: 3823
-- Resultado: 03 06 07 08 10 11 15 16 17 18 20 21 22 23 24
+- Concurso Número: 3824
+- Resultado: 01 02 03 07 11 12 13 14 15 17 18 19 22 24 25
 - Cartão gerado: 01 02 03 04 05 10 11 12 13 14 15 19 20 24 25
-- Número de acertos: 6
+- Número de acertos: 11
 
-- Acertos: 03 10 11 15 20 24
-- Selecionadas que não saíram: 01 02 04 05 12 13 14 19 25
-- Sorteadas que ficaram fora: 06 07 08 16 17 18 21 22 23
+- Acertos: 01 02 03 11 12 13 14 15 19 24 25
+- Selecionadas que não saíram: 04 05 10 20
+- Sorteadas que ficaram fora: 07 17 18 22
 
 ## Autoanálise do processo
-- Cartão obteve 6 acertos; 9 selecionadas não saíram e 9 sorteadas ficaram fora.
-- O modelo primário ficou abaixo do baseline uniforme neste concurso.
+- Cartão obteve 11 acertos; 4 selecionadas não saíram e 4 sorteadas ficaram fora.
+- O modelo primário superou o baseline uniforme neste concurso isolado.
 
 ### Correções necessárias
 - Nenhuma correção de integridade obrigatória foi identificada neste ciclo.
 
 ### Ajustes sugeridos
 - Examinar a recorrência das dezenas selecionadas que não saíram e das sorteadas que ficaram fora em uma janela prospectiva; um único concurso não deve virar regra de seleção.
-- Se a perda para o baseline persistir na coorte, abrir challenger predeclarado e compará-lo sem alterar retroativamente o champion.
+- Registrar o ganho sem promover o modelo; aguardar evidência prospectiva acumulada.
 
 ### Implementações necessárias
 - Emitir e persistir este relatório automaticamente após cada resultado oficial avaliado.
