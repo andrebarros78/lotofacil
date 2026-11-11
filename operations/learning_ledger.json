@@ -1292,37 +1292,64 @@
         25
       ],
       "target_hits": 15
+    },
+    {
+      "adjustments_suggested": [
+        "Examinar a recorrência das dezenas selecionadas que não saíram e das sorteadas que ficaram fora em uma janela prospectiva; um único concurso não deve virar regra de seleção.",
+        "Registrar o ganho sem promover o modelo; aguardar evidência prospectiva acumulada."
+      ],
+      "contest_number": 3826,
+      "gap_to_15": 5,
+      "hits": 10,
+      "omitted_winners": [
+        8,
+        9,
+        18,
+        21,
+        22
+      ],
+      "primary_delta_brier_vs_uniform": 0.0002670764736906195,
+      "process_findings": [
+        "Cartão obteve 10 acertos; 5 selecionadas não saíram e 5 sorteadas ficaram fora.",
+        "O modelo primário superou o baseline uniforme neste concurso isolado."
+      ],
+      "selected_misses": [
+        4,
+        10,
+        11,
+        14,
+        20
+      ],
+      "target_hits": 15
     }
   ],
-  "entry_count": 41,
+  "entry_count": 42,
   "latest_entry": {
     "adjustments_suggested": [
       "Examinar a recorrência das dezenas selecionadas que não saíram e das sorteadas que ficaram fora em uma janela prospectiva; um único concurso não deve virar regra de seleção.",
-      "Se a perda para o baseline persistir na coorte, abrir challenger predeclarado e compará-lo sem alterar retroativamente o champion."
+      "Registrar o ganho sem promover o modelo; aguardar evidência prospectiva acumulada."
     ],
-    "contest_number": 3825,
-    "gap_to_15": 6,
-    "hits": 9,
+    "contest_number": 3826,
+    "gap_to_15": 5,
+    "hits": 10,
     "omitted_winners": [
-      6,
-      7,
       8,
       9,
-      17,
-      23
+      18,
+      21,
+      22
     ],
-    "primary_delta_brier_vs_uniform": -0.0009563251212382773,
+    "primary_delta_brier_vs_uniform": 0.0002670764736906195,
     "process_findings": [
-      "Cartão obteve 9 acertos; 6 selecionadas não saíram e 6 sorteadas ficaram fora.",
-      "O modelo primário ficou abaixo do baseline uniforme neste concurso."
+      "Cartão obteve 10 acertos; 5 selecionadas não saíram e 5 sorteadas ficaram fora.",
+      "O modelo primário superou o baseline uniforme neste concurso isolado."
     ],
     "selected_misses": [
-      2,
+      4,
+      10,
       11,
-      12,
-      13,
-      24,
-      25
+      14,
+      20
     ],
     "target_hits": 15
   },
@@ -1341,16 +1368,16 @@
   "schema_version": 1,
   "summary": {
     "best_hits": 11,
-    "latest_gap_to_15": 6,
-    "mean_hits": 8.731707317073171,
+    "latest_gap_to_15": 5,
+    "mean_hits": 8.761904761904763,
     "omitted_winner_frequency": [
       {
-        "count": 29,
-        "number": 6
+        "count": 30,
+        "number": 8
       },
       {
         "count": 29,
-        "number": 8
+        "number": 6
       },
       {
         "count": 28,
@@ -1373,19 +1400,19 @@
         "number": 17
       },
       {
-        "count": 22,
+        "count": 23,
         "number": 18
       },
       {
-        "count": 20,
+        "count": 21,
         "number": 21
       },
       {
-        "count": 17,
+        "count": 18,
         "number": 22
       },
       {
-        "count": 11,
+        "count": 12,
         "number": 9
       },
       {
@@ -1399,16 +1426,20 @@
         "number": 2
       },
       {
-        "count": 20,
+        "count": 21,
         "number": 10
       },
       {
-        "count": 19,
+        "count": 20,
         "number": 14
       },
       {
-        "count": 18,
+        "count": 19,
         "number": 4
+      },
+      {
+        "count": 18,
+        "number": 20
       },
       {
         "count": 17,
@@ -1419,8 +1450,8 @@
         "number": 5
       },
       {
-        "count": 17,
-        "number": 20
+        "count": 16,
+        "number": 11
       },
       {
         "count": 16,
@@ -1429,10 +1460,6 @@
       {
         "count": 16,
         "number": 25
-      },
-      {
-        "count": 15,
-        "number": 11
       },
       {
         "count": 14,
