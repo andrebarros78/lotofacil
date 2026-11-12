@@ -1,16 +1,16 @@
 # Análise Pós-Concurso — Lotofácil Operacional
 
-- Concurso Número: 3826
-- Resultado: 01 02 03 05 08 09 12 13 15 18 19 21 22 24 25
+- Concurso Número: 3827
+- Resultado: 01 02 04 05 06 10 11 13 15 16 18 20 21 22 23
 - Cartão gerado: 01 02 03 04 05 10 11 12 13 14 15 19 20 24 25
-- Número de acertos: 10
+- Número de acertos: 9
 
-- Acertos: 01 02 03 05 12 13 15 19 24 25
-- Selecionadas que não saíram: 04 10 11 14 20
-- Sorteadas que ficaram fora: 08 09 18 21 22
+- Acertos: 01 02 04 05 10 11 13 15 20
+- Selecionadas que não saíram: 03 12 14 19 24 25
+- Sorteadas que ficaram fora: 06 16 18 21 22 23
 
 ## Autoanálise do processo
-- Cartão obteve 10 acertos; 5 selecionadas não saíram e 5 sorteadas ficaram fora.
+- Cartão obteve 9 acertos; 6 selecionadas não saíram e 6 sorteadas ficaram fora.
 - O modelo primário superou o baseline uniforme neste concurso isolado.
 
 ### Correções necessárias
