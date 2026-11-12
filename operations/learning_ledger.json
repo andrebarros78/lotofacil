@@ -1321,35 +1321,68 @@
         20
       ],
       "target_hits": 15
+    },
+    {
+      "adjustments_suggested": [
+        "Examinar a recorrência das dezenas selecionadas que não saíram e das sorteadas que ficaram fora em uma janela prospectiva; um único concurso não deve virar regra de seleção.",
+        "Registrar o ganho sem promover o modelo; aguardar evidência prospectiva acumulada."
+      ],
+      "contest_number": 3827,
+      "gap_to_15": 6,
+      "hits": 9,
+      "omitted_winners": [
+        6,
+        16,
+        18,
+        21,
+        22,
+        23
+      ],
+      "primary_delta_brier_vs_uniform": 0.0005929564492785366,
+      "process_findings": [
+        "Cartão obteve 9 acertos; 6 selecionadas não saíram e 6 sorteadas ficaram fora.",
+        "O modelo primário superou o baseline uniforme neste concurso isolado."
+      ],
+      "selected_misses": [
+        3,
+        12,
+        14,
+        19,
+        24,
+        25
+      ],
+      "target_hits": 15
     }
   ],
-  "entry_count": 42,
+  "entry_count": 43,
   "latest_entry": {
     "adjustments_suggested": [
       "Examinar a recorrência das dezenas selecionadas que não saíram e das sorteadas que ficaram fora em uma janela prospectiva; um único concurso não deve virar regra de seleção.",
       "Registrar o ganho sem promover o modelo; aguardar evidência prospectiva acumulada."
     ],
-    "contest_number": 3826,
-    "gap_to_15": 5,
-    "hits": 10,
+    "contest_number": 3827,
+    "gap_to_15": 6,
+    "hits": 9,
     "omitted_winners": [
-      8,
-      9,
+      6,
+      16,
       18,
       21,
-      22
+      22,
+      23
     ],
-    "primary_delta_brier_vs_uniform": 0.0002670764736906195,
+    "primary_delta_brier_vs_uniform": 0.0005929564492785366,
     "process_findings": [
-      "Cartão obteve 10 acertos; 5 selecionadas não saíram e 5 sorteadas ficaram fora.",
+      "Cartão obteve 9 acertos; 6 selecionadas não saíram e 6 sorteadas ficaram fora.",
       "O modelo primário superou o baseline uniforme neste concurso isolado."
     ],
     "selected_misses": [
-      4,
-      10,
-      11,
+      3,
+      12,
       14,
-      20
+      19,
+      24,
+      25
     ],
     "target_hits": 15
   },
@@ -1368,19 +1401,19 @@
   "schema_version": 1,
   "summary": {
     "best_hits": 11,
-    "latest_gap_to_15": 5,
-    "mean_hits": 8.761904761904763,
+    "latest_gap_to_15": 6,
+    "mean_hits": 8.767441860465116,
     "omitted_winner_frequency": [
+      {
+        "count": 30,
+        "number": 6
+      },
       {
         "count": 30,
         "number": 8
       },
       {
         "count": 29,
-        "number": 6
-      },
-      {
-        "count": 28,
         "number": 23
       },
       {
@@ -1388,8 +1421,12 @@
         "number": 7
       },
       {
-        "count": 26,
+        "count": 27,
         "number": 16
+      },
+      {
+        "count": 24,
+        "number": 18
       },
       {
         "count": 24,
@@ -1400,15 +1437,11 @@
         "number": 17
       },
       {
-        "count": 23,
-        "number": 18
-      },
-      {
-        "count": 21,
+        "count": 22,
         "number": 21
       },
       {
-        "count": 18,
+        "count": 19,
         "number": 22
       },
       {
@@ -1430,7 +1463,7 @@
         "number": 10
       },
       {
-        "count": 20,
+        "count": 21,
         "number": 14
       },
       {
@@ -1450,6 +1483,10 @@
         "number": 5
       },
       {
+        "count": 17,
+        "number": 25
+      },
+      {
         "count": 16,
         "number": 11
       },
@@ -1458,31 +1495,27 @@
         "number": 13
       },
       {
-        "count": 16,
-        "number": 25
-      },
-      {
-        "count": 14,
+        "count": 15,
         "number": 3
       },
       {
-        "count": 13,
+        "count": 14,
         "number": 12
+      },
+      {
+        "count": 13,
+        "number": 24
       },
       {
         "count": 12,
         "number": 15
       },
       {
-        "count": 12,
-        "number": 24
-      },
-      {
         "count": 11,
         "number": 9
       },
       {
-        "count": 7,
+        "count": 8,
         "number": 19
       },
       {
