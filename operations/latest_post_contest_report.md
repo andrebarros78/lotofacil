@@ -1,13 +1,13 @@
 # Análise Pós-Concurso — Lotofácil Operacional
 
-- Concurso Número: 3827
-- Resultado: 01 02 04 05 06 10 11 13 15 16 18 20 21 22 23
+- Concurso Número: 3828
+- Resultado: 03 05 07 08 11 13 14 15 18 19 20 21 22 23 25
 - Cartão gerado: 01 02 03 04 05 10 11 12 13 14 15 19 20 24 25
 - Número de acertos: 9
 
-- Acertos: 01 02 04 05 10 11 13 15 20
-- Selecionadas que não saíram: 03 12 14 19 24 25
-- Sorteadas que ficaram fora: 06 16 18 21 22 23
+- Acertos: 03 05 11 13 14 15 19 20 25
+- Selecionadas que não saíram: 01 02 04 10 12 24
+- Sorteadas que ficaram fora: 07 08 18 21 22 23
 
 ## Autoanálise do processo
 - Cartão obteve 9 acertos; 6 selecionadas não saíram e 6 sorteadas ficaram fora.
