@@ -1414,37 +1414,72 @@
         25
       ],
       "target_hits": 15
+    },
+    {
+      "adjustments_suggested": [
+        "Examinar a recorrência das dezenas selecionadas que não saíram e das sorteadas que ficaram fora em uma janela prospectiva; um único concurso não deve virar regra de seleção.",
+        "Se a perda para o baseline persistir na coorte, abrir challenger predeclarado e compará-lo sem alterar retroativamente o champion."
+      ],
+      "contest_number": 3830,
+      "gap_to_15": 7,
+      "hits": 8,
+      "omitted_winners": [
+        9,
+        16,
+        17,
+        18,
+        21,
+        22,
+        23
+      ],
+      "primary_delta_brier_vs_uniform": -0.0012404812554426825,
+      "process_findings": [
+        "Cartão obteve 8 acertos; 7 selecionadas não saíram e 7 sorteadas ficaram fora.",
+        "O modelo primário ficou abaixo do baseline uniforme neste concurso."
+      ],
+      "selected_misses": [
+        2,
+        5,
+        10,
+        11,
+        15,
+        19,
+        20
+      ],
+      "target_hits": 15
     }
   ],
-  "entry_count": 45,
+  "entry_count": 46,
   "latest_entry": {
     "adjustments_suggested": [
       "Examinar a recorrência das dezenas selecionadas que não saíram e das sorteadas que ficaram fora em uma janela prospectiva; um único concurso não deve virar regra de seleção.",
       "Se a perda para o baseline persistir na coorte, abrir challenger predeclarado e compará-lo sem alterar retroativamente o champion."
     ],
-    "contest_number": 3829,
-    "gap_to_15": 6,
-    "hits": 9,
+    "contest_number": 3830,
+    "gap_to_15": 7,
+    "hits": 8,
     "omitted_winners": [
-      6,
       9,
       16,
+      17,
       18,
+      21,
       22,
       23
     ],
-    "primary_delta_brier_vs_uniform": -0.00020213641887995015,
+    "primary_delta_brier_vs_uniform": -0.0012404812554426825,
     "process_findings": [
-      "Cartão obteve 9 acertos; 6 selecionadas não saíram e 6 sorteadas ficaram fora.",
+      "Cartão obteve 8 acertos; 7 selecionadas não saíram e 7 sorteadas ficaram fora.",
       "O modelo primário ficou abaixo do baseline uniforme neste concurso."
     ],
     "selected_misses": [
-      3,
+      2,
       5,
+      10,
       11,
-      12,
-      14,
-      25
+      15,
+      19,
+      20
     ],
     "target_hits": 15
   },
@@ -1463,9 +1498,13 @@
   "schema_version": 1,
   "summary": {
     "best_hits": 11,
-    "latest_gap_to_15": 6,
-    "mean_hits": 8.777777777777779,
+    "latest_gap_to_15": 7,
+    "mean_hits": 8.76086956521739,
     "omitted_winner_frequency": [
+      {
+        "count": 32,
+        "number": 23
+      },
       {
         "count": 31,
         "number": 6
@@ -1475,39 +1514,35 @@
         "number": 8
       },
       {
-        "count": 31,
-        "number": 23
+        "count": 29,
+        "number": 16
       },
       {
         "count": 28,
         "number": 7
       },
       {
-        "count": 28,
-        "number": 16
+        "count": 27,
+        "number": 18
       },
       {
-        "count": 26,
-        "number": 18
+        "count": 24,
+        "number": 17
       },
       {
         "count": 24,
         "number": 19
       },
       {
-        "count": 23,
-        "number": 17
-      },
-      {
-        "count": 23,
+        "count": 24,
         "number": 21
       },
       {
-        "count": 21,
+        "count": 22,
         "number": 22
       },
       {
-        "count": 13,
+        "count": 14,
         "number": 9
       },
       {
@@ -1517,11 +1552,11 @@
     ],
     "selected_miss_frequency": [
       {
-        "count": 30,
+        "count": 31,
         "number": 2
       },
       {
-        "count": 22,
+        "count": 23,
         "number": 10
       },
       {
@@ -1533,24 +1568,24 @@
         "number": 4
       },
       {
+        "count": 19,
+        "number": 5
+      },
+      {
+        "count": 19,
+        "number": 20
+      },
+      {
         "count": 18,
         "number": 1
       },
       {
         "count": 18,
-        "number": 5
-      },
-      {
-        "count": 18,
-        "number": 20
+        "number": 11
       },
       {
         "count": 18,
         "number": 25
-      },
-      {
-        "count": 17,
-        "number": 11
       },
       {
         "count": 16,
@@ -1569,7 +1604,7 @@
         "number": 24
       },
       {
-        "count": 12,
+        "count": 13,
         "number": 15
       },
       {
@@ -1577,7 +1612,7 @@
         "number": 9
       },
       {
-        "count": 8,
+        "count": 9,
         "number": 19
       },
       {
