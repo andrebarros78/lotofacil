@@ -1,16 +1,16 @@
 # Análise Pós-Concurso — Lotofácil Operacional
 
-- Concurso Número: 3829
-- Resultado: 01 02 04 06 09 10 13 15 16 18 19 20 22 23 24
+- Concurso Número: 3830
+- Resultado: 01 03 04 09 12 13 14 16 17 18 21 22 23 24 25
 - Cartão gerado: 01 02 03 04 05 10 11 12 13 14 15 19 20 24 25
-- Número de acertos: 9
+- Número de acertos: 8
 
-- Acertos: 01 02 04 10 13 15 19 20 24
-- Selecionadas que não saíram: 03 05 11 12 14 25
-- Sorteadas que ficaram fora: 06 09 16 18 22 23
+- Acertos: 01 03 04 12 13 14 24 25
+- Selecionadas que não saíram: 02 05 10 11 15 19 20
+- Sorteadas que ficaram fora: 09 16 17 18 21 22 23
 
 ## Autoanálise do processo
-- Cartão obteve 9 acertos; 6 selecionadas não saíram e 6 sorteadas ficaram fora.
+- Cartão obteve 8 acertos; 7 selecionadas não saíram e 7 sorteadas ficaram fora.
 - O modelo primário ficou abaixo do baseline uniforme neste concurso.
 
 ### Correções necessárias
