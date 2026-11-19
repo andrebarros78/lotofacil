@@ -1,31 +1,32 @@
 {
   "bootstrap_manifest_sha256": "716feea67b3b5a2ee712a498adcd9975578b9bc6837431584578ba1e7b7aefe5",
   "bootstrap_official_patches": [],
-  "canonical_history_sha256": "c96fc5966eef6d0791221fd0e9d5ce3d3e2c89b796b1dc501fea99b0638408d9",
-  "data_snapshot_hash": "07119af1e6aba2db6adac8ae23acaa3a5585a2c8c86491aa1c7c5840f2b1c9e7",
+  "canonical_history_sha256": "9b2f1469c3dd3fb9ad48310d040a8ccde3b9a8b63b6845203499635958f63ee2",
+  "data_snapshot_hash": "2ef36814a047203743b5d2d408c98d16013dd9f72fafd179adcdef41f96b4bf2",
   "database_integrity": "ok",
   "inserted_official_contests": [
-    3831
+    3832,
+    3833
   ],
-  "next_prediction_target": 3832,
-  "official_latest_contest": 3831,
+  "next_prediction_target": 3834,
+  "official_latest_contest": 3833,
   "post_contest_report": {
     "emitted_for_contests": [
-      3831
+      3832
     ],
-    "latest_contest": 3831,
-    "report_count": 48
+    "latest_contest": 3832,
+    "report_count": 49
   },
   "prospective": {
     "cohort_a": {
-      "n": 48,
-      "primary_ci95_high": 1.0788090366326908e-05,
-      "primary_ci95_low": -0.0012573361169479285,
+      "n": 49,
+      "primary_ci95_high": 3.17159133148301e-05,
+      "primary_ci95_low": -0.0012162013913862135,
       "primary_gate_pass": false,
-      "primary_mean_delta": -0.0006232740132908008,
-      "secondary_ci95_high": 0.0012513272872657108,
-      "secondary_ci95_low": -0.008926648433478459,
-      "secondary_mean_delta": -0.003837660573106374
+      "primary_mean_delta": -0.0005922427390356917,
+      "secondary_ci95_high": 0.00102348192393149,
+      "secondary_ci95_low": -0.00895750408399971,
+      "secondary_mean_delta": -0.00396701108003411
     },
     "cohort_b": {
       "n": 0,
@@ -37,71 +38,71 @@
       "secondary_ci95_low": null,
       "secondary_mean_delta": null
     },
-    "evaluated_predictions": 48,
+    "evaluated_predictions": 49,
     "note": "Criteria met does not auto-promote: independent review remains required by project protocol.",
     "pending_predictions": 1,
     "predictive_evidence": "NOT_ESTABLISHED",
-    "primary_ci95_high": 1.0788090366326908e-05,
-    "primary_ci95_low": -0.0012573361169479285,
-    "primary_mean_delta": -0.0006232740132908008,
+    "primary_ci95_high": 3.17159133148301e-05,
+    "primary_ci95_low": -0.0012162013913862135,
+    "primary_mean_delta": -0.0005922427390356917,
     "prospective_state": "UNDER_TEST_COHORT_A",
     "replication_criteria_met": false
   },
   "retrospective_core": {
-    "contest_count": 3831,
+    "contest_count": 3833,
     "m1_frequency": {
       "backtest_status": "VALID",
-      "delta_brier": 6.80836282276296e-05,
-      "delta_brier_ci_high": 0.00018955409172947588,
-      "delta_brier_ci_low": -5.3386835274216675e-05,
+      "delta_brier": 6.951983171332563e-05,
+      "delta_brier_ci_high": 0.0001908641286552467,
+      "delta_brier_ci_low": -5.182446522859543e-05,
       "delta_min": 0.0,
       "failed_window_ids": [],
       "failed_windows": 0,
-      "mean_brier": 0.23993191637177239,
+      "mean_brier": 0.23993048016828666,
       "model_name": "M1_frequency_regularized_lambda_100",
-      "planned_windows": 1533,
-      "predictions": 1533,
+      "planned_windows": 1534,
+      "predictions": 1534,
       "success_rate": 1.0,
-      "successful_windows": 1533,
+      "successful_windows": 1534,
       "uniform_brier": 0.24,
-      "window_ledger_hash": "f2ff7295fd4493131faa7744ab7d033a38cc7d3995092f6133e194b9924fc9ce"
+      "window_ledger_hash": "82ab22a9d82d863d015c650fd453757fb8f9f850034632931c5181403a88e407"
     },
     "m2_exponential": {
       "backtest_status": "VALID",
-      "delta_brier": -0.006116552710669076,
-      "delta_brier_ci_high": -0.005314580369009487,
-      "delta_brier_ci_low": -0.006918525052328664,
+      "delta_brier": -0.0061187845355634195,
+      "delta_brier_ci_high": -0.005317321843606321,
+      "delta_brier_ci_low": -0.006920247227520518,
       "delta_min": 0.0,
       "failed_window_ids": [],
       "failed_windows": 0,
-      "mean_brier": 0.24611655271066907,
+      "mean_brier": 0.2461187845355634,
       "model_name": "M2_exponential_alpha_0.05",
-      "planned_windows": 1533,
-      "predictions": 1533,
+      "planned_windows": 1534,
+      "predictions": 1534,
       "success_rate": 1.0,
-      "successful_windows": 1533,
+      "successful_windows": 1534,
       "uniform_brier": 0.24,
-      "window_ledger_hash": "9450d6c04ab2d56c1d7bb01f688bf1d5c07d7843aa84b2b235fa52c72a5c519a"
+      "window_ledger_hash": "f3665f012ddad15c2ba9465c15780d49017b8d0ab99ba88bbfac44f6410f6b60"
     },
-    "max_abs_marginal_z": 3.482588979255779,
-    "max_marginal_frequency": 0.6230749151657531,
-    "mean_consecutive_repetition": 8.973107049608355,
-    "min_marginal_frequency": 0.572435395458105,
-    "min_train": 2298,
+    "max_abs_marginal_z": 3.4553039144649165,
+    "max_marginal_frequency": 0.6232715888338116,
+    "mean_consecutive_repetition": 8.972599164926931,
+    "min_marginal_frequency": 0.5726584920427863,
+    "min_train": 2299,
     "predictive_evidence": "NOT_ESTABLISHED",
     "scientific_conclusion": "EVIDENCIA_PREDITIVA_INSUFICIENTE"
   },
-  "run_at_utc": "2026-11-17T11:44:42.495731+00:00",
-  "snapshot_contests": 3831,
-  "snapshot_hash": "2163944d42f5f91954f089d9a86da8569e934e1f7a5e70716a3ac82db34cc82a",
-  "snapshot_id": "snap-2163944d42f5f91954f0",
+  "run_at_utc": "2026-11-19T11:31:03.967722+00:00",
+  "snapshot_contests": 3833,
+  "snapshot_hash": "6c80819bc06a054ca7fc67142750c68c8d8ebd6eb77a1cc595a7b76c90a5f7c9",
+  "snapshot_id": "snap-6c80819bc06a054ca7fc",
   "state_transaction": {
-    "generation_id": "cycle-3831-78666da67ed9b45d",
+    "generation_id": "cycle-3833-5dd4c08397ff3af5",
     "previous_commit_status": "STATE_COMMIT_VERIFIED",
     "recovery_before_cycle": "CLEAN",
     "schema": "operational-state-transaction-v1"
   },
   "status": "GITHUB_OPERATIONAL_CYCLE_PASS",
-  "storage_snapshot_hash": "2163944d42f5f91954f089d9a86da8569e934e1f7a5e70716a3ac82db34cc82a",
-  "storage_snapshot_id": "snap-2163944d42f5f91954f0"
+  "storage_snapshot_hash": "6c80819bc06a054ca7fc67142750c68c8d8ebd6eb77a1cc595a7b76c90a5f7c9",
+  "storage_snapshot_id": "snap-6c80819bc06a054ca7fc"
 }
