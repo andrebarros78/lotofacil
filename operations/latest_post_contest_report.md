@@ -1,16 +1,16 @@
 # Análise Pós-Concurso — Lotofácil Operacional
 
-- Concurso Número: 3832
-- Resultado: 01 03 05 07 10 11 12 13 14 16 17 18 19 20 23
+- Concurso Número: 3834
+- Resultado: 02 03 04 06 07 09 11 13 15 17 20 21 22 24 25
 - Cartão gerado: 01 02 03 04 05 10 11 12 13 14 15 19 20 24 25
-- Número de acertos: 10
+- Número de acertos: 9
 
-- Acertos: 01 03 05 10 11 12 13 14 19 20
-- Selecionadas que não saíram: 02 04 15 24 25
-- Sorteadas que ficaram fora: 07 16 17 18 23
+- Acertos: 02 03 04 11 13 15 20 24 25
+- Selecionadas que não saíram: 01 05 10 12 14 19
+- Sorteadas que ficaram fora: 06 07 09 17 21 22
 
 ## Autoanálise do processo
-- Cartão obteve 10 acertos; 5 selecionadas não saíram e 5 sorteadas ficaram fora.
+- Cartão obteve 9 acertos; 6 selecionadas não saíram e 6 sorteadas ficaram fora.
 - O modelo primário superou o baseline uniforme neste concurso isolado.
 
 ### Correções necessárias
