@@ -1569,37 +1569,68 @@
         25
       ],
       "target_hits": 15
+    },
+    {
+      "adjustments_suggested": [
+        "Examinar a recorrência das dezenas selecionadas que não saíram e das sorteadas que ficaram fora em uma janela prospectiva; um único concurso não deve virar regra de seleção.",
+        "Registrar o ganho sem promover o modelo; aguardar evidência prospectiva acumulada."
+      ],
+      "contest_number": 3837,
+      "gap_to_15": 6,
+      "hits": 9,
+      "omitted_winners": [
+        7,
+        8,
+        16,
+        17,
+        22,
+        23
+      ],
+      "primary_delta_brier_vs_uniform": 0.0011003701500429675,
+      "process_findings": [
+        "Cartão obteve 9 acertos; 6 selecionadas não saíram e 6 sorteadas ficaram fora.",
+        "O modelo primário superou o baseline uniforme neste concurso isolado."
+      ],
+      "selected_misses": [
+        1,
+        2,
+        12,
+        13,
+        15,
+        19
+      ],
+      "target_hits": 15
     }
   ],
-  "entry_count": 50,
+  "entry_count": 51,
   "latest_entry": {
     "adjustments_suggested": [
       "Examinar a recorrência das dezenas selecionadas que não saíram e das sorteadas que ficaram fora em uma janela prospectiva; um único concurso não deve virar regra de seleção.",
-      "Se a perda para o baseline persistir na coorte, abrir challenger predeclarado e compará-lo sem alterar retroativamente o champion."
+      "Registrar o ganho sem promover o modelo; aguardar evidência prospectiva acumulada."
     ],
-    "contest_number": 3835,
+    "contest_number": 3837,
     "gap_to_15": 6,
     "hits": 9,
     "omitted_winners": [
-      9,
+      7,
+      8,
       16,
       17,
-      18,
-      21,
-      22
+      22,
+      23
     ],
-    "primary_delta_brier_vs_uniform": -0.0021338201318191474,
+    "primary_delta_brier_vs_uniform": 0.0011003701500429675,
     "process_findings": [
       "Cartão obteve 9 acertos; 6 selecionadas não saíram e 6 sorteadas ficaram fora.",
-      "O modelo primário ficou abaixo do baseline uniforme neste concurso."
+      "O modelo primário superou o baseline uniforme neste concurso isolado."
     ],
     "selected_misses": [
       1,
-      11,
-      14,
-      20,
-      24,
-      25
+      2,
+      12,
+      13,
+      15,
+      19
     ],
     "target_hits": 15
   },
@@ -1619,10 +1650,10 @@
   "summary": {
     "best_hits": 11,
     "latest_gap_to_15": 6,
-    "mean_hits": 8.8,
+    "mean_hits": 8.803921568627452,
     "omitted_winner_frequency": [
       {
-        "count": 34,
+        "count": 35,
         "number": 23
       },
       {
@@ -1630,36 +1661,36 @@
         "number": 6
       },
       {
-        "count": 32,
+        "count": 33,
         "number": 16
       },
       {
-        "count": 31,
+        "count": 32,
         "number": 8
       },
       {
-        "count": 30,
+        "count": 31,
         "number": 7
+      },
+      {
+        "count": 29,
+        "number": 17
       },
       {
         "count": 29,
         "number": 18
       },
       {
-        "count": 28,
-        "number": 17
-      },
-      {
         "count": 27,
         "number": 21
       },
       {
-        "count": 24,
-        "number": 19
+        "count": 25,
+        "number": 22
       },
       {
         "count": 24,
-        "number": 22
+        "number": 19
       },
       {
         "count": 17,
@@ -1672,7 +1703,7 @@
     ],
     "selected_miss_frequency": [
       {
-        "count": 32,
+        "count": 33,
         "number": 2
       },
       {
@@ -1684,7 +1715,7 @@
         "number": 10
       },
       {
-        "count": 21,
+        "count": 22,
         "number": 1
       },
       {
@@ -1708,7 +1739,7 @@
         "number": 11
       },
       {
-        "count": 18,
+        "count": 19,
         "number": 12
       },
       {
@@ -1716,7 +1747,7 @@
         "number": 3
       },
       {
-        "count": 16,
+        "count": 17,
         "number": 13
       },
       {
@@ -1724,16 +1755,16 @@
         "number": 24
       },
       {
-        "count": 14,
+        "count": 15,
         "number": 15
+      },
+      {
+        "count": 12,
+        "number": 19
       },
       {
         "count": 11,
         "number": 9
-      },
-      {
-        "count": 11,
-        "number": 19
       },
       {
         "count": 4,
