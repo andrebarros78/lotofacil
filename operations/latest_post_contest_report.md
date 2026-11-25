@@ -1,24 +1,24 @@
 # Análise Pós-Concurso — Lotofácil Operacional
 
-- Concurso Número: 3835
-- Resultado: 02 03 04 05 09 10 12 13 15 16 17 18 19 21 22
+- Concurso Número: 3837
+- Resultado: 03 04 05 07 08 10 11 14 16 17 20 22 23 24 25
 - Cartão gerado: 01 02 03 04 05 10 11 12 13 14 15 19 20 24 25
 - Número de acertos: 9
 
-- Acertos: 02 03 04 05 10 12 13 15 19
-- Selecionadas que não saíram: 01 11 14 20 24 25
-- Sorteadas que ficaram fora: 09 16 17 18 21 22
+- Acertos: 03 04 05 10 11 14 20 24 25
+- Selecionadas que não saíram: 01 02 12 13 15 19
+- Sorteadas que ficaram fora: 07 08 16 17 22 23
 
 ## Autoanálise do processo
 - Cartão obteve 9 acertos; 6 selecionadas não saíram e 6 sorteadas ficaram fora.
-- O modelo primário ficou abaixo do baseline uniforme neste concurso.
+- O modelo primário superou o baseline uniforme neste concurso isolado.
 
 ### Correções necessárias
 - Nenhuma correção de integridade obrigatória foi identificada neste ciclo.
 
 ### Ajustes sugeridos
 - Examinar a recorrência das dezenas selecionadas que não saíram e das sorteadas que ficaram fora em uma janela prospectiva; um único concurso não deve virar regra de seleção.
-- Se a perda para o baseline persistir na coorte, abrir challenger predeclarado e compará-lo sem alterar retroativamente o champion.
+- Registrar o ganho sem promover o modelo; aguardar evidência prospectiva acumulada.
 
 ### Implementações necessárias
 - Emitir e persistir este relatório automaticamente após cada resultado oficial avaliado.
